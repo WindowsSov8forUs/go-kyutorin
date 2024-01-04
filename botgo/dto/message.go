@@ -41,6 +41,9 @@ type Message struct {
 	SrcGuildID string `json:"src_guild_id"`
 	//返回的ret 超过主动限制会返回22009
 	Ret int `json:"ret,omitempty"`
+
+	// 群聊场景下，该字段用来表示消息响应来自哪个群聊
+	GroupCode string `json:"group_code,omitempty"`
 }
 
 type MediaResponse struct {
@@ -53,7 +56,7 @@ type MediaResponse struct {
 	Ret int `json:"ret,omitempty"`
 }
 
-//群信息结构
+// 群信息结构
 type GroupMessageResponse struct {
 	MediaResponse *MediaResponse
 	Message       *Message
