@@ -1,7 +1,6 @@
 package config
 
-const ConfigTemplate = `
-# 配置文件
+const ConfigTemplate = `# 配置文件
 # 请根据注释进行配置，不要删除任意一项
 
 # 日志等级
@@ -51,13 +50,20 @@ account: # QQ 机器人配置
       #- "AUDIO_ACTION"                 # 音频机器人事件
       - "PUBLIC_GUILD_MESSAGES"        # 公域频道消息事件       # 该事件是默认订阅
 
+# 本地文件服务器配置
+# 请确保配置正确，否则无法正常启动
+# use_local_file_server 默认设置为 false ，如果需要使用本地文件服务器，请将其设置为 true
+file_server:
+  use_local_file_server: false # 是否使用本地文件服务器
+  url: "" # 填入公网 IP 或域名
+  port: 8080 # 填入端口号
+
 satori: # Satori 配置
   version: 1 # Satori 版本，目前只有 1
-  path: "" # Satori 部署路径，可以为空，，如果不为空需要以 / 开头
+  path: "" # Satori 部署路径，可以为空，如果不为空需要以 / 开头
   token: "" # 鉴权令牌，如果不设置则不会进行鉴权
 
   # 服务器配置
   server:
     host: "127.0.0.1" # 服务器地址
-    port: 8080 # 服务器端口
-`
+    port: 8080 # 服务器端口`

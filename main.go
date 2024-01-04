@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
+	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	"github.com/WindowsSov8forUs/go-kyutorin/httpapi"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
@@ -105,25 +106,25 @@ func main() {
 		if err := botgo.SelectOpenAPIVersion(openapi.APIv1); err != nil {
 			log.Fatalf("创建 OpenAPI 时出错: %v", err)
 		}
-		api = botgo.NewOpenAPI(token).WithTimeout(3 * time.Second)
+		api = botgo.NewOpenAPI(token).WithTimeout(10 * time.Second)
 
 		// 创建 v2 版本 OpenAPI
 		if err := botgo.SelectOpenAPIVersion(openapi.APIv2); err != nil {
 			log.Fatalf("创建 OpenAPI 时出错: %v", err)
 		}
-		apiV2 = botgo.NewOpenAPI(token).WithTimeout(3 * time.Second)
+		apiV2 = botgo.NewOpenAPI(token).WithTimeout(10 * time.Second)
 	} else {
 		// 创建 v1 版本 OpenAPI
 		if err := botgo.SelectOpenAPIVersion(openapi.APIv1); err != nil {
 			log.Fatalf("创建 OpenAPI 时出错: %v", err)
 		}
-		api = botgo.NewSandboxOpenAPI(token).WithTimeout(3 * time.Second)
+		api = botgo.NewSandboxOpenAPI(token).WithTimeout(10 * time.Second)
 
 		// 创建 v2 版本 OpenAPI
 		if err := botgo.SelectOpenAPIVersion(openapi.APIv2); err != nil {
 			log.Fatalf("创建 OpenAPI 时出错: %v", err)
 		}
-		apiV2 = botgo.NewSandboxOpenAPI(token).WithTimeout(3 * time.Second)
+		apiV2 = botgo.NewSandboxOpenAPI(token).WithTimeout(10 * time.Second)
 	}
 
 	var me *dto.User
@@ -179,6 +180,20 @@ func main() {
 
 		log.Info("已成功连接 QQ 开放平台")
 		log.Infof("欢迎使用机器人: %s ！", me.Username)
+
+		// 开启本地文件服务器
+		var hasFileServer bool
+		if conf.FileServer.UseLocalFileServer {
+			if conf.FileServer.URL != "" && conf.FileServer.Port != 0 {
+				hasFileServer = true
+				fileserver.StartFileServer(conf)
+			} else {
+				log.Warn("文件服务器 URL 或端口未指定，将不会启动文件服务器")
+			}
+		}
+		if !hasFileServer {
+			log.Warn("文件服务器未启动，将无法使用本地文件或 base64 编码发送文件")
+		}
 
 		p = processor.NewProcessor(api, apiV2)
 

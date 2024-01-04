@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/sys"
 
 	"gopkg.in/yaml.v3"
 )
@@ -21,9 +20,10 @@ var (
 
 // Config 配置
 type Config struct {
-	LogLevel log.LogLevel `yaml:"log_level"` // 日志等级
-	Account  Account      `yaml:"account"`   // QQ 机器人账号配置
-	Satori   Satori       `yaml:"satori"`    // Satori 配置
+	LogLevel   log.LogLevel `yaml:"log_level"`   // 日志等级
+	Account    Account      `yaml:"account"`     // QQ 机器人账号配置
+	FileServer FileServer   `yaml:"file_server"` // 本地文件服务器配置
+	Satori     Satori       `yaml:"satori"`      // Satori 配置
 }
 
 // Account QQ 机器人账号配置
@@ -40,6 +40,13 @@ type Account struct {
 type WebSocket struct {
 	Shards  uint32   `yaml:"shards"`  // 分片数
 	Intents []string `yaml:"intents"` // 事件订阅
+}
+
+// FileServer 本地文件服务器配置
+type FileServer struct {
+	UseLocalFileServer bool   `yaml:"use_local_file_server"` // 是否使用本地文件服务器
+	URL                string `yaml:"url"`                   // 本地文件服务器地址
+	Port               uint16 `yaml:"port"`                  // 本地文件服务器端口
 }
 
 // Satori Satori 配置
@@ -127,19 +134,19 @@ func ensureConfigComplete(config *Config, path string) error {
 
 	// 如果有缺失设置，处理缺失配置行
 	if len(missingSettings) > 0 {
-		fmt.Printf("检测到配置文件不完整，缺失以下设置：\n%s", missingSettings)
+		fmt.Printf("检测到配置文件不完整，缺失以下设置：\n%s\n", missingSettings)
 		missingConfigLines, err := extractMissingConfigLines(missingSettings, ConfigTemplate)
 		if err != nil {
 			return err
 		}
 
-		// 追加到配置文件
-		if err = appendToConfigFile(path, missingConfigLines); err != nil {
+		// 更新配置文件
+		if err = recreateToConfigFile(path, missingConfigLines); err != nil {
 			return err
 		}
 
-		fmt.Printf("配置文件已更新，正在重新启动程序。")
-		sys.RestartApplication()
+		fmt.Printf("配置文件已更新，原配置文件已被命名为 config_backup.yml ，请重新启动程序。")
+		os.Exit(0)
 	}
 
 	return nil
@@ -234,24 +241,48 @@ func extractMissingConfigLines(missingSettings map[string]string, configTemplate
 	return missingConfigLines, nil
 }
 
-func appendToConfigFile(path string, lines []string) error {
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0644)
+func recreateToConfigFile(path string, lines []string) error {
+	// 将原配置文件重命名为 config_backup.yml
+	err := os.Rename(path, "config_backup.yml")
 	if err != nil {
-		fmt.Println("打开文件错误:", err)
+		return err
+	}
+
+	// 将配置模板写入配置文件
+	file, err := os.Create(path)
+	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	// 写入缺失的配置项
-	for _, line := range lines {
-		if _, err := file.WriteString("\n" + line); err != nil {
-			fmt.Println("写入配置错误:", err)
-			return err
-		}
+	_, err = file.WriteString(ConfigTemplate)
+	if err != nil {
+		return err
 	}
 
-	// 输出写入状态
-	fmt.Println("配置已更新，写入到文件:", path)
-
 	return nil
+}
+
+// IsFileServerEnabled 是否启用本地文件服务器
+func IsFileServerEnabled() bool {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if instance == nil {
+		log.Warn("配置未加载，无法判断是否启用本地文件服务器。")
+		return false
+	}
+	return instance.FileServer.UseLocalFileServer
+}
+
+// GetFileServerURL 获取本地文件服务器地址
+func GetFileServerURL() string {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if instance == nil {
+		log.Warn("配置未加载，无法获取本地文件服务器地址。")
+		return ""
+	}
+	return instance.FileServer.URL
 }

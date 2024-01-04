@@ -9,6 +9,7 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
+	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tencent-connect/botgo/openapi"
@@ -89,6 +90,7 @@ func satoriResourceAPIHandler(c *gin.Context, api openapi.OpenAPI, apiV2 openapi
 		case callapi.ErrMethodNotAllowed:
 			c.JSON(http.StatusMethodNotAllowed, gin.H{})
 		default:
+			log.Errorf("调用 API 时出错: %s", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{})
 		}
 		return
