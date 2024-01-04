@@ -6,7 +6,11 @@ require github.com/tencent-connect/botgo v0.1.6
 
 require github.com/dezhishen/satori-model-go v0.0.4
 
-require github.com/mattn/go-colorable v0.1.13 // indirect
+require (
+	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
+)
 
 require (
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
@@ -33,11 +37,13 @@ require (
 require (
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
+	github.com/disintegration/imaging v1.6.2
 	github.com/fatih/color v1.16.0
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-resty/resty/v2 v2.6.0 // indirect
 	github.com/gorilla/websocket v1.4.2
+	github.com/syndtr/goleveldb v1.0.0
 	github.com/tidwall/gjson v1.9.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect

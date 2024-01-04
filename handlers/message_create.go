@@ -138,7 +138,7 @@ func HandleMessageCreate(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message cal
 			if err != nil {
 				return "", err
 			}
-			messageResponse, err := convertDtoMessageToMessage(dtoGroupMessageResponse.Message)
+			messageResponse, err := convertDtoMessageV2ToMessage(dtoGroupMessageResponse.Message)
 			if err != nil {
 				return "", err
 			}
@@ -595,6 +595,82 @@ func convertDtoMessageToMessage(dtoMessage *dto.Message) (*satoriMessage.Message
 	return &message, nil
 }
 
+// convertDtoMessageV2ToMessage 将收到的 V2 消息响应转化为符合 Satori 协议的消息
+func convertDtoMessageV2ToMessage(dtoMessage *dto.Message) (*satoriMessage.Message, error) {
+	var message satoriMessage.Message
+
+	message.Id = dtoMessage.ID
+	message.Content = strings.TrimSpace(ConvertToMessageContent(dtoMessage))
+
+	// 判断是否为单聊
+	if dtoMessage.GroupCode != "" {
+		// 是群聊
+		channel := &channel.Channel{
+			Id:   dtoMessage.GroupCode,
+			Type: channel.CHANNEL_TYPE_TEXT,
+		}
+		guild := &guild.Guild{
+			Id: dtoMessage.GroupCode,
+		}
+		var guildMember *guildmember.GuildMember
+		if dtoMessage.Member == nil {
+			guildMember = &guildmember.GuildMember{}
+			if dtoMessage.Member != nil {
+				guildMember.Nick = dtoMessage.Member.Nick
+			}
+			if dtoMessage.Author != nil {
+				guildMember.Avatar = dtoMessage.Author.Avatar
+			}
+		}
+		var u *user.User
+		if dtoMessage.Author != nil {
+			u = &user.User{
+				Id:     dtoMessage.Author.ID,
+				Name:   dtoMessage.Author.Username,
+				Avatar: dtoMessage.Author.Avatar,
+				IsBot:  dtoMessage.Author.Bot,
+			}
+		}
+
+		// 获取时间
+		if dtoMessage.Member != nil {
+			time, err := dtoMessage.Member.JoinedAt.Time()
+			if err != nil {
+				return nil, err
+			}
+			guildMember.JoinedAt = time.Unix()
+		}
+
+		message.Channel = channel
+		message.Guild = guild
+		message.Member = guildMember
+		message.User = u
+	} else {
+		// 是单聊
+		// TODO: 目前没有实际运用场景，很可能需要更改
+		channel := &channel.Channel{
+			Id:   dtoMessage.Author.ID,
+			Type: channel.CHANNEL_TYPE_DIRECT,
+		}
+		user := &user.User{
+			Id:     dtoMessage.Author.ID,
+			Name:   dtoMessage.Author.Username,
+			Avatar: dtoMessage.Author.Avatar,
+			IsBot:  dtoMessage.Author.Bot,
+		}
+		message.Channel = channel
+		message.User = user
+	}
+
+	time, err := dtoMessage.Timestamp.Time()
+	if err != nil {
+		return nil, err
+	}
+	message.CreateAt = time.Unix()
+
+	return &message, nil
+}
+
 // convertButtonToKeyboard 将 Satori 协议的按钮转换为 QQ 的按钮
 func convertButtonToKeyboard(button *satoriMessage.MessageElementButton) *keyboard.MessageKeyboard {
 	// TODO: 或许需要支持更多的方式
@@ -617,9 +693,9 @@ func uploadMedia(ctx context.Context, groupID string, richMediaMessage *dto.Rich
 }
 
 // uploadMedia 上传媒体并返回FileInfo
-func uploadMediaPrivate(ctx context.Context, UserID string, richMediaMessage *dto.RichMediaMessage, apiv2 openapi.OpenAPI) (string, error) {
+func uploadMediaPrivate(ctx context.Context, userID string, richMediaMessage *dto.RichMediaMessage, apiv2 openapi.OpenAPI) (string, error) {
 	// 调用API来上传媒体
-	messageReturn, err := apiv2.PostC2CMessage(ctx, UserID, richMediaMessage)
+	messageReturn, err := apiv2.PostC2CMessage(ctx, userID, richMediaMessage)
 	if err != nil {
 		return "", err
 	}
@@ -636,24 +712,27 @@ func generateDtoRichMediaMessage(id string, element satoriMessage.MessageElement
 	// 根据 element 的类型来创建 dto.RichMediaMessage
 	switch e := element.(type) {
 	case *satoriMessage.MessageElementImg:
+		url := saveSrcToURL(e.Src)
 		dtoRichMediaMessage = &dto.RichMediaMessage{
 			EventID:    id,
 			FileType:   1,
-			URL:        e.Src,
+			URL:        url,
 			SrvSendMsg: false,
 		}
 	case *satoriMessage.MessageElementVideo:
+		url := saveSrcToURL(e.Src)
 		dtoRichMediaMessage = &dto.RichMediaMessage{
 			EventID:    id,
 			FileType:   2,
-			URL:        e.Src,
+			URL:        url,
 			SrvSendMsg: false,
 		}
 	case *satoriMessage.MessageElementAudio:
+		url := saveSrcToURL(e.Src)
 		dtoRichMediaMessage = &dto.RichMediaMessage{
 			EventID:    id,
 			FileType:   3,
-			URL:        e.Src,
+			URL:        url,
 			SrvSendMsg: false,
 		}
 	case *satoriMessage.MessageElementFile:
