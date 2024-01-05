@@ -76,6 +76,64 @@ func GetStatus(platform string) login.LoginStatus {
 	return globalStatusMapping.mapping[platform]
 }
 
+// getSrcKey 获取 src 的 key
+func getSrcKey(src, messageType string) string {
+	// 分析 src 获取 hash
+	// 检查是否是 URL
+	u, err := url.Parse(src)
+	if err == nil && u.Scheme != "" && u.Host != "" {
+		// url 并不支持缓存
+		return ""
+	}
+
+	// 检查是否是 data/mime 字符串
+	if strings.HasPrefix(src, "data:") {
+		// 解析 data/mime 字符串
+		parts := strings.Split(src, ",")
+		if len(parts) != 2 {
+			return ""
+		}
+
+		// 解析 mime 类型
+		mimeParts := strings.Split(parts[0], ";")
+		if len(mimeParts) != 2 {
+			return ""
+		}
+
+		// 解析 base64 编码
+		encoding := mimeParts[1]
+		var data []byte
+		switch encoding {
+		case "base64":
+			data, err = base64.StdEncoding.DecodeString(parts[1])
+			if err != nil {
+				return ""
+			}
+
+			// 获取 hash 值
+			hash := fileserver.GetHash(data)
+			return messageType + ":" + hash
+		default:
+			return ""
+		}
+	}
+
+	// 检查是否是本地文件
+	if _, err := os.Stat(src); err == nil {
+		// 读取文件数据
+		data, err := os.ReadFile(src)
+		if err != nil {
+			return ""
+		}
+
+		// 获取 hash 值
+		hash := fileserver.GetHash(data)
+		return messageType + ":" + hash
+	}
+
+	return ""
+}
+
 // saveSrcToURL 将文件资源字符串保存并返回一个 URL
 func saveSrcToURL(src string) string {
 	// 检查是否是 URL
