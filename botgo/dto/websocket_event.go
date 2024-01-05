@@ -39,6 +39,8 @@ const (
 	EventForumAuditResult      EventType = "FORUM_PUBLISH_AUDIT_RESULT"
 	EventInteractionCreate     EventType = "INTERACTION_CREATE"
 	EventGroupAtMessageCreate  EventType = "GROUP_AT_MESSAGE_CREATE"
+	EventGroupAddRobot         EventType = "GROUP_ADD_ROBOT"
+	EventGroupDelRobot         EventType = "GROUP_DEL_ROBOT"
 	EventC2CMessageCreate      EventType = "C2C_MESSAGE_CREATE"
 )
 
@@ -50,7 +52,10 @@ var intentEventMap = map[Intent][]EventType{
 	},
 	IntentGuildMembers:  {EventGuildMemberAdd, EventGuildMemberUpdate, EventGuildMemberRemove},
 	IntentGuildMessages: {EventMessageCreate, EventMessageDelete},
-	IntentGroupMessages: {EventGroupAtMessageCreate, EventC2CMessageCreate},
+	IntentGroupMessages: {
+		EventGroupAtMessageCreate, EventGroupAddRobot, EventGroupDelRobot,
+		EventC2CMessageCreate,
+	},
 
 	IntentGuildMessageReactions: {EventMessageReactionAdd, EventMessageReactionRemove},
 	IntentGuildAtMessage:        {EventAtMessageCreate, EventPublicMessageDelete},

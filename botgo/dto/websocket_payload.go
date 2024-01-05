@@ -8,6 +8,7 @@ type WSPayload struct {
 	WSPayloadBase
 	Data       interface{} `json:"d,omitempty"`
 	S          int64       `json:"s,omitempty"`
+	ID         string      `json:"id,omitempty"`
 	RawMessage []byte      `json:"-"` // 原始的 message 数据
 }
 
@@ -113,6 +114,20 @@ type WSInteractionData Interaction
 
 // WSGroupATMessageData 群@机器人的事件
 type WSGroupATMessageData Message
+
+// WSGroupAddRobotData 群添加机器人事件
+type WSGroupAddRobotData struct {
+	GroupOpenid    string `json:"group_openid"`     // 加入群的群openid
+	OpMemberOpenid string `json:"op_member_openid"` // 操作添加机器人进群的群成员openid
+	Timestamp      int64  `json:"timestamp"`        // 加入的时间戳
+}
+
+// WSGroupDelRobotData 群删除机器人事件
+type WSGroupDelRobotData struct {
+	GroupOpenid    string `json:"group_openid"`     // 移除的时间戳
+	OpMemberOpenid string `json:"op_member_openid"` // 操作移除机器人退群的群成员openid
+	Timestamp      int64  `json:"timestamp"`        // 移除的时间戳
+}
 
 // WSC2CMessageData  c2c消息事件
 type WSC2CMessageData Message

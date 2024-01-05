@@ -254,11 +254,23 @@ func (c *Client) saveSeq(seq uint32) {
 func (c *Client) isHandleBuildIn(payload *dto.WSPayload) bool {
 	switch payload.OPCode {
 	case dto.WSHello: // 接收到 hello 后需要开始发心跳
+		// 调用自定义的 hello 回调
+		if event.DefaultHandlers.Hello != nil {
+			go event.DefaultHandlers.Hello(payload)
+		}
 		c.startHeartBeatTicker(payload.RawMessage)
 	case dto.WSHeartbeatAck: // 心跳 ack 不需要业务处理
 	case dto.WSReconnect: // 达到连接时长，需要重新连接，此时可以通过 resume 续传原连接上的事件
+		// 调用自定义的 reconnect 回调
+		if event.DefaultHandlers.Reconnect != nil {
+			go event.DefaultHandlers.Reconnect(payload)
+		}
 		c.closeChan <- errs.ErrNeedReConnect
 	case dto.WSInvalidSession: // 无效的 sessionLog，需要重新鉴权
+		// 调用自定义的 reconnect 回调
+		if event.DefaultHandlers.Reconnect != nil {
+			go event.DefaultHandlers.Reconnect(payload)
+		}
 		c.closeChan <- errs.ErrInvalidSession
 	default:
 		return false

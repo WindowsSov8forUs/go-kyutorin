@@ -10,6 +10,9 @@ var DefaultHandlers struct {
 	ErrorNotify ErrorNotifyHandler
 	Plain       PlainEventHandler
 
+	Hello     HelloHandler
+	Reconnect ReconnectHandler
+
 	Guild       GuildEventHandler
 	GuildMember GuildMemberEventHandler
 	Channel     ChannelEventHandler
@@ -33,6 +36,8 @@ var DefaultHandlers struct {
 	Interaction InteractionEventHandler
 
 	GroupATMessage GroupATMessageEventHandler
+	GroupAddRobot  GroupAddRobotEventHandler
+	GroupDelRobot  GroupDelRobotEventHandler
 	C2CMessage     C2CMessageEventHandler
 }
 
@@ -45,6 +50,12 @@ type ErrorNotifyHandler func(err error)
 
 // PlainEventHandler 透传handler
 type PlainEventHandler func(event *dto.WSPayload, message []byte) error
+
+// HelloHandler 当 ws 接收到 hello 事件的时候会回调
+type HelloHandler func(event *dto.WSPayload)
+
+// ReconnectHandler 当 ws 重新连接的时候会回调
+type ReconnectHandler func(event *dto.WSPayload)
 
 // GuildEventHandler 频道事件handler
 type GuildEventHandler func(event *dto.WSPayload, data *dto.WSGuildData) error
@@ -101,6 +112,12 @@ type InteractionEventHandler func(event *dto.WSPayload, data *dto.WSInteractionD
 
 // GroupATMessageEventHandler 群中at机器人消息事件 handler
 type GroupATMessageEventHandler func(event *dto.WSPayload, data *dto.WSGroupATMessageData) error
+
+// GroupAddRobotEventHandler 群添加机器人事件 handler
+type GroupAddRobotEventHandler func(event *dto.WSPayload, data *dto.WSGroupAddRobotData) error
+
+// GroupDelRobotEventHandler 群删除机器人事件 handler
+type GroupDelRobotEventHandler func(event *dto.WSPayload, data *dto.WSGroupDelRobotData) error
 
 // C2CMessageEventHandler 机器人消息事件 handler
 type C2CMessageEventHandler func(event *dto.WSPayload, data *dto.WSC2CMessageData) error
@@ -210,6 +227,12 @@ func registerMessageHandlers(i dto.Intent, handlers ...interface{}) dto.Intent {
 		case GroupATMessageEventHandler:
 			DefaultHandlers.GroupATMessage = handle
 			i = i | dto.EventToIntent(dto.EventGroupAtMessageCreate)
+		case GroupAddRobotEventHandler:
+			DefaultHandlers.GroupAddRobot = handle
+			i = i | dto.EventToIntent(dto.EventGroupAddRobot)
+		case GroupDelRobotEventHandler:
+			DefaultHandlers.GroupDelRobot = handle
+			i = i | dto.EventToIntent(dto.EventGroupDelRobot)
 		case C2CMessageEventHandler:
 			DefaultHandlers.C2CMessage = handle
 			i = i | dto.EventToIntent(dto.EventC2CMessageCreate)
