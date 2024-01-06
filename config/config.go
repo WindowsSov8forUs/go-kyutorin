@@ -23,7 +23,7 @@ type Config struct {
 	LogLevel   log.LogLevel `yaml:"log_level"`   // 日志等级
 	Account    Account      `yaml:"account"`     // QQ 机器人账号配置
 	FileServer FileServer   `yaml:"file_server"` // 本地文件服务器配置
-	Database   bool         `yaml:"database"`    // 是否启用数据库
+	Database   Database     `yaml:"database"`    // 数据库配置
 	Satori     Satori       `yaml:"satori"`      // Satori 配置
 }
 
@@ -48,6 +48,18 @@ type FileServer struct {
 	UseLocalFileServer bool   `yaml:"use_local_file_server"` // 是否使用本地文件服务器
 	URL                string `yaml:"url"`                   // 本地文件服务器地址
 	Port               uint16 `yaml:"port"`                  // 本地文件服务器端口
+}
+
+// Database 数据库配置
+type Database struct {
+	FileDatabase    bool            `yaml:"file_database"`    // 是否使用文件数据库
+	MessageDatabase MessageDatabase `yaml:"message_database"` // 消息数据库配置
+}
+
+// MessageDatabase 消息数据库配置
+type MessageDatabase struct {
+	InUse bool `yaml:"in_use"` // 是否启用消息数据库
+	Limit int  `yaml:"limit"`  // 消息获取数量限制
 }
 
 // Satori Satori 配置

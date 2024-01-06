@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/WindowsSov8forUs/go-kyutorin/database"
+	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
@@ -39,6 +41,7 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 		Id:   data.Author.UserOpenID,
 		Type: channel.CHANNEL_TYPE_DIRECT,
 	}
+	echo.SetOpenIdType(data.Author.UserOpenID, "private")
 
 	// 构建 message
 	message := &message.Message{
@@ -63,6 +66,12 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 		Message:   message,
 		User:      user,
 	}
+
+	// 存储消息
+	messageToSave := message
+	messageToSave.Channel = channel
+	messageToSave.User = user
+	database.SaveMessage(messageToSave, data.Author.UserOpenID, "private")
 
 	// 上报消息到 Satori 应用
 	return p.BroadcastEvent(event)

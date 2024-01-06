@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
+	"github.com/WindowsSov8forUs/go-kyutorin/database"
+	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 
 	"github.com/dezhishen/satori-model-go/pkg/channel"
 	"github.com/dezhishen/satori-model-go/pkg/guild"
@@ -79,6 +81,30 @@ func HandleMessageList(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message calla
 
 			response.Data = append(response.Data, m)
 		}
+
+		var responseData []byte
+		responseData, err = json.Marshal(response)
+		if err != nil {
+			return "", err
+		}
+		return string(responseData), nil
+	} else if message.Platform == "qq" {
+		var response MessageListResponse
+
+		// 获取子频道类型
+		channelType := echo.GetOpenIdType(request.ChannelId)
+		if channelType != "private" {
+			channelType = "group"
+		}
+
+		messages, next, err := database.GetMessageList(request.ChannelId, channelType, request.Next)
+		if err != nil {
+			return "", err
+		}
+		for _, message := range messages {
+			response.Data = append(response.Data, *message)
+		}
+		response.Next = next
 
 		var responseData []byte
 		responseData, err = json.Marshal(response)

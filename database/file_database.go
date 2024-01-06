@@ -37,8 +37,8 @@ var (
 	videoDBInstance *FileCacheDB
 )
 
-// StartDB 启动数据库
-func StartDB() {
+// StartFileDB 启动文件数据库
+func StartFileDB() {
 	log.Info("正在启动数据库...")
 
 	// 启动图片数据库

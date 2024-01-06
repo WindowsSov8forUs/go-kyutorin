@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/WindowsSov8forUs/go-kyutorin/database"
+	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
@@ -41,6 +43,7 @@ func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGrou
 		Id:   data.GroupID,
 		Type: channel.CHANNEL_TYPE_TEXT,
 	}
+	echo.SetOpenIdType(data.GroupID, "group")
 
 	// 构建 guild
 	guild := &guild.Guild{
@@ -75,6 +78,14 @@ func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGrou
 		Message:   message,
 		User:      user,
 	}
+
+	// 存储消息
+	messageToSave := message
+	messageToSave.Channel = channel
+	messageToSave.Guild = guild
+	messageToSave.Member = member
+	messageToSave.User = user
+	database.SaveMessage(messageToSave, data.GroupID, "group")
 
 	// 上报消息到 Satori 应用
 	return p.BroadcastEvent(event)

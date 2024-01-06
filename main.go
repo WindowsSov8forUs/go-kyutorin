@@ -197,11 +197,22 @@ func main() {
 			log.Warn("文件服务器未启动，将无法使用本地文件或 base64 编码发送文件")
 		}
 
-		// 启动数据库
-		if conf.Database {
-			database.StartDB()
+		// 启动文件数据库
+		if conf.Database.FileDatabase {
+			database.StartFileDB()
 		} else {
 			log.Warn("数据库未启动，将无法使用文件缓存。")
+		}
+
+		// 启动消息数据库
+		if conf.Database.MessageDatabase.InUse {
+			log.Info("正在启动消息数据库...")
+			err := database.StartMessageDB(conf.Database.MessageDatabase.Limit)
+			if err != nil {
+				log.Errorf("启动消息数据库时出错，将无法使用消息缓存: %v", err)
+			}
+		} else {
+			log.Warn("消息数据库未启动，将无法使用消息缓存。")
 		}
 
 		p = processor.NewProcessor(api, apiV2)
