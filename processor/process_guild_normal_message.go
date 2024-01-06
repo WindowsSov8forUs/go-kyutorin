@@ -2,10 +2,10 @@ package processor
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
+	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
 	"github.com/dezhishen/satori-model-go/pkg/channel"
@@ -15,16 +15,21 @@ import (
 	"github.com/dezhishen/satori-model-go/pkg/message"
 	"github.com/dezhishen/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/dto"
-	"github.com/tencent-connect/botgo/websocket/client"
 )
 
 // ProcessGuildNormalMessage 处理群组私域消息
-func (p *Processor) ProcessGuildNormalMessage(data *dto.WSMessageData) error {
+func (p *Processor) ProcessGuildNormalMessage(payload *dto.WSPayload, data *dto.WSMessageData) error {
+	// 打印消息日志
+	printGuildMessage(payload, data)
+
 	// 构建事件数据
 	var event *signaling.Event
 
-	// 获取 s
-	id := client.GetGlobalS()
+	// 获取事件 ID
+	id, err := HashEventID(payload.ID)
+	if err != nil {
+		return fmt.Errorf("计算事件 ID 时出错: %v", err)
+	}
 
 	// 将事件字符串转换为时间戳
 	t, err := time.Parse(time.RFC3339, string(data.Timestamp))
@@ -77,7 +82,7 @@ func (p *Processor) ProcessGuildNormalMessage(data *dto.WSMessageData) error {
 
 	// 填充事件数据
 	event = &signaling.Event{
-		Id:        strconv.FormatInt(id, 10),
+		Id:        id,
 		Type:      signaling.EVENT_TYPE_MESSAGE_CREATED,
 		Platform:  "qqguild",
 		SelfId:    handlers.SelfId,
@@ -92,4 +97,21 @@ func (p *Processor) ProcessGuildNormalMessage(data *dto.WSMessageData) error {
 
 	// 上报消息到 Satori 应用
 	return p.BroadcastEvent(event)
+}
+
+func printGuildMessage(payload *dto.WSPayload, data *dto.WSMessageData) {
+	// 构建用户名称
+	var userName string
+	if data.Member.Nick != "" {
+		userName = fmt.Sprintf("%s(%s)", data.Member.Nick, data.Author.ID)
+	} else if data.Author.Username != "" {
+		userName = fmt.Sprintf("%s(%s)", data.Author.Username, data.Author.ID)
+	} else {
+		userName = data.Author.ID
+	}
+
+	// 构建消息日志
+	msgContent := getMessageLog(data)
+
+	log.Infof("收到来自频道 %s 的子频道 %s 的用户 %s 的消息: %s", data.GuildID, data.ChannelID, userName, msgContent)
 }

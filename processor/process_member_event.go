@@ -2,10 +2,10 @@ package processor
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
+	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
 	"github.com/dezhishen/satori-model-go/pkg/guild"
@@ -17,12 +17,19 @@ import (
 // ProcessMemberEvent 处理群组成员事件
 func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuildMemberData) error {
 	// TODO: 有修改的可能
+	var err error
+
+	// 打印事件日志
+	printMemberEvent(payload, data)
 
 	// 构建事件数据
 	var event *signaling.Event
 
-	// 获取 s
-	id := payload.S
+	// 获取事件 ID
+	id, err := HashEventID(payload.ID)
+	if err != nil {
+		return fmt.Errorf("计算事件 ID 时出错: %v", err)
+	}
 
 	// 根据不同的 payload.Type 设置不同的 event.Type
 	var eventType signaling.EventType
@@ -39,7 +46,6 @@ func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuild
 
 	// 根据不同的 payload.Type 通过不同方式获取 Timestamp
 	var t time.Time
-	var err error
 	if payload.Type == dto.EventGuildCreate {
 		t, err = time.Parse(time.RFC3339, string(data.JoinedAt))
 		if err != nil {
@@ -81,7 +87,7 @@ func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuild
 
 	// 填充事件数据
 	event = &signaling.Event{
-		Id:        strconv.FormatInt(id, 10),
+		Id:        id,
 		Type:      eventType,
 		Platform:  "qqguild",
 		SelfId:    handlers.SelfId,
@@ -94,4 +100,44 @@ func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuild
 
 	// 发送事件
 	return p.BroadcastEvent(event)
+}
+
+func printMemberEvent(payload *dto.WSPayload, data *dto.WSGuildMemberData) {
+	// 构建成员名称
+	var memberName string
+	if data.Nick != "" {
+		memberName = fmt.Sprintf("%s(%s)", data.Nick, data.User.ID)
+	} else if data.User.Username != "" {
+		memberName = fmt.Sprintf("%s(%s)", data.User.Username, data.User.ID)
+	} else {
+		memberName = data.User.ID
+	}
+
+	// 构建日志内容
+	var logContent string
+	switch payload.Type {
+	case dto.EventGuildMemberAdd:
+		if data.User.ID == data.OpUserID {
+			logContent = fmt.Sprintf("用户 %s 加入了频道 %s 。", memberName, data.GuildID)
+		} else {
+			logContent = fmt.Sprintf("用户 %s 邀请了用户 %s 加入频道 %s 。", data.OpUserID, memberName, data.GuildID)
+		}
+	case dto.EventGuildMemberUpdate:
+		if data.User.ID == data.OpUserID {
+			logContent = fmt.Sprintf("频道 %s 的用户 %s 更新了自己的信息。", data.GuildID, memberName)
+		} else {
+			logContent = fmt.Sprintf("频道 %s 的用户 %s 更新了用户 %s 的信息。", data.GuildID, data.OpUserID, memberName)
+		}
+	case dto.EventGuildMemberRemove:
+		if data.User.ID == data.OpUserID {
+			logContent = fmt.Sprintf("用户 %s 离开了频道 %s 。", memberName, data.GuildID)
+		} else {
+			logContent = fmt.Sprintf("用户 %s 将用户 %s 移出了频道 %s 。", data.OpUserID, memberName, data.GuildID)
+		}
+	default:
+		logContent = "未知的频道成员事件: " + string(payload.Type)
+	}
+
+	// 打印日志
+	log.Info(logContent)
 }

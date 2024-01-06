@@ -2,10 +2,10 @@ package processor
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
+	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
 	"github.com/dezhishen/satori-model-go/pkg/channel"
@@ -14,16 +14,21 @@ import (
 	"github.com/dezhishen/satori-model-go/pkg/message"
 	"github.com/dezhishen/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/dto"
-	"github.com/tencent-connect/botgo/websocket/client"
 )
 
 // ProcessGroupMessage 处理群组消息
-func (p *Processor) ProcessGroupMessage(data *dto.WSGroupATMessageData) error {
+func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGroupATMessageData) error {
+	// 打印消息日志
+	printGroupMessage(data)
+
 	// 构建事件数据
 	var event *signaling.Event
 
-	// 获取 s
-	id := client.GetGlobalS()
+	// 获取事件 ID
+	id, err := HashEventID(payload.ID)
+	if err != nil {
+		return fmt.Errorf("计算事件 ID 时出错: %v", err)
+	}
 
 	// 将事件字符串转换为时间戳
 	t, err := time.Parse(time.RFC3339, string(data.Timestamp))
@@ -59,7 +64,7 @@ func (p *Processor) ProcessGroupMessage(data *dto.WSGroupATMessageData) error {
 
 	// 填充事件数据
 	event = &signaling.Event{
-		Id:        strconv.FormatInt(id, 10),
+		Id:        id,
 		Type:      signaling.EVENT_TYPE_MESSAGE_CREATED,
 		Platform:  "qq",
 		SelfId:    handlers.SelfId,
@@ -73,4 +78,11 @@ func (p *Processor) ProcessGroupMessage(data *dto.WSGroupATMessageData) error {
 
 	// 上报消息到 Satori 应用
 	return p.BroadcastEvent(event)
+}
+
+func printGroupMessage(data *dto.WSGroupATMessageData) {
+	// 构建消息日志
+	msgContent := getMessageLog(data)
+
+	log.Infof("收到来自群 %s 用户 %s 的消息: %s", data.GroupID, data.Author.MemberOpenID, msgContent)
 }

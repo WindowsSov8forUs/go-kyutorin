@@ -2,10 +2,10 @@ package processor
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
+	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
 	"github.com/dezhishen/satori-model-go/pkg/guild"
@@ -16,12 +16,19 @@ import (
 // ProcessGuildEvent 处理群组事件
 func (p *Processor) ProcessGuildEvent(payload *dto.WSPayload, data *dto.WSGuildData) error {
 	// TODO: 有修改的可能
+	var err error
+
+	// 打印事件日志
+	printGuildEvent(payload, data)
 
 	// 构建事件数据
 	var event *signaling.Event
 
-	// 获取 s
-	id := payload.S
+	// 获取事件 ID
+	id, err := HashEventID(payload.ID)
+	if err != nil {
+		return fmt.Errorf("计算事件 ID 时出错: %v", err)
+	}
 
 	// 根据不同的 payload.Type 设置不同的 event.Type
 	var eventType signaling.EventType
@@ -38,7 +45,6 @@ func (p *Processor) ProcessGuildEvent(payload *dto.WSPayload, data *dto.WSGuildD
 
 	// 根据不同的 payload.Type 通过不同方式获取 Timestamp
 	var t time.Time
-	var err error
 	if payload.Type == dto.EventGuildCreate {
 		t, err = time.Parse(time.RFC3339, string(data.JoinedAt))
 		if err != nil {
@@ -63,7 +69,7 @@ func (p *Processor) ProcessGuildEvent(payload *dto.WSPayload, data *dto.WSGuildD
 
 	// 填充事件数据
 	event = &signaling.Event{
-		Id:        strconv.FormatInt(id, 10),
+		Id:        id,
 		Type:      eventType,
 		Platform:  "qqguild",
 		SelfId:    handlers.SelfId,
@@ -74,4 +80,30 @@ func (p *Processor) ProcessGuildEvent(payload *dto.WSPayload, data *dto.WSGuildD
 
 	// 发送事件
 	return p.BroadcastEvent(event)
+}
+
+func printGuildEvent(payload *dto.WSPayload, data *dto.WSGuildData) {
+	// 构建频道名称
+	var guildName string
+	if data.Name != "" {
+		guildName = fmt.Sprintf("%s(%s)", data.Name, data.ID)
+	} else {
+		guildName = data.ID
+	}
+
+	// 构建日志内容
+	var logContent string
+	switch payload.Type {
+	case dto.EventGuildCreate:
+		logContent = fmt.Sprintf("用户 %s 创建了频道 %s 。", data.OpUserID, guildName)
+	case dto.EventGuildUpdate:
+		logContent = fmt.Sprintf("用户 %s 更新了频道 %s 的信息。", data.OpUserID, guildName)
+	case dto.EventGuildDelete:
+		logContent = fmt.Sprintf("用户 %s 删除了频道 %s 。", data.OpUserID, guildName)
+	default:
+		logContent = "未知的频道事件: " + string(payload.Type)
+	}
+
+	// 打印日志
+	log.Info(logContent)
 }

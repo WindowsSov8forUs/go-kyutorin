@@ -35,7 +35,7 @@ type ReadyBody struct {
 
 // 事件类型定义
 type Event struct {
-	Id        string                   `json:"id"`                 // 事件 ID
+	Id        int64                    `json:"id"`                 // 事件 ID
 	Type      EventType                `json:"type"`               // 事件类型
 	Platform  string                   `json:"platform"`           // 接收者的平台名称
 	SelfId    string                   `json:"self_id"`            // 接收者的平台账号

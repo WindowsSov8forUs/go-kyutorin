@@ -62,6 +62,7 @@ func webSocketHandler(token string, p *processor.Processor, c *gin.Context) {
 	defer ws.Conn.Close()
 
 	// 开始鉴权流程
+	var sequence int64
 	signalingChan := make(chan signaling.Signaling)
 	// 开始一个 10s 的计时器
 	timer := time.NewTimer(10 * time.Second)
@@ -89,6 +90,7 @@ func webSocketHandler(token string, p *processor.Processor, c *gin.Context) {
 				}
 				// 鉴权成功
 				log.Info("鉴权成功，开始进行事件推送")
+				sequence = identify.Sequence
 				// 发送 READY 信令
 				readyBody := processor.GetReadyBody()
 				readySignaling := signaling.Signaling{
@@ -117,6 +119,38 @@ func webSocketHandler(token string, p *processor.Processor, c *gin.Context) {
 			return
 		}
 		break
+	}
+
+	// 进行事件补发
+	if sequence > 0 {
+		log.Infof("开始进行事件补发，起始序列号: %d", sequence)
+		// 处理事件队列
+		p.EventQueue.ResumeEvents(sequence)
+
+		// 循环补发事件直到队列清空
+		for {
+			// 从队列中获取事件
+			event := p.EventQueue.PopEvent()
+			if event == nil {
+				// 队列已清空
+				break
+			}
+
+			// 构建 WebSocket 信令
+			sgnl := &signaling.Signaling{
+				Op:   signaling.SIGNALING_EVENT,
+				Body: (*signaling.EventBody)(event),
+			}
+			// 转换为 []byte
+			data, err := json.Marshal(sgnl)
+			if err != nil {
+				log.Errorf("转换信令时出错: %v", err)
+				continue
+			}
+			if err := ws.SendMessage(data); err != nil {
+				log.Errorf("补发事件时出错: %v", err)
+			}
+		}
 	}
 
 	// 监听心跳

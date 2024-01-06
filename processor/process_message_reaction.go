@@ -7,6 +7,7 @@ import (
 
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
+	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
 	"github.com/dezhishen/satori-model-go/pkg/channel"
@@ -20,11 +21,17 @@ import (
 func (p *Processor) ProcessMessageReaction(payload *dto.WSPayload, data *dto.WSMessageReactionData) error {
 	// TODO: 更好的处理方式
 
+	// 打印消息日志
+	printMessageReaction(payload, data)
+
 	// 构建事件数据
 	var event *signaling.Event
 
-	// 获取 s
-	id := strconv.FormatInt(payload.S, 10)
+	// 获取事件 ID
+	id, err := HashEventID(payload.ID)
+	if err != nil {
+		return fmt.Errorf("计算事件 ID 时出错: %v", err)
+	}
 
 	// 根据 payload.Type 判断事件类型
 	var eventType signaling.EventType
@@ -92,4 +99,50 @@ func (p *Processor) ProcessMessageReaction(payload *dto.WSPayload, data *dto.WSM
 
 	// 上报消息到 Satori 应用
 	return p.BroadcastEvent(event)
+}
+
+func printMessageReaction(payload *dto.WSPayload, data *dto.WSMessageReactionData) {
+	// 构建目标名称
+	targetName := fmt.Sprintf("%s(%s)", targetTypeToString(data.Target.Type), data.Target.ID)
+
+	// 构建 Emoji 名称
+	emojiName := fmt.Sprintf("%s(%s)", emojiTypeToString(data.Emoji.Type), data.Emoji.ID)
+
+	var logContent string
+	switch payload.Type {
+	case dto.EventMessageReactionAdd:
+		logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 对 %s 进行了表态: %s", data.GuildID, data.ChannelID, data.UserID, targetName, emojiName)
+	case dto.EventMessageReactionRemove:
+		logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 对 %s 移除了表态: %s", data.GuildID, data.ChannelID, data.UserID, targetName, emojiName)
+	default:
+		logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 对 %s 发生了表态事件: %s", data.GuildID, data.ChannelID, data.UserID, targetName, emojiName)
+	}
+
+	log.Infof(logContent)
+}
+
+func targetTypeToString(targetType dto.ReactionTargetType) string {
+	switch targetType {
+	case dto.ReactionTargetTypeMsg:
+		return "消息"
+	case dto.ReactionTargetTypeFeed:
+		return "帖子"
+	case dto.ReactionTargetTypeComment:
+		return "评论"
+	case dto.ReactionTargetTypeReply:
+		return "回复"
+	default:
+		return "[" + strconv.Itoa(int(targetType)) + "]"
+	}
+}
+
+func emojiTypeToString(emojiType int) string {
+	switch emojiType {
+	case 1:
+		return "系统表情"
+	case 2:
+		return "emoji表情"
+	default:
+		return "[表情" + strconv.Itoa(int(emojiType)) + "]"
+	}
 }

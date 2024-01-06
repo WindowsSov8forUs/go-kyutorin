@@ -2,7 +2,6 @@ package processor
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
@@ -34,11 +33,17 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 		return fmt.Errorf("无法处理的消息撤回事件: %v", data)
 	}
 
+	// 打印消息日志
+	printMessageDeleteEvent(payload, messageDelete)
+
 	// 构建事件数据
 	var event *signaling.Event
 
-	// 获取 s
-	id := strconv.FormatInt(payload.S, 10)
+	// 获取事件 ID
+	id, err := HashEventID(payload.ID)
+	if err != nil {
+		return fmt.Errorf("计算事件 ID 时出错: %v", err)
+	}
 
 	// 将当前时间转换为时间戳
 	t := time.Now().Unix()
@@ -91,4 +96,52 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 
 	// 上报消息到 Satori 应用
 	return p.BroadcastEvent(event)
+}
+
+func printMessageDeleteEvent(payload *dto.WSPayload, data *dto.MessageDelete) {
+	// 构建用户名称
+	var userName string
+	if data.OpUser.Username != "" {
+		userName = fmt.Sprintf("%s(%s)", data.OpUser.Username, data.OpUser.ID)
+	} else {
+		userName = data.OpUser.ID
+	}
+
+	// 构建成员名称
+	var memberName string
+	if data.Message.Member.Nick != "" {
+		memberName = fmt.Sprintf("%s(%s)", data.Message.Member.Nick, data.Message.Author.ID)
+	} else if data.Message.Author.Username != "" {
+		memberName = fmt.Sprintf("%s(%s)", data.Message.Author.Username, data.Message.Author.ID)
+	} else {
+		memberName = data.Message.Author.ID
+	}
+
+	// 构建日志内容
+	var logContent string
+	switch payload.Type {
+	case dto.EventMessageDelete:
+		if data.OpUser.ID == data.Message.Author.ID {
+			logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 撤回了一条消息。", data.Message.GuildID, data.Message.ChannelID, userName)
+		} else {
+			logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 撤回了用户 %s 的一条消息。", data.Message.GuildID, data.Message.ChannelID, userName, memberName)
+		}
+	case dto.EventPublicMessageDelete:
+		if data.OpUser.ID == data.Message.Author.ID {
+			logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 撤回了一条消息。", data.Message.GuildID, data.Message.ChannelID, userName)
+		} else {
+			logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 撤回了用户 %s 的一条消息。", data.Message.GuildID, data.Message.ChannelID, userName, memberName)
+		}
+	case dto.EventDirectMessageDelete:
+		logContent = fmt.Sprintf("用户 %s 撤回了一条私聊频道消息。", userName)
+	default:
+		if data.OpUser.ID == data.Message.Author.ID {
+			logContent = fmt.Sprintf("用户 %s 撤回了一条消息。", userName)
+		} else {
+			logContent = fmt.Sprintf("用户 %s 撤回了用户 %s 的一条消息。", userName, memberName)
+		}
+	}
+
+	// 打印日志
+	fmt.Println(logContent)
 }
