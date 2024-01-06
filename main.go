@@ -16,6 +16,7 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/httpapi"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
+	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 	"github.com/WindowsSov8forUs/go-kyutorin/sys"
 	wsServer "github.com/WindowsSov8forUs/go-kyutorin/websocket"
 
@@ -265,7 +266,52 @@ func ReadyHandler() event.ReadyHandler {
 	return func(event *dto.WSPayload, data *dto.WSReadyData) {
 		log.Infof("连接成功，欢迎使用 %s ！", data.User.Username)
 		handlers.SetStatus("qq", login.ONLINE)
+
+		// 构建事件
+		id, err := processor.HashEventID("READY-QQ" + time.Now().String())
+		if err != nil {
+			log.Errorf("构建事件 ID 时出错: %v", err)
+			return
+		}
+
+		satoriEvent := &signaling.Event{
+			Id:        id,
+			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
+			Platform:  "qq",
+			SelfId:    handlers.SelfId,
+			Timestamp: time.Now().UnixNano() / 1e6,
+			Login: &login.Login{
+				User:     handlers.GetBot("qq"),
+				SelfId:   handlers.SelfId,
+				Platform: "qq",
+				Status:   login.ONLINE,
+			},
+		}
+		p.BroadcastEvent(satoriEvent)
+
 		handlers.SetStatus("qqguild", login.ONLINE)
+
+		// 构建事件
+		id, err = processor.HashEventID("READY-QQGUILD" + time.Now().String())
+		if err != nil {
+			log.Errorf("构建事件 ID 时出错: %v", err)
+			return
+		}
+
+		satoriEvent = &signaling.Event{
+			Id:        id,
+			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
+			Platform:  "qqguild",
+			SelfId:    handlers.SelfId,
+			Timestamp: time.Now().UnixNano() / 1e6,
+			Login: &login.Login{
+				User:     handlers.GetBot("qqguild"),
+				SelfId:   handlers.SelfId,
+				Platform: "qqguild",
+				Status:   login.ONLINE,
+			},
+		}
+		p.BroadcastEvent(satoriEvent)
 	}
 }
 
@@ -273,6 +319,160 @@ func ReadyHandler() event.ReadyHandler {
 func ErrorNotifyHandler() event.ErrorNotifyHandler {
 	return func(err error) {
 		log.Errorf("QQ 开放平台连接出现错误：%v", err)
+
+		handlers.SetStatus("qq", login.OFFLINE)
+
+		// 构建事件
+		id, err := processor.HashEventID("ERROR-QQ" + err.Error())
+		if err != nil {
+			log.Errorf("构建事件 ID 时出错: %v", err)
+			return
+		}
+
+		satoriEvent := &signaling.Event{
+			Id:        id,
+			Type:      signaling.EVENT_TYPE_LOGIN_REMOVED,
+			Platform:  "qq",
+			SelfId:    handlers.SelfId,
+			Timestamp: time.Now().UnixNano() / 1e6,
+			Login: &login.Login{
+				User:     handlers.GetBot("qq"),
+				SelfId:   handlers.SelfId,
+				Platform: "qq",
+				Status:   login.OFFLINE,
+			},
+		}
+		p.BroadcastEvent(satoriEvent)
+
+		handlers.SetStatus("qqguild", login.OFFLINE)
+
+		// 构建事件
+		id, err = processor.HashEventID("ERROR-QQGUILD" + err.Error())
+		if err != nil {
+			log.Errorf("构建事件 ID 时出错: %v", err)
+			return
+		}
+
+		satoriEvent = &signaling.Event{
+			Id:        id,
+			Type:      signaling.EVENT_TYPE_LOGIN_REMOVED,
+			Platform:  "qqguild",
+			SelfId:    handlers.SelfId,
+			Timestamp: time.Now().UnixNano() / 1e6,
+			Login: &login.Login{
+				User:     handlers.GetBot("qqguild"),
+				SelfId:   handlers.SelfId,
+				Platform: "qqguild",
+				Status:   login.OFFLINE,
+			},
+		}
+		p.BroadcastEvent(satoriEvent)
+	}
+}
+
+// HelloHandler 处理 Hello 事件
+func HelloHandler() event.HelloHandler {
+	return func(event *dto.WSPayload) {
+		handlers.SetStatus("qq", login.ONLINE)
+
+		// 构建事件
+		id, err := processor.HashEventID("HELLO-QQ" + time.Now().String())
+		if err != nil {
+			log.Errorf("构建事件 ID 时出错: %v", err)
+			return
+		}
+
+		satoriEvent := &signaling.Event{
+			Id:        id,
+			Type:      signaling.EVENT_TYPE_LOGIN_UPDATED,
+			Platform:  "qq",
+			SelfId:    handlers.SelfId,
+			Timestamp: time.Now().UnixNano() / 1e6,
+			Login: &login.Login{
+				User:     handlers.GetBot("qq"),
+				SelfId:   handlers.SelfId,
+				Platform: "qq",
+				Status:   login.ONLINE,
+			},
+		}
+		p.BroadcastEvent(satoriEvent)
+
+		handlers.SetStatus("qqguild", login.ONLINE)
+
+		// 构建事件
+		id, err = processor.HashEventID("HELLO-QQGUILD" + time.Now().String())
+		if err != nil {
+			log.Errorf("构建事件 ID 时出错: %v", err)
+			return
+		}
+
+		satoriEvent = &signaling.Event{
+			Id:        id,
+			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
+			Platform:  "qqguild",
+			SelfId:    handlers.SelfId,
+			Timestamp: time.Now().UnixNano() / 1e6,
+			Login: &login.Login{
+				User:     handlers.GetBot("qqguild"),
+				SelfId:   handlers.SelfId,
+				Platform: "qqguild",
+				Status:   login.ONLINE,
+			},
+		}
+		p.BroadcastEvent(satoriEvent)
+	}
+}
+
+// ReconnectHandler 处理 Reconnect 事件
+func ReconnectHandler() event.ReconnectHandler {
+	return func(event *dto.WSPayload) {
+		handlers.SetStatus("qq", login.RECONNECT)
+
+		// 构建事件
+		id, err := processor.HashEventID("RECONNECT-QQ" + time.Now().String())
+		if err != nil {
+			log.Errorf("构建事件 ID 时出错: %v", err)
+			return
+		}
+
+		satoriEvent := &signaling.Event{
+			Id:        id,
+			Type:      signaling.EVENT_TYPE_LOGIN_UPDATED,
+			Platform:  "qq",
+			SelfId:    handlers.SelfId,
+			Timestamp: time.Now().UnixNano() / 1e6,
+			Login: &login.Login{
+				User:     handlers.GetBot("qq"),
+				SelfId:   handlers.SelfId,
+				Platform: "qq",
+				Status:   login.RECONNECT,
+			},
+		}
+		p.BroadcastEvent(satoriEvent)
+
+		handlers.SetStatus("qqguild", login.RECONNECT)
+
+		// 构建事件
+		id, err = processor.HashEventID("RECONNECT-QQGUILD" + time.Now().String())
+		if err != nil {
+			log.Errorf("构建事件 ID 时出错: %v", err)
+			return
+		}
+
+		satoriEvent = &signaling.Event{
+			Id:        id,
+			Type:      signaling.EVENT_TYPE_LOGIN_UPDATED,
+			Platform:  "qqguild",
+			SelfId:    handlers.SelfId,
+			Timestamp: time.Now().UnixNano() / 1e6,
+			Login: &login.Login{
+				User:     handlers.GetBot("qqguild"),
+				SelfId:   handlers.SelfId,
+				Platform: "qqguild",
+				Status:   login.RECONNECT,
+			},
+		}
+		p.BroadcastEvent(satoriEvent)
 	}
 }
 
@@ -355,21 +555,21 @@ func ChannelEventHandler() event.ChannelEventHandler {
 // CreateMessageHandler 处理消息事件 私域的事件 不at信息
 func CreateMessageHandler() event.MessageEventHandler {
 	return func(event *dto.WSPayload, data *dto.WSMessageData) error {
-		return p.ProcessGuildNormalMessage(data)
+		return p.ProcessGuildNormalMessage(event, data)
 	}
 }
 
 // ATMessageEventHandler 实现处理 频道at 消息的回调
 func ATMessageEventHandler() event.ATMessageEventHandler {
 	return func(event *dto.WSPayload, data *dto.WSATMessageData) error {
-		return p.ProcessGuildATMessage(data)
+		return p.ProcessGuildATMessage(event, data)
 	}
 }
 
 // DirectMessageHandler 处理私信事件
 func DirectMessageHandler() event.DirectMessageEventHandler {
 	return func(event *dto.WSPayload, data *dto.WSDirectMessageData) error {
-		return p.ProcessChannelDirectMessage(data)
+		return p.ProcessChannelDirectMessage(event, data)
 	}
 }
 
@@ -412,14 +612,28 @@ func MessageAuditEventHandler() event.MessageAuditEventHandler {
 // GroupATMessageEventHandler 实现处理 群at 消息的回调
 func GroupATMessageEventHandler() event.GroupATMessageEventHandler {
 	return func(event *dto.WSPayload, data *dto.WSGroupATMessageData) error {
-		return p.ProcessGroupMessage(data)
+		return p.ProcessGroupMessage(event, data)
+	}
+}
+
+// GroupAddRobotEventHandler 实现处理 群添加机器人的回调
+func GroupAddRobotEventHandler() event.GroupAddRobotEventHandler {
+	return func(event *dto.WSPayload, data *dto.WSGroupAddRobotData) error {
+		return p.ProcessGroupAddRobot(event, data)
+	}
+}
+
+// GroupDelRobotEventHandler 实现处理 群删除机器人的回调
+func GroupDelRobotEventHandler() event.GroupDelRobotEventHandler {
+	return func(event *dto.WSPayload, data *dto.WSGroupDelRobotData) error {
+		return p.ProcessGroupDelRobot(event, data)
 	}
 }
 
 // C2CMessageEventHandler 实现处理私聊消息的回调
 func C2CMessageEventHandler() event.C2CMessageEventHandler {
 	return func(event *dto.WSPayload, data *dto.WSC2CMessageData) error {
-		return p.ProcessC2CMessage(data)
+		return p.ProcessC2CMessage(event, data)
 	}
 }
 
@@ -463,6 +677,8 @@ func getHandlersByName(intentName string) ([]interface{}, bool) {
 	case "USER_MESSAGES": // 单聊/群聊消息事件
 		handlers := []interface{}{
 			GroupATMessageEventHandler(),
+			GroupAddRobotEventHandler(),
+			GroupDelRobotEventHandler(),
 			C2CMessageEventHandler(),
 		}
 		return handlers, true
