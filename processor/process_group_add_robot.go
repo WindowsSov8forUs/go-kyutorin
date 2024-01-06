@@ -3,6 +3,7 @@ package processor
 import (
 	"fmt"
 
+	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
@@ -33,6 +34,7 @@ func (p *Processor) ProcessGroupAddRobot(payload *dto.WSPayload, data *dto.WSGro
 		Id:   data.GroupOpenid,
 		Type: channel.CHANNEL_TYPE_TEXT,
 	}
+	echo.SetOpenIdType(data.GroupOpenid, "group")
 
 	// 构建 guild
 	guild := &guild.Guild{

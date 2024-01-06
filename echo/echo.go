@@ -51,3 +51,17 @@ func SetOpenIdType(openId string, openIdType string) {
 	defer globalOpenIdMappingInstance.mu.Unlock()
 	globalOpenIdMappingInstance.mapping[openId] = openIdType
 }
+
+// DelOpenId 删除开放 ID
+func DelOpenId(openId string) {
+	globalOpenIdMappingInstance.mu.Lock()
+	defer globalOpenIdMappingInstance.mu.Unlock()
+	delete(globalOpenIdMappingInstance.mapping, openId)
+}
+
+// GetOpenIdData 获取开放 ID 数据
+func GetOpenIdData() map[string]string {
+	globalOpenIdMappingInstance.mu.Lock()
+	defer globalOpenIdMappingInstance.mu.Unlock()
+	return globalOpenIdMappingInstance.mapping
+}

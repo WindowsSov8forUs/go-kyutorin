@@ -3,8 +3,10 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
+	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 
 	"github.com/dezhishen/satori-model-go/pkg/guild"
 	"github.com/tencent-connect/botgo/dto"
@@ -40,6 +42,22 @@ func HandleGuildGet(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message callapi.
 		response.Id = dtoGuild.ID
 		response.Name = dtoGuild.Name
 		response.Avatar = dtoGuild.Icon
+
+		var responseData []byte
+		responseData, err = json.Marshal(response)
+		if err != nil {
+			return "", err
+		}
+		return string(responseData), nil
+	} else if message.Platform == "qq" {
+		// 只是通过缓存模拟罢了
+
+		var response GuildGetResponse
+		guildType := echo.GetOpenIdType(request.GuildId)
+		if guildType != "group" {
+			return "", fmt.Errorf("群组未被记录在缓存中: %s", request.GuildId)
+		}
+		response.Id = request.GuildId
 
 		var responseData []byte
 		responseData, err = json.Marshal(response)

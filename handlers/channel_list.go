@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
+	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 
 	"github.com/dezhishen/satori-model-go/pkg/channel"
 	"github.com/tencent-connect/botgo/dto"
@@ -58,6 +59,26 @@ func HandleChannelList(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message calla
 				ParentId: dtoChannel.ParentID,
 				Type:     channelType,
 			})
+		}
+
+		var responseData []byte
+		responseData, err = json.Marshal(response)
+		if err != nil {
+			return "", err
+		}
+		return string(responseData), nil
+	} else if message.Platform == "qq" {
+		// 只是通过缓存模拟而已
+
+		var response ChannelListResponse
+		guildType := echo.GetOpenIdType(request.GuildId)
+
+		// 因为一群一频道，所以不存在多个频道的可能性
+		if guildType == "group" {
+			var c channel.Channel
+			c.Id = request.GuildId
+			c.Type = channel.CHANNEL_TYPE_TEXT
+			response.Data = append(response.Data, c)
 		}
 
 		var responseData []byte

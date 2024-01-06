@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
@@ -59,6 +60,26 @@ func HandleChannelGet(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message callap
 			default:
 				response.Type = channel.CHANNEL_TYPE_CATEGORY
 			}
+		}
+		var responseData []byte
+		responseData, err = json.Marshal(response)
+		if err != nil {
+			return "", err
+		}
+		return string(responseData), nil
+	} else if message.Platform == "qq" {
+		// 只是通过缓存模拟而已
+
+		var response ChannelGetResponse
+		channelType := echo.GetOpenIdType(request.ChannelID)
+		response.Id = request.ChannelID
+		switch channelType {
+		case "private":
+			response.Type = channel.CHANNEL_TYPE_DIRECT
+		case "group":
+			response.Type = channel.CHANNEL_TYPE_TEXT
+		default:
+			return "", fmt.Errorf("频道未存储于缓存中: %s", request.ChannelID)
 		}
 		var responseData []byte
 		responseData, err = json.Marshal(response)

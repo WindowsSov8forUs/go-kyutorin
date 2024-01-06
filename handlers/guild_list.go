@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
+	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 
 	"github.com/dezhishen/satori-model-go/pkg/guild"
 	"github.com/tencent-connect/botgo/dto"
@@ -44,6 +45,28 @@ func HandleGuildList(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message callapi
 			response.Data[i].Id = dtoGuild.ID
 			response.Data[i].Name = dtoGuild.Name
 			response.Data[i].Avatar = dtoGuild.Icon
+		}
+
+		var responseData []byte
+		responseData, err = json.Marshal(response)
+		if err != nil {
+			return "", err
+		}
+		return string(responseData), nil
+	} else if message.Platform == "qq" {
+		// 只是通过缓存模拟而已
+
+		var response GuildListResponse
+		guildData := echo.GetOpenIdData()
+
+		// 遍历栈中所有已存储的 openid
+		for guildId, guildType := range guildData {
+			var g guild.Guild
+			g.Id = guildId
+			if guildType != "group" {
+				continue
+			}
+			response.Data = append(response.Data, g)
 		}
 
 		var responseData []byte
