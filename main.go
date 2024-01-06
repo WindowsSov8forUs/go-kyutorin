@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
+	"github.com/WindowsSov8forUs/go-kyutorin/database"
 	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
 	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	"github.com/WindowsSov8forUs/go-kyutorin/httpapi"
@@ -194,6 +195,13 @@ func main() {
 		}
 		if !hasFileServer {
 			log.Warn("文件服务器未启动，将无法使用本地文件或 base64 编码发送文件")
+		}
+
+		// 启动数据库
+		if conf.Database {
+			database.StartDB()
+		} else {
+			log.Warn("数据库未启动，将无法使用文件缓存。")
 		}
 
 		p = processor.NewProcessor(api, apiV2)

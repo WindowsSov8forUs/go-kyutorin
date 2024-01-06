@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
+	"github.com/WindowsSov8forUs/go-kyutorin/database"
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
-	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 
 	"github.com/dezhishen/satori-model-go/pkg/channel"
@@ -324,7 +324,7 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 				// 获取 key
 				key := getSrcKey(e.Src, messageType)
 				// 尝试获取缓存
-				fileInfo, ok := fileserver.GetImageCache(key)
+				fileInfo, ok := database.GetImageCache(key)
 				if ok {
 					dtoMessageToCreate.Media.FileInfo = fileInfo
 					dtoMessageToCreate.MsgType = 7
@@ -359,7 +359,7 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 				// 获取 key
 				key := getSrcKey(e.Src, messageType)
 				// 尝试获取缓存
-				fileInfo, ok := fileserver.GetAudioCache(key)
+				fileInfo, ok := database.GetAudioCache(key)
 				if ok {
 					dtoMessageToCreate.Media.FileInfo = fileInfo
 					dtoMessageToCreate.MsgType = 7
@@ -394,7 +394,7 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 				// 获取 key
 				key := getSrcKey(e.Src, messageType)
 				// 尝试获取缓存
-				fileInfo, ok := fileserver.GetVideoCache(key)
+				fileInfo, ok := database.GetVideoCache(key)
 				if ok {
 					dtoMessageToCreate.Media.FileInfo = fileInfo
 					dtoMessageToCreate.MsgType = 7
@@ -726,19 +726,19 @@ func uploadMedia(ctx context.Context, groupID string, richMediaMessage *dto.Rich
 	switch richMediaMessage.FileType {
 	case 1:
 		// 图片
-		err = fileserver.SaveImageCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+		err = database.SaveImageCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
 		if err != nil {
 			log.Warnf("保存图片缓存失败: %s", err.Error())
 		}
 	case 2:
 		// 视频
-		err = fileserver.SaveVideoCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+		err = database.SaveVideoCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
 		if err != nil {
 			log.Warnf("保存视频缓存失败: %s", err.Error())
 		}
 	case 3:
 		// 音频
-		err = fileserver.SaveAudioCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+		err = database.SaveAudioCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
 		if err != nil {
 			log.Warnf("保存音频缓存失败: %s", err.Error())
 		}
@@ -758,19 +758,19 @@ func uploadMediaPrivate(ctx context.Context, userID string, richMediaMessage *dt
 	switch richMediaMessage.FileType {
 	case 1:
 		// 图片
-		err = fileserver.SaveImageCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+		err = database.SaveImageCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
 		if err != nil {
 			log.Warnf("保存图片缓存失败: %s", err.Error())
 		}
 	case 2:
 		// 视频
-		err = fileserver.SaveVideoCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+		err = database.SaveVideoCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
 		if err != nil {
 			log.Warnf("保存视频缓存失败: %s", err.Error())
 		}
 	case 3:
 		// 音频
-		err = fileserver.SaveAudioCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+		err = database.SaveAudioCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
 		if err != nil {
 			log.Warnf("保存音频缓存失败: %s", err.Error())
 		}

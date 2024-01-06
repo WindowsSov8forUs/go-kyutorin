@@ -23,6 +23,7 @@ type Config struct {
 	LogLevel   log.LogLevel `yaml:"log_level"`   // 日志等级
 	Account    Account      `yaml:"account"`     // QQ 机器人账号配置
 	FileServer FileServer   `yaml:"file_server"` // 本地文件服务器配置
+	Database   bool         `yaml:"database"`    // 是否启用数据库
 	Satori     Satori       `yaml:"satori"`      // Satori 配置
 }
 

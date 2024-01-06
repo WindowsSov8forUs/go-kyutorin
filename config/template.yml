@@ -56,6 +56,10 @@ file_server:
   url: "" # 填入公网 IP 或域名
   port: 8080 # 填入端口号
 
+# 是否开启数据库
+# 若不开启数据库，则无法使用缓存发送图片、视频、语音等
+database: true
+
 satori: # Satori 配置
   version: 1 # Satori 版本，目前只有 1
   path: "" # Satori 部署路径，可以为空，如果不为空需要以 / 开头
