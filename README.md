@@ -19,9 +19,9 @@ _✨ 基于 [Satori](https://satori.js.org/zh-CN/) 协议的 QQ 官方机器人 
 
 ### 接口
 
-- [x] HTTP API
-- [x] WebSocket
-- [ ] WebHook
+- [x] [HTTP API](https://satori.js.org/zh-CN/protocol/api.html)
+- [x] [WebSocket](https://satori.js.org/zh-CN/protocol/events.html#websocket)
+- [x] [WebHook](https://satori.js.org/zh-CN/protocol/events.html#webhook-%E5%8F%AF%E9%80%89)
 
 ### 实现
 
@@ -112,6 +112,18 @@ _✨ 基于 [Satori](https://satori.js.org/zh-CN/) 协议的 QQ 官方机器人 
 [添加表态]: https://satori.js.org/zh-CN/resources/reaction.html#%E6%B7%BB%E5%8A%A0%E8%A1%A8%E6%80%81
 [删除表态]: https://satori.js.org/zh-CN/resources/reaction.html#%E5%88%A0%E9%99%A4%E8%A1%A8%E6%80%81
 [获取表态列表]: https://satori.js.org/zh-CN/resources/reaction.html#%E8%8E%B7%E5%8F%96%E8%A1%A8%E6%80%81%E5%88%97%E8%A1%A8
+
+#### 符合 Satori 协议标准的扩展 API
+
+| 扩展 API              | 功能              |
+|-----------------------|-------------------|
+| /admin/login.list     | [获取登录信息列表] |
+| /admin/webhook.create | [创建 WebHook]    |
+| /admin/webhook.delete | [移除 WebHook]    |
+
+[获取登录信息列表]: https://satori.js.org/zh-CN/advanced/admin.html#%E8%8E%B7%E5%8F%96%E7%99%BB%E5%BD%95%E4%BF%A1%E6%81%AF%E5%88%97%E8%A1%A8
+[创建 WebHook]: https://satori.js.org/zh-CN/advanced/admin.html#%E5%88%9B%E5%BB%BA-webhook
+[移除 WebHook]: https://satori.js.org/zh-CN/advanced/admin.html#%E7%A7%BB%E9%99%A4-webhook
 
 </details>
 
