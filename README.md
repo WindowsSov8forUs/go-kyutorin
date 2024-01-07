@@ -140,6 +140,9 @@ _✨ 基于 [Satori](https://satori.js.org/zh-CN/) 协议的 QQ 官方机器人 
 | guild-member-added   | [群组成员增加时触发]     | 🟩      | 🟥         |
 | guild-member-updated | [群组成员信息更新时触发] | 🟩      | 🟥         |
 | guild-member-removed | [群组成员移除时触发]     | 🟩      | 🟥         |
+| login-added          | [登录被创建时触发]       | 🟩      | 🟩         |
+| login-removed        | [登录被删除时触发]       | 🟩      | 🟩         |
+| login-updated        | [登录信息更新时触发]     | 🟩      | 🟩         |
 | message-created      | [当消息被创建时触发]     | 🟩      | 🟩         |
 | message-deleted      | [当消息被删除时触发]     | 🟩      | 🟥         |
 | reaction-added       | [当表态被添加时触发]     | 🟩      | 🟥         |
@@ -151,6 +154,9 @@ _✨ 基于 [Satori](https://satori.js.org/zh-CN/) 协议的 QQ 官方机器人 
 [群组成员增加时触发]: https://satori.js.org/zh-CN/resources/member.html#guild-member-added
 [群组成员信息更新时触发]: https://satori.js.org/zh-CN/resources/member.html#guild-member-updated
 [群组成员移除时触发]: https://satori.js.org/zh-CN/resources/member.html#guild-member-removed
+[登录被创建时触发]: https://satori.js.org/zh-CN/resources/login.html#login-added
+[登录被删除时触发]: https://satori.js.org/zh-CN/resources/login.html#login-removed
+[登录信息更新时触发]: https://satori.js.org/zh-CN/resources/login.html#login-updated
 [当消息被创建时触发]: https://satori.js.org/zh-CN/resources/message.html#message-created
 [当消息被删除时触发]: https://satori.js.org/zh-CN/resources/message.html#message-deleted
 [当表态被添加时触发]: https://satori.js.org/zh-CN/resources/reaction.html#reaction-added
