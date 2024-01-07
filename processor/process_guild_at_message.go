@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
@@ -64,7 +63,7 @@ func (p *Processor) ProcessGuildATMessage(payload *dto.WSPayload, data *dto.WSAT
 		CreateAt: t.Unix(),
 	}
 	// 转换消息格式
-	content := handlers.ConvertToMessageContent(data)
+	content := ConvertToMessageContent(data)
 	message.Content = content
 
 	// 构建 user
@@ -85,7 +84,7 @@ func (p *Processor) ProcessGuildATMessage(payload *dto.WSPayload, data *dto.WSAT
 		Id:        id,
 		Type:      signaling.EVENT_TYPE_MESSAGE_CREATED,
 		Platform:  "qqguild",
-		SelfId:    handlers.SelfId,
+		SelfId:    SelfId,
 		Timestamp: t.Unix(),
 		Channel:   channel,
 		Guild:     guild,

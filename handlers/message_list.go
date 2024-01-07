@@ -7,6 +7,7 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
 	"github.com/WindowsSov8forUs/go-kyutorin/database"
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
+	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 
 	"github.com/dezhishen/satori-model-go/pkg/channel"
 	"github.com/dezhishen/satori-model-go/pkg/guild"
@@ -45,7 +46,7 @@ func HandleMessageList(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message calla
 		for _, dtoMessage := range dtoMessages {
 			m := satoriMessage.Message{
 				Id:      dtoMessage.ID,
-				Content: ConvertToMessageContent(dtoMessage),
+				Content: processor.ConvertToMessageContent(dtoMessage),
 				Channel: &channel.Channel{
 					Id: dtoMessage.ChannelID,
 				},

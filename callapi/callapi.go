@@ -3,6 +3,7 @@ package callapi
 import (
 	"errors"
 
+	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 	"github.com/dezhishen/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/openapi"
 )
@@ -16,27 +17,52 @@ type ActionMessage struct {
 	Data     []byte    // 应用发送的数据
 }
 
+// Satori 应用发送的管理接口调用信息
+type AdminMessage struct {
+	method string // 方法
+	Data   []byte // 应用发送的数据
+}
+
 // WebSocketServer WebSocket 服务器接口
 type WebSocketServer interface {
 	SendMessage(message []byte) error
 	Close() error
 }
 
+// WebHookClient WebHook 客户端接口
+type WebHookClient interface {
+	PostEvent(*signaling.Event) error
+	GetURL() string
+}
+
 // 特定资源和方法的处理函数
 type HandlerFunc func(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message ActionMessage) (string, error)
 
-var handlers = make(map[string]map[string]HandlerFunc)
+// 管理接口的处理函数
+type AdminHandlerFunc func(message AdminMessage) (string, error)
+
+var (
+	handlers      = make(map[string]map[string]HandlerFunc)
+	handlersAdmin = make(map[string]AdminHandlerFunc)
+)
 
 var ErrBadRequest = errors.New("bad request")
+var ErrUnauthorized = errors.New("unauthorized")
 var ErrNotFound = errors.New("not found")
 var ErrMethodNotAllowed = errors.New("method not allowed")
+var ErrServerError = errors.New("server error")
 
 // RegisterHandler 注册特定资源与方法的处理函数
-func RegisterHandler(resource string, method string, handler HandlerFunc) {
+func RegisterHandler(resource, method string, handler HandlerFunc) {
 	if _, ok := handlers[resource]; !ok {
 		handlers[resource] = make(map[string]HandlerFunc)
 	}
 	handlers[resource][method] = handler
+}
+
+// RegisterAdminHandler 注册管理接口的处理函数
+func RegisterAdminHandler(method string, handler AdminHandlerFunc) {
+	handlersAdmin[method] = handler
 }
 
 // CallAPI 调用 Satori API
@@ -50,6 +76,14 @@ func CallAPI(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message ActionMessage) 
 	return handlers[message.resource][message.method](api, apiv2, message)
 }
 
+// CallAdmin 调用管理接口
+func CallAdmin(message AdminMessage) (string, error) {
+	if _, ok := handlersAdmin[message.method]; !ok {
+		return "", ErrMethodNotAllowed
+	}
+	return handlersAdmin[message.method](message)
+}
+
 // NewActionMessage 创建 ActionMessage
 func NewActionMessage(resource string, method string, bot user.User, platform string, data []byte) ActionMessage {
 	return ActionMessage{
@@ -58,5 +92,13 @@ func NewActionMessage(resource string, method string, bot user.User, platform st
 		Bot:      bot,
 		Platform: platform,
 		Data:     data,
+	}
+}
+
+// NewAdminMessage 创建 AdminMessage
+func NewAdminMessage(method string, data []byte) AdminMessage {
+	return AdminMessage{
+		method: method,
+		Data:   data,
 	}
 }

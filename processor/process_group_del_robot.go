@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
-	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
@@ -54,7 +53,7 @@ func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.WSGro
 		Id:        id,
 		Type:      signaling.EVENT_TYPE_GUILD_REMOVED,
 		Platform:  "qq",
-		SelfId:    handlers.SelfId,
+		SelfId:    SelfId,
 		Timestamp: data.Timestamp,
 		Channel:   channel,
 		Guild:     guild,

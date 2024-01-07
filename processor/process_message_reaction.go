@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
-	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
@@ -89,7 +88,7 @@ func (p *Processor) ProcessMessageReaction(payload *dto.WSPayload, data *dto.WSM
 		Id:        id,
 		Type:      eventType,
 		Platform:  "qqguild",
-		SelfId:    handlers.SelfId,
+		SelfId:    SelfId,
 		Timestamp: t,
 		Channel:   channel,
 		Guild:     guild,

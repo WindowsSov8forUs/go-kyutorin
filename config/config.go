@@ -64,16 +64,22 @@ type MessageDatabase struct {
 
 // Satori Satori 配置
 type Satori struct {
-	Version uint8  `yaml:"version"` // Satori 版本，目前只有 1
-	Path    string `yaml:"path"`    // Satori 部署路径，可以为空
-	Token   string `yaml:"token"`   // 鉴权令牌
-	Server  Server `yaml:"server"`  // 服务器配置
+	Version uint8   `yaml:"version"` // Satori 版本，目前只有 1
+	Path    string  `yaml:"path"`    // Satori 部署路径，可以为空
+	Token   string  `yaml:"token"`   // 鉴权令牌
+	Server  Server  `yaml:"server"`  // 服务器配置
+	WebHook WebHook `yaml:"webhook"` // WebHook 客户端配置
 }
 
 // Server 服务器配置
 type Server struct {
-	Host string `yaml:"host"` // 服务器地址
+	Host string `yaml:"host"` // 服务器监听地址
 	Port uint16 `yaml:"port"` // 服务器端口
+}
+
+// WebHook WebHook 客户端配置
+type WebHook struct {
+	Timeout uint32 `yaml:"timeout"` // 超时时间
 }
 
 // GetSatoriToken 获取 Satori 鉴权令牌

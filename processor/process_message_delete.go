@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
 	"github.com/dezhishen/satori-model-go/pkg/channel"
@@ -85,7 +84,7 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 		Id:        id,
 		Type:      signaling.EVENT_TYPE_MESSAGE_DELETED,
 		Platform:  "qqguild",
-		SelfId:    handlers.SelfId,
+		SelfId:    SelfId,
 		Timestamp: t,
 		Channel:   channel,
 		Guild:     guild,

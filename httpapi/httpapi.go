@@ -8,8 +8,8 @@ import (
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
-	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
+	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tencent-connect/botgo/openapi"
@@ -58,12 +58,12 @@ func satoriResourceAPIHandler(c *gin.Context, api openapi.OpenAPI, apiV2 openapi
 	}
 
 	// 判断平台与 SelfID 是否正确
-	bot := handlers.GetBot(xPlatform)
+	bot := processor.GetBot(xPlatform)
 	if bot == nil {
 		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
-	if xSelfID != handlers.SelfId {
+	if xSelfID != processor.SelfId {
 		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
@@ -81,6 +81,67 @@ func satoriResourceAPIHandler(c *gin.Context, api openapi.OpenAPI, apiV2 openapi
 
 	// 调用 API
 	response, err := callapi.CallAPI(api, apiV2, actionMessage)
+	if err != nil {
+		switch err {
+		case callapi.ErrBadRequest:
+			c.JSON(http.StatusBadRequest, gin.H{})
+		case callapi.ErrNotFound:
+			c.JSON(http.StatusNotFound, gin.H{})
+		case callapi.ErrMethodNotAllowed:
+			c.JSON(http.StatusMethodNotAllowed, gin.H{})
+		default:
+			log.Errorf("调用 API 时出错: %s", err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{})
+		}
+		return
+	}
+
+	// 返回结果
+	c.Data(http.StatusOK, "application/json", []byte(response))
+}
+
+// AdminMiddleware 管理接口中间件
+func AdminMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// 在内部进行判断处理
+		satoriAdminAPIHandler(ctx)
+	}
+}
+
+// satoriAdminAPIHandler 处理 Satori 管理 API
+func satoriAdminAPIHandler(c *gin.Context) {
+	// 提取路径中参数
+	method := c.Param("method")
+
+	// 提取请求头参数
+	contentType := c.GetHeader("Content-Type")
+	authorization := c.GetHeader("Authorization")
+
+	// 判断请求头错误
+	if contentType != "application/json" {
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	// 鉴权
+	if !authorize(authorization) {
+		c.JSON(http.StatusUnauthorized, gin.H{})
+		return
+	}
+
+	// 构建请求
+	requestBody := c.Request.Body
+	defer requestBody.Close()
+	// 提取请求体 []byte
+	requestBodyBytes, err := io.ReadAll(requestBody)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+	actionMessage := callapi.NewAdminMessage(method, requestBodyBytes)
+
+	// 调用 API
+	response, err := callapi.CallAdmin(actionMessage)
 	if err != nil {
 		switch err {
 		case callapi.ErrBadRequest:

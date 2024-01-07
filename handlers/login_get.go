@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
+	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 
 	"github.com/dezhishen/satori-model-go/pkg/login"
 	"github.com/dezhishen/satori-model-go/pkg/user"
@@ -36,13 +37,13 @@ func HandleLoginGet(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message callapi.
 		Avatar: me.Avatar,
 		IsBot:  me.Bot,
 	}
-	SetBot(message.Platform, bot)
+	processor.SetBot(message.Platform, bot)
 
 	// 获取机器人状态
-	status := GetStatus(message.Platform)
+	status := processor.GetStatus(message.Platform)
 
 	response.User = bot
-	response.SelfId = SelfId
+	response.SelfId = processor.SelfId
 	response.Platform = message.Platform
 	response.Status = status
 

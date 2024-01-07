@@ -6,7 +6,6 @@ import (
 
 	"github.com/WindowsSov8forUs/go-kyutorin/database"
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
-	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
@@ -46,7 +45,7 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 	// 构建 message
 	message := &message.Message{
 		Id:       data.ID,
-		Content:  handlers.ConvertToMessageContent(data),
+		Content:  ConvertToMessageContent(data),
 		CreateAt: t.Unix(),
 	}
 
@@ -60,7 +59,7 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 		Id:        id,
 		Type:      signaling.EVENT_TYPE_MESSAGE_CREATED,
 		Platform:  "qq",
-		SelfId:    handlers.SelfId,
+		SelfId:    SelfId,
 		Timestamp: t.Unix(),
 		Channel:   channel,
 		Message:   message,

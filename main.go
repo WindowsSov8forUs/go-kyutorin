@@ -13,12 +13,12 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
 	"github.com/WindowsSov8forUs/go-kyutorin/database"
 	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
-	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	"github.com/WindowsSov8forUs/go-kyutorin/httpapi"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 	"github.com/WindowsSov8forUs/go-kyutorin/sys"
+	"github.com/WindowsSov8forUs/go-kyutorin/webhook"
 	wsServer "github.com/WindowsSov8forUs/go-kyutorin/websocket"
 
 	"github.com/dezhishen/satori-model-go/pkg/login"
@@ -142,9 +142,9 @@ func main() {
 			Avatar: me.Avatar,
 			IsBot:  me.Bot,
 		}
-		handlers.SetBot("qq", bot)
-		handlers.SetBot("qqguild", bot)
-		handlers.SelfId = me.ID
+		processor.SetBot("qq", bot)
+		processor.SetBot("qqguild", bot)
+		processor.SelfId = me.ID
 
 		// 获取 WebSocket 信息
 		wsInfo, err := apiV2.WS(ctx, nil, "")
@@ -226,6 +226,9 @@ func main() {
 			conf.Satori.Path = ""
 		}
 
+		// 设置 WebHook 超时时间
+		webhook.Timeout = conf.Satori.WebHook.Timeout
+
 		r := gin.New()
 		r.Use(gin.Recovery())
 
@@ -236,6 +239,8 @@ func main() {
 			{
 				// 注册 Satori WebSocket 处理函数
 				satoriGroup.GET("/events", wsServer.WebSocketHandler(conf.Satori.Token, p))
+				// 注册 Satori 管理接口处理函数
+				satoriGroup.POST("/admin/*method", httpapi.AdminMiddleware())
 				// 注册 Satori 资源 API 处理函数
 				satoriGroup.POST("/*action", httpapi.ResourceMiddleware(api, apiV2))
 			}
@@ -284,7 +289,7 @@ func main() {
 func ReadyHandler() event.ReadyHandler {
 	return func(event *dto.WSPayload, data *dto.WSReadyData) {
 		log.Infof("连接成功，欢迎使用 %s ！", data.User.Username)
-		handlers.SetStatus("qq", login.ONLINE)
+		processor.SetStatus("qq", login.ONLINE)
 
 		// 构建事件
 		id, err := processor.HashEventID("READY-QQ" + time.Now().String())
@@ -297,18 +302,18 @@ func ReadyHandler() event.ReadyHandler {
 			Id:        id,
 			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
 			Platform:  "qq",
-			SelfId:    handlers.SelfId,
+			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
 			Login: &login.Login{
-				User:     handlers.GetBot("qq"),
-				SelfId:   handlers.SelfId,
+				User:     processor.GetBot("qq"),
+				SelfId:   processor.SelfId,
 				Platform: "qq",
 				Status:   login.ONLINE,
 			},
 		}
 		p.BroadcastEvent(satoriEvent)
 
-		handlers.SetStatus("qqguild", login.ONLINE)
+		processor.SetStatus("qqguild", login.ONLINE)
 
 		// 构建事件
 		id, err = processor.HashEventID("READY-QQGUILD" + time.Now().String())
@@ -321,11 +326,11 @@ func ReadyHandler() event.ReadyHandler {
 			Id:        id,
 			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
 			Platform:  "qqguild",
-			SelfId:    handlers.SelfId,
+			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
 			Login: &login.Login{
-				User:     handlers.GetBot("qqguild"),
-				SelfId:   handlers.SelfId,
+				User:     processor.GetBot("qqguild"),
+				SelfId:   processor.SelfId,
 				Platform: "qqguild",
 				Status:   login.ONLINE,
 			},
@@ -339,7 +344,7 @@ func ErrorNotifyHandler() event.ErrorNotifyHandler {
 	return func(err error) {
 		log.Errorf("QQ 开放平台连接出现错误：%v", err)
 
-		handlers.SetStatus("qq", login.OFFLINE)
+		processor.SetStatus("qq", login.OFFLINE)
 
 		// 构建事件
 		id, err := processor.HashEventID("ERROR-QQ" + err.Error())
@@ -352,18 +357,18 @@ func ErrorNotifyHandler() event.ErrorNotifyHandler {
 			Id:        id,
 			Type:      signaling.EVENT_TYPE_LOGIN_REMOVED,
 			Platform:  "qq",
-			SelfId:    handlers.SelfId,
+			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
 			Login: &login.Login{
-				User:     handlers.GetBot("qq"),
-				SelfId:   handlers.SelfId,
+				User:     processor.GetBot("qq"),
+				SelfId:   processor.SelfId,
 				Platform: "qq",
 				Status:   login.OFFLINE,
 			},
 		}
 		p.BroadcastEvent(satoriEvent)
 
-		handlers.SetStatus("qqguild", login.OFFLINE)
+		processor.SetStatus("qqguild", login.OFFLINE)
 
 		// 构建事件
 		id, err = processor.HashEventID("ERROR-QQGUILD" + err.Error())
@@ -376,11 +381,11 @@ func ErrorNotifyHandler() event.ErrorNotifyHandler {
 			Id:        id,
 			Type:      signaling.EVENT_TYPE_LOGIN_REMOVED,
 			Platform:  "qqguild",
-			SelfId:    handlers.SelfId,
+			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
 			Login: &login.Login{
-				User:     handlers.GetBot("qqguild"),
-				SelfId:   handlers.SelfId,
+				User:     processor.GetBot("qqguild"),
+				SelfId:   processor.SelfId,
 				Platform: "qqguild",
 				Status:   login.OFFLINE,
 			},
@@ -392,7 +397,7 @@ func ErrorNotifyHandler() event.ErrorNotifyHandler {
 // HelloHandler 处理 Hello 事件
 func HelloHandler() event.HelloHandler {
 	return func(event *dto.WSPayload) {
-		handlers.SetStatus("qq", login.ONLINE)
+		processor.SetStatus("qq", login.ONLINE)
 
 		// 构建事件
 		id, err := processor.HashEventID("HELLO-QQ" + time.Now().String())
@@ -405,18 +410,18 @@ func HelloHandler() event.HelloHandler {
 			Id:        id,
 			Type:      signaling.EVENT_TYPE_LOGIN_UPDATED,
 			Platform:  "qq",
-			SelfId:    handlers.SelfId,
+			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
 			Login: &login.Login{
-				User:     handlers.GetBot("qq"),
-				SelfId:   handlers.SelfId,
+				User:     processor.GetBot("qq"),
+				SelfId:   processor.SelfId,
 				Platform: "qq",
 				Status:   login.ONLINE,
 			},
 		}
 		p.BroadcastEvent(satoriEvent)
 
-		handlers.SetStatus("qqguild", login.ONLINE)
+		processor.SetStatus("qqguild", login.ONLINE)
 
 		// 构建事件
 		id, err = processor.HashEventID("HELLO-QQGUILD" + time.Now().String())
@@ -429,11 +434,11 @@ func HelloHandler() event.HelloHandler {
 			Id:        id,
 			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
 			Platform:  "qqguild",
-			SelfId:    handlers.SelfId,
+			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
 			Login: &login.Login{
-				User:     handlers.GetBot("qqguild"),
-				SelfId:   handlers.SelfId,
+				User:     processor.GetBot("qqguild"),
+				SelfId:   processor.SelfId,
 				Platform: "qqguild",
 				Status:   login.ONLINE,
 			},
@@ -445,7 +450,7 @@ func HelloHandler() event.HelloHandler {
 // ReconnectHandler 处理 Reconnect 事件
 func ReconnectHandler() event.ReconnectHandler {
 	return func(event *dto.WSPayload) {
-		handlers.SetStatus("qq", login.RECONNECT)
+		processor.SetStatus("qq", login.RECONNECT)
 
 		// 构建事件
 		id, err := processor.HashEventID("RECONNECT-QQ" + time.Now().String())
@@ -458,18 +463,18 @@ func ReconnectHandler() event.ReconnectHandler {
 			Id:        id,
 			Type:      signaling.EVENT_TYPE_LOGIN_UPDATED,
 			Platform:  "qq",
-			SelfId:    handlers.SelfId,
+			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
 			Login: &login.Login{
-				User:     handlers.GetBot("qq"),
-				SelfId:   handlers.SelfId,
+				User:     processor.GetBot("qq"),
+				SelfId:   processor.SelfId,
 				Platform: "qq",
 				Status:   login.RECONNECT,
 			},
 		}
 		p.BroadcastEvent(satoriEvent)
 
-		handlers.SetStatus("qqguild", login.RECONNECT)
+		processor.SetStatus("qqguild", login.RECONNECT)
 
 		// 构建事件
 		id, err = processor.HashEventID("RECONNECT-QQGUILD" + time.Now().String())
@@ -482,11 +487,11 @@ func ReconnectHandler() event.ReconnectHandler {
 			Id:        id,
 			Type:      signaling.EVENT_TYPE_LOGIN_UPDATED,
 			Platform:  "qqguild",
-			SelfId:    handlers.SelfId,
+			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
 			Login: &login.Login{
-				User:     handlers.GetBot("qqguild"),
-				SelfId:   handlers.SelfId,
+				User:     processor.GetBot("qqguild"),
+				SelfId:   processor.SelfId,
 				Platform: "qqguild",
 				Status:   login.RECONNECT,
 			},

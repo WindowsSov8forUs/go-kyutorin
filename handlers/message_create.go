@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
 	"github.com/WindowsSov8forUs/go-kyutorin/database"
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
+	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 
 	"github.com/dezhishen/satori-model-go/pkg/channel"
 	"github.com/dezhishen/satori-model-go/pkg/guild"
@@ -511,7 +511,7 @@ func convertDtoMessageToMessage(dtoMessage *dto.Message) (*satoriMessage.Message
 	var message satoriMessage.Message
 
 	message.Id = dtoMessage.ID
-	message.Content = strings.TrimSpace(ConvertToMessageContent(dtoMessage))
+	message.Content = strings.TrimSpace(processor.ConvertToMessageContent(dtoMessage))
 
 	// 判断消息类型
 	if dtoMessage.ChannelID != "" {
@@ -634,7 +634,7 @@ func convertDtoMessageV2ToMessage(dtoMessage *dto.Message) (*satoriMessage.Messa
 	var message satoriMessage.Message
 
 	message.Id = dtoMessage.ID
-	message.Content = strings.TrimSpace(ConvertToMessageContent(dtoMessage))
+	message.Content = strings.TrimSpace(processor.ConvertToMessageContent(dtoMessage))
 
 	// 判断是否为单聊
 	if dtoMessage.GroupCode != "" {
@@ -819,175 +819,6 @@ func generateDtoRichMediaMessage(id string, element satoriMessage.MessageElement
 	}
 
 	return dtoRichMediaMessage
-}
-
-// ConvertToMessageContent 将收到的消息转化为符合 Satori 协议的消息
-func ConvertToMessageContent(data interface{}) string {
-	// 强制类型转换获取 Message 结构
-	var msg *dto.Message
-	var isAt bool = false // 是否为 at 消息
-	switch v := data.(type) {
-	case *dto.WSGroupATMessageData:
-		msg = (*dto.Message)(v)
-		isAt = true
-	case *dto.WSATMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.WSMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.WSDirectMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.WSC2CMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.Message:
-		msg = v
-	default:
-		return ""
-	}
-	var messageSegments []satoriMessage.MessageElement
-
-	// 使用正则表达式查找特殊格式字符
-	re := regexp.MustCompile(`(@everyone|<@!\d+>|<#\d+>|<emoji:\d+>)`)
-
-	// 获取所有匹配项的位置
-	indexes := re.FindAllStringIndex(msg.Content, -1)
-
-	// 根据匹配项的位置分割字符串
-	var result []string
-	start := 0
-	for _, index := range indexes {
-		if start != index[0] {
-			part := msg.Content[start:index[0]]
-			if part != "" {
-				result = append(result, part)
-			}
-		}
-		result = append(result, msg.Content[index[0]:index[1]])
-		start = index[1]
-	}
-	if start != len(msg.Content) {
-		part := msg.Content[start:]
-		if part != "" {
-			result = append(result, part)
-		}
-	}
-
-	// 匹配检查每个结果
-	for _, r := range result {
-		if r == "@everyone" {
-			if msg.MentionEveryone {
-				at := satoriMessage.MessageElementAt{Type: "all"}
-				messageSegments = append(messageSegments, &at)
-			}
-		} else if strings.HasPrefix(r, "<@!") && strings.HasSuffix(r, ">") {
-			// 提取 ID
-			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<@!")
-			for _, mention := range msg.Mentions {
-				if mention.ID == id {
-					at := satoriMessage.MessageElementAt{
-						Id:   mention.ID,
-						Name: mention.Username,
-					}
-					messageSegments = append(messageSegments, &at)
-					break
-				}
-			}
-		} else if strings.HasPrefix(r, "<#") && strings.HasSuffix(r, ">") {
-			// 提取频道 ID
-			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<#")
-			sharp := satoriMessage.MessageElementSharp{Id: id}
-			messageSegments = append(messageSegments, &sharp)
-		} else if strings.HasPrefix(r, "<emoji:") && strings.HasSuffix(r, ">") {
-			// 提取 emoji ID
-			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<emoji:")
-			emoji := satoriMessage.MessageElementCustom{
-				Platform:  "qqguild",
-				CustomTag: "emoji",
-				Attrs:     map[string]interface{}{"id": id},
-			}
-			messageSegments = append(messageSegments, &emoji)
-		} else {
-			// 普通文本
-			text := satoriMessage.MessageElementText{Content: r}
-			messageSegments = append(messageSegments, &text)
-		}
-	}
-
-	// 处理 Attachments 字段
-	for _, attachment := range msg.Attachments {
-		// 根据 ContentType 前缀判断文件类型
-		switch {
-		case strings.HasPrefix(attachment.ContentType, "image"):
-			image := satoriMessage.MessageElementImg{}
-			if strings.HasPrefix(attachment.URL, "http") {
-				image.SetSrc(attachment.URL)
-			} else {
-				image.SetSrc("https://" + attachment.URL)
-			}
-
-			// 添加可能存在的长宽属性
-			if attachment.Width != 0 {
-				image.Width = uint32(attachment.Width)
-			}
-			if attachment.Height != 0 {
-				image.Height = uint32(attachment.Height)
-			}
-			messageSegments = append(messageSegments, &image)
-		case strings.HasPrefix(attachment.ContentType, "audio"):
-			audio := satoriMessage.MessageElementAudio{}
-			if strings.HasPrefix(attachment.URL, "http") {
-				audio.SetSrc(attachment.URL)
-			} else {
-				audio.SetSrc("https://" + attachment.URL)
-			}
-			messageSegments = append(messageSegments, &audio)
-		case strings.HasPrefix(attachment.ContentType, "video"):
-			video := satoriMessage.MessageElementVideo{}
-			if strings.HasPrefix(attachment.URL, "http") {
-				video.SetSrc(attachment.URL)
-			} else {
-				video.SetSrc("https://" + attachment.URL)
-			}
-			messageSegments = append(messageSegments, &video)
-		default:
-			file := satoriMessage.MessageElementFile{}
-			if strings.HasPrefix(attachment.URL, "http") {
-				file.SetSrc(attachment.URL)
-			} else {
-				file.SetSrc("https://" + attachment.URL)
-			}
-			messageSegments = append(messageSegments, &file)
-		}
-	}
-
-	// 添加消息回复
-	if msg.MessageReference != nil {
-		message := satoriMessage.MessageElementMessage{
-			Id: msg.MessageReference.MessageID,
-		}
-		quote := satoriMessage.MessageElementQuote{}
-		quote.SetChildren([]satoriMessage.MessageElement{&message})
-
-		// 添加为第一个元素
-		messageSegments = append([]satoriMessage.MessageElement{&quote}, messageSegments...)
-	}
-
-	// 添加消息前 at
-	if isAt {
-		bot := GetBot("qq") // 获取 qq 平台机器人实例
-		at := satoriMessage.MessageElementAt{
-			Id:   bot.Id,
-			Name: bot.Name,
-		}
-		// 添加为第一个元素
-		messageSegments = append([]satoriMessage.MessageElement{&at}, messageSegments...)
-	}
-
-	// 拼接消息
-	var content string
-	for _, segment := range messageSegments {
-		content += segment.Stringify()
-	}
-	return content
 }
 
 // escape 转义

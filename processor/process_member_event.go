@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
@@ -90,7 +89,7 @@ func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuild
 		Id:        id,
 		Type:      eventType,
 		Platform:  "qqguild",
-		SelfId:    handlers.SelfId,
+		SelfId:    SelfId,
 		Timestamp: t.Unix(),
 		Guild:     guild,
 		Member:    member,

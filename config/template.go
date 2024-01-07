@@ -82,5 +82,9 @@ satori: # Satori 配置
 
   # 服务器配置
   server:
-    host: "127.0.0.1" # 服务器地址
-    port: 8080 # 服务器端口`
+    host: "127.0.0.1" # 服务器监听地址
+    port: 8080 # 服务器端口
+  
+  # WebHook 配置
+  webhook:
+    timeout: 10 # WebHook 事件推送超时时间，单位为秒，设置为 0 则时间为无限`
