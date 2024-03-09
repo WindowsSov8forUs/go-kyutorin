@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
@@ -83,74 +84,67 @@ func saveSrcToURL(src string) string {
 	}
 
 	// 检查是否是 data/mime 字符串
-	if strings.HasPrefix(src, "data:") {
+	re := regexp.MustCompile(`data:(.*);base64,(.*)`)
+	matches := re.FindStringSubmatch(src)
+	if len(matches) == 3 {
 		// 解析 data/mime 字符串
-		parts := strings.Split(src, ",")
-		if len(parts) != 2 {
-			return ""
-		}
+		mimeType := matches[1]
+		base64Data := matches[2]
 
 		// 解析 mime 类型
-		mimeParts := strings.Split(parts[0], ";")
+		mimeParts := strings.Split(mimeType, "/")
 		if len(mimeParts) != 2 {
+			log.Errorf("错误的 mime 类型: %s", mimeType)
 			return ""
 		}
 		fileType := mimeParts[0]
 
 		// 判断是否为音频文件
 		var isAudio bool
-		if strings.HasPrefix(fileType, "audio/") {
+		if fileType == "audio" {
 			isAudio = true
 		}
 
 		// 判断是否为视频文件
 		var isVideo bool
-		if strings.HasPrefix(fileType, "video/") {
+		if fileType == "video" {
 			isVideo = true
 		}
 
 		// 判断是否为图像文件
 		var isImage bool
-		if strings.HasPrefix(fileType, "image/") {
+		if fileType == "image" {
 			isImage = true
 		}
 
 		// 解析 base64 编码
-		encoding := mimeParts[1]
 		var data []byte
-		switch encoding {
-		case "base64":
-			data, err = base64.StdEncoding.DecodeString(parts[1])
-			if err != nil {
-				log.Errorf("解析 base64 编码失败: %s", err.Error())
-				return ""
-			}
-			if isAudio {
-				// 判断并转码
-				data, err = convertAudioToSilk(data)
-				if err != nil {
-					log.Errorf("转码音频文件失败: %s", err.Error())
-					return ""
-				}
-			} else if isVideo {
-				// 判断并转码
-				data, err = convertVideoToMP4(data)
-				if err != nil {
-					log.Errorf("转码视频文件失败: %s", err.Error())
-					return ""
-				}
-			} else if isImage {
-				// 判断并转码
-				data, err = convertImage(data)
-				if err != nil {
-					log.Errorf("转码图像文件失败: %s", err.Error())
-					return ""
-				}
-			} else {
-				return ""
-			}
-		default:
+		data, err = base64.StdEncoding.DecodeString(base64Data)
+		if err != nil {
+			log.Errorf("解析 base64 编码失败: %s", err.Error())
 			return ""
+		}
+		if isAudio {
+			// 判断并转码
+			data, err = convertAudioToSilk(data)
+			if err != nil {
+				log.Errorf("转码音频文件失败: %s", err.Error())
+				return ""
+			}
+		} else if isVideo {
+			// 判断并转码
+			data, err = convertVideoToMP4(data)
+			if err != nil {
+				log.Errorf("转码视频文件失败: %s", err.Error())
+				return ""
+			}
+		} else if isImage {
+			// 判断并转码
+			data, err = convertImage(data)
+			if err != nil {
+				log.Errorf("转码图像文件失败: %s", err.Error())
+				return ""
+			}
 		}
 		if err != nil {
 			return ""
@@ -209,6 +203,7 @@ func saveSrcToURL(src string) string {
 		return u
 	}
 
+	log.Errorf("无法解析的资源字符串: %s", src)
 	return ""
 }
 

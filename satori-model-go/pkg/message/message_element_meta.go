@@ -94,7 +94,7 @@ func (e *MessageElementPassive) Stringify() string {
 		result += ` id="` + e.Id + `"`
 	}
 	if e.Seq != 0 {
-		result += ` seq=` + fmt.Sprint(e.Seq)
+		result += ` seq="` + fmt.Sprint(e.Seq) + `"`
 	}
 	return result + "/>"
 }

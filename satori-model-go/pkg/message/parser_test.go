@@ -7,7 +7,7 @@ import (
 
 func TestParse(t *testing.T) {
 	elements, _ := Parse(
-		`<passive id="08f9e7ba8f86d39e251090b5b4ae02385a48d1bbc9ac06"/><at id="1862902977615371284"/><image src="https://gchat.qpic.cn/qmeetpic/635502894002160049/634198672-3078136204-EFA2D473526BC132850E2C486E481246/0"/>`)
+		`<passive id="08f9e7ba8f86d39e251090b5b4ae02385a48d1bbc9ac06" seq="5"/><at id="1862902977615371284"/><image src="https://gchat.qpic.cn/qmeetpic/635502894002160049/634198672-3078136204-EFA2D473526BC132850E2C486E481246/0"/>`)
 	s := ""
 	for _, e := range elements {
 		s += e.Stringify()

@@ -26,7 +26,7 @@ func (e *MessageElementCustom) Stringify() string {
 		case string:
 			result += fmt.Sprintf(" %s=\"%s\"", k, Escape(_v))
 		case int:
-			result += fmt.Sprintf(" %s=%d", k, _v)
+			result += fmt.Sprintf(" %s=\"%d\"", k, _v)
 		case bool:
 			if _v {
 				result += fmt.Sprintf(" %s", k)
