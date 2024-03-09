@@ -634,7 +634,9 @@ func convertDtoMessageV2ToMessage(dtoMessage *dto.Message) (*satoriMessage.Messa
 	var message satoriMessage.Message
 
 	message.Id = dtoMessage.ID
-	message.Content = strings.TrimSpace(processor.ConvertToMessageContent(dtoMessage))
+	if content := strings.TrimSpace(processor.ConvertToMessageContent(dtoMessage)); content != "" {
+		message.Content = content
+	}
 
 	// 判断是否为单聊
 	if dtoMessage.GroupCode != "" {
@@ -680,20 +682,23 @@ func convertDtoMessageV2ToMessage(dtoMessage *dto.Message) (*satoriMessage.Messa
 		message.Member = guildMember
 		message.User = u
 	} else {
-		// 是单聊
-		// TODO: 目前没有实际运用场景，很可能需要更改
-		channel := &channel.Channel{
-			Id:   dtoMessage.Author.ID,
-			Type: channel.CHANNEL_TYPE_DIRECT,
+		// 判断是否存在需要的数据
+		if dtoMessage.Author != nil {
+			// 是单聊
+			// TODO: 目前没有实际运用场景，很可能需要更改
+			channel := &channel.Channel{
+				Id:   dtoMessage.Author.ID,
+				Type: channel.CHANNEL_TYPE_DIRECT,
+			}
+			user := &user.User{
+				Id:     dtoMessage.Author.ID,
+				Name:   dtoMessage.Author.Username,
+				Avatar: dtoMessage.Author.Avatar,
+				IsBot:  dtoMessage.Author.Bot,
+			}
+			message.Channel = channel
+			message.User = user
 		}
-		user := &user.User{
-			Id:     dtoMessage.Author.ID,
-			Name:   dtoMessage.Author.Username,
-			Avatar: dtoMessage.Author.Avatar,
-			IsBot:  dtoMessage.Author.Bot,
-		}
-		message.Channel = channel
-		message.User = user
 	}
 
 	time, err := dtoMessage.Timestamp.Time()
