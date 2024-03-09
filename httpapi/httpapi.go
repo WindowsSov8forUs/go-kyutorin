@@ -111,7 +111,8 @@ func AdminMiddleware() gin.HandlerFunc {
 // satoriAdminAPIHandler 处理 Satori 管理 API
 func satoriAdminAPIHandler(c *gin.Context) {
 	// 提取路径中参数
-	method := c.Param("method")
+	action := c.Param("action")
+	method := strings.TrimPrefix(action, "/admin/")
 
 	// 提取请求头参数
 	contentType := c.GetHeader("Content-Type")

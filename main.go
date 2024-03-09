@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -239,10 +240,17 @@ func main() {
 			{
 				// 注册 Satori WebSocket 处理函数
 				satoriGroup.GET("/events", wsServer.WebSocketHandler(conf.Satori.Token, p))
-				// 注册 Satori 管理接口处理函数
-				satoriGroup.POST("/admin/*method", httpapi.AdminMiddleware())
-				// 注册 Satori 资源 API 处理函数
-				satoriGroup.POST("/*action", httpapi.ResourceMiddleware(api, apiV2))
+				// 注册 Satori HTTP API 处理函数
+				satoriGroup.POST("/*action", func(c *gin.Context) {
+					action := c.Param("action")
+					if strings.HasPrefix(action, "/admin") {
+						// Satori 管理接口处理函数
+						httpapi.AdminMiddleware()(c)
+					} else {
+						// Satori 资源 API 处理函数
+						httpapi.ResourceMiddleware(api, apiV2)(c)
+					}
+				})
 			}
 		default:
 			log.Fatalf("未知的 Satori 版本: %s", version)
