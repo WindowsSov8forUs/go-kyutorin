@@ -708,6 +708,7 @@ func convertDtoMessageV2ToMessage(dtoMessage *dto.Message) (*satoriMessage.Messa
 // convertButtonToKeyboard 将 Satori 协议的按钮转换为 QQ 的按钮
 func convertButtonToKeyboard(button *satoriMessage.MessageElementButton) *keyboard.MessageKeyboard {
 	// TODO: 或许需要支持更多的方式
+
 	var messageKeyboard keyboard.MessageKeyboard
 
 	messageKeyboard.ID = button.Id
