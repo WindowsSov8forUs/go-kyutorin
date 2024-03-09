@@ -3,6 +3,7 @@ package callapi
 import (
 	"errors"
 
+	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 	"github.com/dezhishen/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/openapi"
@@ -42,10 +43,7 @@ type HandlerFunc func(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message Action
 // 管理接口的处理函数
 type AdminHandlerFunc func(message AdminMessage) (string, error)
 
-var (
-	handlers      = make(map[string]map[string]HandlerFunc)
-	handlersAdmin = make(map[string]AdminHandlerFunc)
-)
+var handlers = make(map[string]map[string]HandlerFunc)
 
 var ErrBadRequest = errors.New("bad request")
 var ErrUnauthorized = errors.New("unauthorized")
@@ -69,6 +67,7 @@ func CallAPI(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message ActionMessage) 
 	if _, ok := handlers[message.resource][message.method]; !ok {
 		return "", ErrMethodNotAllowed
 	}
+	log.Debugf("调用 API: %s %s", message.resource, message.method)
 	return handlers[message.resource][message.method](api, apiv2, message)
 }
 

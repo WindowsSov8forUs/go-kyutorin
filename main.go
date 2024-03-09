@@ -243,6 +243,11 @@ func main() {
 				// 注册 Satori HTTP API 处理函数
 				satoriGroup.POST("/*action", func(c *gin.Context) {
 					action := c.Param("action")
+					// 输出请求详情
+					log.Debugf(
+						"收到请求: %s %s，请求头：%v，请求体：%v",
+						c.Request.Method, action, c.Request.Header, c.Request.Body,
+					)
 					if strings.HasPrefix(action, "/admin") {
 						// Satori 管理接口处理函数
 						httpapi.AdminMiddleware()(c)

@@ -177,6 +177,7 @@ func callAdmin(message callapi.AdminMessage) (string, error) {
 	case "login":
 		switch message.Method {
 		case "list":
+			log.Debugf("调用管理接口 API: %s %s", message.Resource, message.Method)
 			return handlers.HandlerLoginList(message)
 		default:
 			return "", callapi.ErrMethodNotAllowed
@@ -184,8 +185,10 @@ func callAdmin(message callapi.AdminMessage) (string, error) {
 	case "webhook":
 		switch message.Method {
 		case "create":
+			log.Debugf("调用管理接口 API: %s %s", message.Resource, message.Method)
 			return handlers.HandlerWebHookCreate(message)
 		case "delete":
+			log.Debugf("调用管理接口 API: %s %s", message.Resource, message.Method)
 			return handlers.HandlerWebHookDelete(message)
 		default:
 			return "", callapi.ErrMethodNotAllowed
