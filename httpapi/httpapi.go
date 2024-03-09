@@ -8,6 +8,7 @@ import (
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
+	"github.com/WindowsSov8forUs/go-kyutorin/handlers"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 
@@ -111,8 +112,16 @@ func AdminMiddleware() gin.HandlerFunc {
 // satoriAdminAPIHandler 处理 Satori 管理 API
 func satoriAdminAPIHandler(c *gin.Context) {
 	// 提取路径中参数
-	action := c.Param("action")
-	method := strings.TrimPrefix(action, "/admin/")
+	action := strings.TrimPrefix(c.Param("action"), "/admin")
+
+	// 拆分 action 为 resource 和 method
+	parts := strings.Split(action[1:], ".")
+	if len(parts) < 2 {
+		c.JSON(http.StatusNotFound, gin.H{})
+		return
+	}
+	resource := strings.Join(parts[:len(parts)-1], ".")
+	method := parts[len(parts)-1]
 
 	// 提取请求头参数
 	contentType := c.GetHeader("Content-Type")
@@ -139,10 +148,10 @@ func satoriAdminAPIHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
-	actionMessage := callapi.NewAdminMessage(method, requestBodyBytes)
+	actionMessage := callapi.NewAdminMessage(resource, method, requestBodyBytes)
 
 	// 调用 API
-	response, err := callapi.CallAdmin(actionMessage)
+	response, err := callAdmin(actionMessage)
 	if err != nil {
 		switch err {
 		case callapi.ErrBadRequest:
@@ -160,6 +169,30 @@ func satoriAdminAPIHandler(c *gin.Context) {
 
 	// 返回结果
 	c.Data(http.StatusOK, "application/json", []byte(response))
+}
+
+// 调用 Admin 处理函数
+func callAdmin(message callapi.AdminMessage) (string, error) {
+	switch message.Resource {
+	case "login":
+		switch message.Method {
+		case "list":
+			return handlers.HandlerLoginList(message)
+		default:
+			return "", callapi.ErrMethodNotAllowed
+		}
+	case "webhook":
+		switch message.Method {
+		case "create":
+			return handlers.HandlerWebHookCreate(message)
+		case "delete":
+			return handlers.HandlerWebHookDelete(message)
+		default:
+			return "", callapi.ErrMethodNotAllowed
+		}
+	default:
+		return "", callapi.ErrNotFound
+	}
 }
 
 // authorize 鉴权

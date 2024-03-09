@@ -19,8 +19,9 @@ type ActionMessage struct {
 
 // Satori 应用发送的管理接口调用信息
 type AdminMessage struct {
-	method string // 方法
-	Data   []byte // 应用发送的数据
+	Resource string // 资源
+	Method   string // 方法
+	Data     []byte // 应用发送的数据
 }
 
 // WebSocketServer WebSocket 服务器接口
@@ -60,11 +61,6 @@ func RegisterHandler(resource, method string, handler HandlerFunc) {
 	handlers[resource][method] = handler
 }
 
-// RegisterAdminHandler 注册管理接口的处理函数
-func RegisterAdminHandler(method string, handler AdminHandlerFunc) {
-	handlersAdmin[method] = handler
-}
-
 // CallAPI 调用 Satori API
 func CallAPI(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message ActionMessage) (string, error) {
 	if _, ok := handlers[message.resource]; !ok {
@@ -74,14 +70,6 @@ func CallAPI(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message ActionMessage) 
 		return "", ErrMethodNotAllowed
 	}
 	return handlers[message.resource][message.method](api, apiv2, message)
-}
-
-// CallAdmin 调用管理接口
-func CallAdmin(message AdminMessage) (string, error) {
-	if _, ok := handlersAdmin[message.method]; !ok {
-		return "", ErrMethodNotAllowed
-	}
-	return handlersAdmin[message.method](message)
 }
 
 // NewActionMessage 创建 ActionMessage
@@ -96,9 +84,10 @@ func NewActionMessage(resource string, method string, bot user.User, platform st
 }
 
 // NewAdminMessage 创建 AdminMessage
-func NewAdminMessage(method string, data []byte) AdminMessage {
+func NewAdminMessage(resource, method string, data []byte) AdminMessage {
 	return AdminMessage{
-		method: method,
-		Data:   data,
+		Resource: resource,
+		Method:   method,
+		Data:     data,
 	}
 }
