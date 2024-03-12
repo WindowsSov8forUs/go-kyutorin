@@ -204,13 +204,17 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 		case *satoriMessage.MessageElementA:
 			dtoMessageToCreate.Content += escape(e.Href)
 		case *satoriMessage.MessageElementImg:
-			// TODO: 通过本地文件或 base64 上传图片
-			dtoMessageToCreate.Image = e.Src
+			if dtoMessageToCreate.Image != "" {
+				// 只支持发一张图片
+				continue
+			}
+			// TODO: 仍待寻找使 cache 能够有作用的方法
+			dtoMessageToCreate.Image = saveSrcToURL(e.Src)
 		case *satoriMessage.MessageElementAudio:
 			// 频道不支持音频消息
 			continue
 		case *satoriMessage.MessageElementVideo:
-			// 频道不支持视频消息
+			// TODO: 频道支持视频消息，但是并未找到支持的实现
 			continue
 		case *satoriMessage.MessageElementFile:
 			// 频道不支持文件消息

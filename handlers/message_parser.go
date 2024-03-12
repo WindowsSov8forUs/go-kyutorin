@@ -28,35 +28,31 @@ func getSrcKey(src, messageType string) string {
 	}
 
 	// 检查是否是 data/mime 字符串
-	if strings.HasPrefix(src, "data:") {
+	re := regexp.MustCompile(`data:(.*);base64,(.*)`)
+	matches := re.FindStringSubmatch(src)
+	if len(matches) == 3 {
 		// 解析 data/mime 字符串
-		parts := strings.Split(src, ",")
-		if len(parts) != 2 {
-			return ""
-		}
+		mimeType := matches[1]
+		base64Data := matches[2]
 
 		// 解析 mime 类型
-		mimeParts := strings.Split(parts[0], ";")
+		mimeParts := strings.Split(mimeType, "/")
 		if len(mimeParts) != 2 {
+			log.Errorf("错误的 mime 类型: %s", mimeType)
 			return ""
 		}
 
 		// 解析 base64 编码
-		encoding := mimeParts[1]
 		var data []byte
-		switch encoding {
-		case "base64":
-			data, err = base64.StdEncoding.DecodeString(parts[1])
-			if err != nil {
-				return ""
-			}
-
-			// 获取 hash 值
-			hash := fileserver.GetHash(data)
-			return messageType + ":" + hash
-		default:
+		data, err = base64.StdEncoding.DecodeString(base64Data)
+		if err != nil {
+			log.Errorf("解析 base64 编码失败: %s", err.Error())
 			return ""
 		}
+
+		// 获取 hash 值
+		hash := fileserver.GetHash(data)
+		return messageType + ":" + hash
 	}
 
 	// 检查是否是本地文件
