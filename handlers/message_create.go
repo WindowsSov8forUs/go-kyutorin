@@ -169,13 +169,9 @@ func logContent(content string) string {
 // convertToMessageToCreate 转换为消息体结构
 func convertToMessageToCreate(content string) (*dto.MessageToCreate, error) {
 	// 将文本消息内容转换为 satoriMessage.MessageElement
-	fmt.Println(content)
 	elements, err := satoriMessage.Parse(content)
 	if err != nil {
 		return nil, err
-	}
-	for _, element := range elements {
-		fmt.Println(element)
 	}
 
 	// 处理 satoriMessage.MessageElement
@@ -184,15 +180,12 @@ func convertToMessageToCreate(content string) (*dto.MessageToCreate, error) {
 	if err != nil {
 		return nil, err
 	}
-	temp, _ := json.Marshal(dtoMessageToCreate)
-	fmt.Println(string(temp))
 	return dtoMessageToCreate, nil
 }
 
 // parseElementsInMessageToCreate 将 Satori 消息元素转换为消息体结构
 func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dtoMessageToCreate *dto.MessageToCreate) error {
 	// 处理 satoriMessage.MessageElement
-	fmt.Println(elements)
 	for _, element := range elements {
 		// 根据元素类型进行处理
 		switch e := element.(type) {

@@ -38,8 +38,6 @@ func satoriResourceAPIHandler(c *gin.Context, api openapi.OpenAPI, apiV2 openapi
 	resource := strings.Join(parts[:len(parts)-1], ".")
 	method := parts[len(parts)-1]
 
-	fmt.Printf("resource: %s method: %s", resource, method)
-
 	// 提取请求头参数
 	contentType := c.GetHeader("Content-Type")
 	authorization := c.GetHeader("Authorization")

@@ -117,7 +117,7 @@ func printMessageReaction(payload *dto.WSPayload, data *dto.WSMessageReactionDat
 		logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 对 %s 发生了表态事件: %s", data.GuildID, data.ChannelID, data.UserID, targetName, emojiName)
 	}
 
-	log.Infof(logContent)
+	log.Info(logContent)
 }
 
 func targetTypeToString(targetType dto.ReactionTargetType) string {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
 	"github.com/dezhishen/satori-model-go/pkg/channel"
@@ -142,5 +143,5 @@ func printMessageDeleteEvent(payload *dto.WSPayload, data *dto.MessageDelete) {
 	}
 
 	// 打印日志
-	fmt.Println(logContent)
+	log.Info(logContent)
 }
