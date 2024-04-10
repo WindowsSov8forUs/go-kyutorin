@@ -50,7 +50,7 @@ func HandleMessageCreate(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message cal
 		guildId := echo.GetDirectChannelGuild(request.ChannelId)
 		if guildId == "" {
 			// 输出日志
-			log.Infof("发送消息到频道 %s : %s", request.ChannelId, request.Content)
+			log.Infof("发送消息到频道 %s : %s", request.ChannelId, logContent(request.Content))
 
 			var dtoMessageToCreate = &dto.MessageToCreate{}
 			dtoMessageToCreate, err = convertToMessageToCreate(request.Content)
@@ -69,7 +69,7 @@ func HandleMessageCreate(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message cal
 			response = append(response, *messageResponse)
 		} else {
 			// 输出日志
-			log.Infof("发送消息到私聊频道 %s : %s", request.ChannelId, request.Content)
+			log.Infof("发送消息到私聊频道 %s : %s", request.ChannelId, logContent(request.Content))
 
 			var dtoMessageToCreate = &dto.MessageToCreate{}
 			var dtoDirectMessage *dto.DirectMessage
@@ -104,7 +104,7 @@ func HandleMessageCreate(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message cal
 		openIdType := echo.GetOpenIdType(request.ChannelId)
 		if openIdType == "private" {
 			// 输出日志
-			log.Infof("发送消息到用户 %s : %s", request.ChannelId, request.Content)
+			log.Infof("发送消息到用户 %s : %s", request.ChannelId, logContent(request.Content))
 
 			// 是私聊频道
 			var dtoMessageToCreate = &dto.MessageToCreate{}
@@ -127,7 +127,7 @@ func HandleMessageCreate(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message cal
 			openIdType = "group"
 
 			// 输出日志
-			log.Infof("发送消息到群 %s : %s", request.ChannelId, request.Content)
+			log.Infof("发送消息到群 %s : %s", request.ChannelId, logContent(request.Content))
 
 			var dtoMessageToCreate = &dto.MessageToCreate{}
 			dtoMessageToCreate, err = convertToMessageToCreateV2(request.Content, request.ChannelId, openIdType, apiv2)
@@ -155,6 +155,15 @@ func HandleMessageCreate(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message cal
 	}
 
 	return "", callapi.ErrMethodNotAllowed
+}
+
+// logContent 将内容处理为输出内容
+func logContent(content string) string {
+	if len(content) > 50 {
+		return content[40:] + "..." + content[:10]
+	} else {
+		return content
+	}
 }
 
 // convertToMessageToCreate 转换为消息体结构
