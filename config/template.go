@@ -14,6 +14,9 @@ const ConfigTemplate = `# 配置文件
 #   - 6/7：输出所有日志
 log_level: 4
 
+# 是否启用调试模式
+debug_mode: false
+
 account: # QQ 机器人配置
   
   # QQ 机器人配置，需要通过 QQ 机器人管理端/开发/开发设置 获取

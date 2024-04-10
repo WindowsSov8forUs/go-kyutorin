@@ -76,6 +76,13 @@ func main() {
 	// 配置日志等级
 	log.SetLogLevel(conf.LogLevel)
 
+	// 设置 gin 运行模式
+	if conf.DebugMode {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	var api openapi.OpenAPI
 	var apiV2 openapi.OpenAPI
 	var notLogin bool
