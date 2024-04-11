@@ -174,6 +174,20 @@ func (cacheDB *FileCacheDB) saveCache(key string, fileInfo string, ttl int64) er
 	return nil
 }
 
+// deleteCache 删除缓存数据
+func (cacheDB *FileCacheDB) deleteCache(key string) error {
+	cacheDB.mu.Lock()
+	defer cacheDB.mu.Unlock()
+
+	// 删除缓存数据
+	err := cacheDB.DB.Delete([]byte(key), nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetImageCache 获取图片缓存
 func GetImageCache(key string) (string, bool) {
 	if imageDBInstance == nil {
@@ -190,6 +204,15 @@ func SaveImageCache(key string, fileInfo string, ttl int64) error {
 	}
 
 	return imageDBInstance.saveCache(key, fileInfo, ttl)
+}
+
+// DeleteImageCache 删除图片缓存
+func DeleteImageCache(key string) error {
+	if imageDBInstance == nil {
+		return fmt.Errorf("图片数据库未启动")
+	}
+
+	return imageDBInstance.deleteCache(key)
 }
 
 // GetAudioCache 获取音频缓存
@@ -210,6 +233,15 @@ func SaveAudioCache(key string, fileInfo string, ttl int64) error {
 	return audioDBInstance.saveCache(key, fileInfo, ttl)
 }
 
+// DeleteAudioCache 删除音频缓存
+func DeleteAudioCache(key string) error {
+	if audioDBInstance == nil {
+		return fmt.Errorf("音频数据库未启动")
+	}
+
+	return audioDBInstance.deleteCache(key)
+}
+
 // GetVideoCache 获取视频缓存
 func GetVideoCache(key string) (string, bool) {
 	if videoDBInstance == nil {
@@ -226,4 +258,13 @@ func SaveVideoCache(key string, fileInfo string, ttl int64) error {
 	}
 
 	return videoDBInstance.saveCache(key, fileInfo, ttl)
+}
+
+// DeleteVideoCache 删除视频缓存
+func DeleteVideoCache(key string) error {
+	if videoDBInstance == nil {
+		return fmt.Errorf("视频数据库未启动")
+	}
+
+	return videoDBInstance.deleteCache(key)
 }

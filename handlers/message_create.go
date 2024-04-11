@@ -9,6 +9,7 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
 	"github.com/WindowsSov8forUs/go-kyutorin/database"
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
+	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 
@@ -72,7 +73,7 @@ func HandleMessageCreate(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message cal
 			log.Infof("发送消息到私聊频道 %s : %s", request.ChannelId, logContent(request.Content))
 
 			var dtoMessageToCreate = &dto.MessageToCreate{}
-			var dtoDirectMessage *dto.DirectMessage
+			var dtoDirectMessage = &dto.DirectMessage{}
 			dtoMessageToCreate, err = convertToMessageToCreate(request.Content)
 			if err != nil {
 				return "", err
@@ -185,6 +186,7 @@ func convertToMessageToCreate(content string) (*dto.MessageToCreate, error) {
 
 // parseElementsInMessageToCreate 将 Satori 消息元素转换为消息体结构
 func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dtoMessageToCreate *dto.MessageToCreate) error {
+	var hash string
 	// 处理 satoriMessage.MessageElement
 	for _, element := range elements {
 		// 根据元素类型进行处理
@@ -211,7 +213,8 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 				continue
 			}
 			// TODO: 仍待寻找使 cache 能够有作用的方法
-			dtoMessageToCreate.Image = saveSrcToURL(e.Src)
+			dtoMessageToCreate.Image, hash = saveSrcToURL(e.Src)
+			defer fileserver.DeleteFile(hash)
 		case *satoriMessage.MessageElementAudio:
 			// 频道不支持音频消息
 			continue
@@ -337,19 +340,25 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 					continue
 				}
 			}
-			dtoRichMediaMessage := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
+			dtoRichMediaMessage, hash := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
+			if !e.Cache {
+				// 删除保存的文件
+				if hash != "" {
+					defer fileserver.DeleteFile(hash)
+				}
+			}
 			if dtoRichMediaMessage == nil {
 				continue
 			}
 			key := getSrcKey(e.Src, messageType)
 			if messageType == "private" {
-				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key)
+				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
 				if err != nil {
 					return err
 				}
 				dtoMessageToCreate.Media.FileInfo = fileInfo
 			} else {
-				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key)
+				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
 				if err != nil {
 					return err
 				}
@@ -372,19 +381,25 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 					continue
 				}
 			}
-			dtoRichMediaMessage := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
+			dtoRichMediaMessage, hash := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
+			if !e.Cache {
+				// 删除保存的文件
+				if hash != "" {
+					defer fileserver.DeleteFile(hash)
+				}
+			}
 			if dtoRichMediaMessage == nil {
 				continue
 			}
 			key := getSrcKey(e.Src, messageType)
 			if messageType == "private" {
-				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key)
+				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
 				if err != nil {
 					return err
 				}
 				dtoMessageToCreate.Media.FileInfo = fileInfo
 			} else {
-				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key)
+				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
 				if err != nil {
 					return err
 				}
@@ -407,19 +422,25 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 					continue
 				}
 			}
-			dtoRichMediaMessage := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
+			dtoRichMediaMessage, hash := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
+			if !e.Cache {
+				// 删除保存的文件
+				if hash != "" {
+					defer fileserver.DeleteFile(hash)
+				}
+			}
 			if dtoRichMediaMessage == nil {
 				continue
 			}
 			key := getSrcKey(e.Src, messageType)
 			if messageType == "private" {
-				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key)
+				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
 				if err != nil {
 					return err
 				}
 				dtoMessageToCreate.Media.FileInfo = fileInfo
 			} else {
-				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key)
+				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
 				if err != nil {
 					return err
 				}
@@ -432,19 +453,22 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 				// 富媒体信息只支持一个
 				continue
 			}
-			dtoRichMediaMessage := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
+			dtoRichMediaMessage, hash := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
+			if hash != "" {
+				defer fileserver.DeleteFile(hash)
+			}
 			if dtoRichMediaMessage == nil {
 				continue
 			}
 			key := getSrcKey(e.Src, messageType)
 			if messageType == "private" {
-				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key)
+				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
 				if err != nil {
 					return err
 				}
 				dtoMessageToCreate.Media.FileInfo = fileInfo
 			} else {
-				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key)
+				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
 				if err != nil {
 					return err
 				}
@@ -728,31 +752,33 @@ func convertButtonToKeyboard(button *satoriMessage.MessageElementButton) *keyboa
 }
 
 // uploadMedia 上传媒体并返回FileInfo
-func uploadMedia(ctx context.Context, groupID string, richMediaMessage *dto.RichMediaMessage, apiv2 openapi.OpenAPI, key string) (string, error) {
+func uploadMedia(ctx context.Context, groupID string, richMediaMessage *dto.RichMediaMessage, apiv2 openapi.OpenAPI, key string, cache bool) (string, error) {
 	// 调用API来上传媒体
 	messageReturn, err := apiv2.PostGroupMessage(ctx, groupID, richMediaMessage)
 	if err != nil {
 		return "", err
 	}
 	// 将获取到的信息保存到数据库
-	switch richMediaMessage.FileType {
-	case 1:
-		// 图片
-		err = database.SaveImageCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-		if err != nil {
-			log.Warnf("保存图片缓存失败: %s", err.Error())
-		}
-	case 2:
-		// 视频
-		err = database.SaveVideoCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-		if err != nil {
-			log.Warnf("保存视频缓存失败: %s", err.Error())
-		}
-	case 3:
-		// 音频
-		err = database.SaveAudioCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-		if err != nil {
-			log.Warnf("保存音频缓存失败: %s", err.Error())
+	if cache {
+		switch richMediaMessage.FileType {
+		case 1:
+			// 图片
+			err = database.SaveImageCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+			if err != nil {
+				log.Warnf("保存图片缓存失败: %s", err.Error())
+			}
+		case 2:
+			// 视频
+			err = database.SaveVideoCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+			if err != nil {
+				log.Warnf("保存视频缓存失败: %s", err.Error())
+			}
+		case 3:
+			// 音频
+			err = database.SaveAudioCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+			if err != nil {
+				log.Warnf("保存音频缓存失败: %s", err.Error())
+			}
 		}
 	}
 	// 返回上传后的FileInfo
@@ -760,31 +786,33 @@ func uploadMedia(ctx context.Context, groupID string, richMediaMessage *dto.Rich
 }
 
 // uploadMedia 上传媒体并返回FileInfo
-func uploadMediaPrivate(ctx context.Context, userID string, richMediaMessage *dto.RichMediaMessage, apiv2 openapi.OpenAPI, key string) (string, error) {
+func uploadMediaPrivate(ctx context.Context, userID string, richMediaMessage *dto.RichMediaMessage, apiv2 openapi.OpenAPI, key string, cache bool) (string, error) {
 	// 调用API来上传媒体
 	messageReturn, err := apiv2.PostC2CMessage(ctx, userID, richMediaMessage)
 	if err != nil {
 		return "", err
 	}
 	// 将获取到的信息保存到数据库
-	switch richMediaMessage.FileType {
-	case 1:
-		// 图片
-		err = database.SaveImageCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-		if err != nil {
-			log.Warnf("保存图片缓存失败: %s", err.Error())
-		}
-	case 2:
-		// 视频
-		err = database.SaveVideoCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-		if err != nil {
-			log.Warnf("保存视频缓存失败: %s", err.Error())
-		}
-	case 3:
-		// 音频
-		err = database.SaveAudioCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-		if err != nil {
-			log.Warnf("保存音频缓存失败: %s", err.Error())
+	if cache {
+		switch richMediaMessage.FileType {
+		case 1:
+			// 图片
+			err = database.SaveImageCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+			if err != nil {
+				log.Warnf("保存图片缓存失败: %s", err.Error())
+			}
+		case 2:
+			// 视频
+			err = database.SaveVideoCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+			if err != nil {
+				log.Warnf("保存视频缓存失败: %s", err.Error())
+			}
+		case 3:
+			// 音频
+			err = database.SaveAudioCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
+			if err != nil {
+				log.Warnf("保存音频缓存失败: %s", err.Error())
+			}
 		}
 	}
 	// 返回上传后的FileInfo
@@ -792,45 +820,47 @@ func uploadMediaPrivate(ctx context.Context, userID string, richMediaMessage *dt
 }
 
 // generateDtoRichMediaMessage 创建 dto.RichMediaMessage
-func generateDtoRichMediaMessage(id string, element satoriMessage.MessageElement) *dto.RichMediaMessage {
-	// TODO: 根据本地文件或 base64 上传文件
-
+func generateDtoRichMediaMessage(id string, element satoriMessage.MessageElement) (*dto.RichMediaMessage, string) {
 	var dtoRichMediaMessage *dto.RichMediaMessage
+	var hash string
 
 	// 根据 element 的类型来创建 dto.RichMediaMessage
 	switch e := element.(type) {
 	case *satoriMessage.MessageElementImg:
-		url := saveSrcToURL(e.Src)
+		url, _hash := saveSrcToURL(e.Src)
 		dtoRichMediaMessage = &dto.RichMediaMessage{
 			EventID:    id,
 			FileType:   1,
 			URL:        url,
 			SrvSendMsg: false,
 		}
+		hash = _hash
 	case *satoriMessage.MessageElementVideo:
-		url := saveSrcToURL(e.Src)
+		url, _hash := saveSrcToURL(e.Src)
 		dtoRichMediaMessage = &dto.RichMediaMessage{
 			EventID:    id,
 			FileType:   2,
 			URL:        url,
 			SrvSendMsg: false,
 		}
+		hash = _hash
 	case *satoriMessage.MessageElementAudio:
-		url := saveSrcToURL(e.Src)
+		url, _hash := saveSrcToURL(e.Src)
 		dtoRichMediaMessage = &dto.RichMediaMessage{
 			EventID:    id,
 			FileType:   3,
 			URL:        url,
 			SrvSendMsg: false,
 		}
+		hash = _hash
 	case *satoriMessage.MessageElementFile:
 		// TODO: 暂不开放
-		return nil
+		return nil, ""
 	default:
-		return nil
+		return nil, ""
 	}
 
-	return dtoRichMediaMessage
+	return dtoRichMediaMessage, hash
 }
 
 // escape 转义

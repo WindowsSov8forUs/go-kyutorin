@@ -72,11 +72,11 @@ func getSrcKey(src, messageType string) string {
 }
 
 // saveSrcToURL 将文件资源字符串保存并返回一个 URL
-func saveSrcToURL(src string) string {
+func saveSrcToURL(src string) (string, string) {
 	// 检查是否是 URL
 	u, err := url.Parse(src)
 	if err == nil && u.Scheme != "" && u.Host != "" {
-		return src
+		return src, ""
 	}
 
 	// 检查是否是 data/mime 字符串
@@ -91,7 +91,7 @@ func saveSrcToURL(src string) string {
 		mimeParts := strings.Split(mimeType, "/")
 		if len(mimeParts) != 2 {
 			log.Errorf("错误的 mime 类型: %s", mimeType)
-			return ""
+			return "", ""
 		}
 		fileType := mimeParts[0]
 
@@ -118,43 +118,39 @@ func saveSrcToURL(src string) string {
 		data, err = base64.StdEncoding.DecodeString(base64Data)
 		if err != nil {
 			log.Errorf("解析 base64 编码失败: %s", err.Error())
-			return ""
+			return "", ""
 		}
 		if isAudio {
 			// 判断并转码
 			data, err = convertAudioToSilk(data)
 			if err != nil {
 				log.Errorf("转码音频文件失败: %s", err.Error())
-				return ""
+				return "", ""
 			}
 		} else if isVideo {
 			// 判断并转码
 			data, err = convertVideoToMP4(data)
 			if err != nil {
 				log.Errorf("转码视频文件失败: %s", err.Error())
-				return ""
+				return "", ""
 			}
 		} else if isImage {
 			// 判断并转码
 			data, err = convertImage(data)
 			if err != nil {
 				log.Errorf("转码图像文件失败: %s", err.Error())
-				return ""
+				return "", ""
 			}
 		}
 		if err != nil {
-			return ""
+			return "", ""
 		}
 
 		// 保存文件
 		u := fileserver.SaveFile(data)
-		if err != nil {
-			log.Errorf("保存文件失败: %s", err.Error())
-			return ""
-		}
 
 		// 返回 URL
-		return u
+		return u, fileserver.GetHash(data)
 	}
 
 	// 检查是否是本地文件
@@ -162,7 +158,7 @@ func saveSrcToURL(src string) string {
 		// 读取文件数据
 		data, err := os.ReadFile(src)
 		if err != nil {
-			return ""
+			return "", ""
 		}
 
 		// 判断是否为音频文件
@@ -172,35 +168,35 @@ func saveSrcToURL(src string) string {
 			data, err = convertAudioToSilk(data)
 			if err != nil {
 				log.Errorf("转码音频文件失败: %s", err.Error())
-				return ""
+				return "", ""
 			}
 		} else if strings.HasPrefix(fileType, "video/") {
 			// 判断并转码
 			data, err = convertVideoToMP4(data)
 			if err != nil {
 				log.Errorf("转码视频文件失败: %s", err.Error())
-				return ""
+				return "", ""
 			}
 		} else if strings.HasPrefix(fileType, "image/") {
 			// 判断并转码
 			data, err = convertImage(data)
 			if err != nil {
 				log.Errorf("转码图像文件失败: %s", err.Error())
-				return ""
+				return "", ""
 			}
 		} else {
-			return ""
+			return "", ""
 		}
 
 		// 保存文件
 		u := fileserver.SaveFile(data)
 
 		// 返回 URL
-		return u
+		return u, fileserver.GetHash(data)
 	}
 
 	log.Errorf("无法解析的资源字符串: %s", src)
-	return ""
+	return "", ""
 }
 
 // convertAudioToSilk 将音频文件转换为 silk 格式

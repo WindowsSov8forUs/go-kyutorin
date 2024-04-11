@@ -83,6 +83,16 @@ func SaveFile(data []byte) string {
 	return "http://" + instance.URL + "/" + hash(data)
 }
 
+// DeleteFile 删除文件
+func DeleteFile(hash string) error {
+	if instance == nil || !instance.UseLocalFileServer {
+		return nil
+	}
+
+	// 删除文件
+	return os.Remove(filepath.Join(cachePath, hash))
+}
+
 // hash 计算文件哈希值
 func hash(data []byte) string {
 	h := sha256.New()
