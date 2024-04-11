@@ -64,7 +64,7 @@ func HandleGuildMemberGet(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message ca
 // convertDtoMemberToGuildMember 将 dto.Member 转换为 guildmember.GuildMember
 func convertDtoMemberToGuildMember(dtoMember *dto.Member) (guildmember.GuildMember, error) {
 	var guildMember guildmember.GuildMember
-	var user *user.User
+	var user = &user.User{}
 
 	// 获取转换后的时间戳
 	var joinedAt int64

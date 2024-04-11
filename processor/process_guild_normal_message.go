@@ -19,7 +19,7 @@ import (
 // ProcessGuildNormalMessage 处理群组私域消息
 func (p *Processor) ProcessGuildNormalMessage(payload *dto.WSPayload, data *dto.WSMessageData) error {
 	// 打印消息日志
-	printGuildMessage(payload, data)
+	printGuildMessage(data)
 
 	// 构建事件数据
 	var event *signaling.Event
@@ -98,7 +98,7 @@ func (p *Processor) ProcessGuildNormalMessage(payload *dto.WSPayload, data *dto.
 	return p.BroadcastEvent(event)
 }
 
-func printGuildMessage(payload *dto.WSPayload, data *dto.WSMessageData) {
+func printGuildMessage(data *dto.WSMessageData) {
 	// 构建用户名称
 	var userName string
 	if data.Member.Nick != "" {
