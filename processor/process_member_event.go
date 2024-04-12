@@ -25,10 +25,7 @@ func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuild
 	var event *signaling.Event
 
 	// 获取事件 ID
-	id, err := HashEventID(payload.ID)
-	if err != nil {
-		return fmt.Errorf("计算事件 ID 时出错: %v", err)
-	}
+	id := RecordEventID(payload.ID)
 
 	// 根据不同的 payload.Type 设置不同的 event.Type
 	var eventType signaling.EventType

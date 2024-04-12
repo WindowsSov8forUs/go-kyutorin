@@ -3,11 +3,10 @@ package processor
 import (
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
-	"io"
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
@@ -31,6 +30,28 @@ type Processor struct {
 }
 
 var instance *Processor
+
+type EventIDTable struct {
+	m     sync.Map
+	count int64
+}
+
+var table = &EventIDTable{}
+
+// RecordEventID 保存事件 ID
+func RecordEventID(id string) int64 {
+	number := atomic.AddInt64(&table.count, 1) - 1
+	table.m.Store(number, id)
+	return number
+}
+
+// GetEventID 获取已经保存了的事件 ID
+func GetEventID(id int64) string {
+	if value, ok := table.m.Load(id); ok {
+		return value.(string)
+	}
+	return ""
+}
 
 // BotMapping 机器人映射
 type BotMapping struct {
@@ -122,11 +143,11 @@ func (q *EventQueue) PopEvent() *signaling.Event {
 }
 
 // ResumeEvents 恢复事件
-func (q *EventQueue) ResumeEvents(Sequence int64) {
+func (q *EventQueue) ResumeEvents(Sequence int64) []*signaling.Event {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	var events []*signaling.Event
-	var isFound bool
+	var isFound bool = false
 	for _, event := range q.Events {
 		if event.Id == Sequence {
 			isFound = true
@@ -135,7 +156,7 @@ func (q *EventQueue) ResumeEvents(Sequence int64) {
 			events = append(events, event)
 		}
 	}
-	q.Events = events
+	return events
 }
 
 // Clear 清空事件队列
@@ -205,12 +226,12 @@ func (p *Processor) BroadcastEvent(event *signaling.Event) error {
 	if err != nil {
 		errors = append(errors, fmt.Sprintf("转换信令时出错: %v", err))
 	} else {
+		p.EventQueue.PushEvent(event)
 		// 判断 WebSocket 服务器是否已建立
 		if p.WebSocket != nil {
 			// 发送
 			if err := p.WebSocket.SendMessage(data); err != nil {
 				errors = append(errors, fmt.Sprintf("发送信令时出错: %v", err))
-				p.EventQueue.PushEvent(event)
 			}
 		}
 
@@ -266,11 +287,7 @@ func (p *Processor) ProcessQQInternal(payload *dto.WSPayload, data interface{}) 
 	var event *signaling.Event
 
 	// 获取 id
-	id, err := HashEventID(payload.ID)
-	if err != nil {
-		log.Errorf("计算事件 ID 时出错: %v", err)
-		return err
-	}
+	id := RecordEventID(payload.ID)
 
 	// 将当前时间转换为时间戳
 	t := time.Now().Unix()
@@ -305,11 +322,7 @@ func (p *Processor) ProcessQQGuildInternal(payload *dto.WSPayload, data interfac
 	var event *signaling.Event
 
 	// 获取 id
-	id, err := HashEventID(payload.ID)
-	if err != nil {
-		log.Errorf("计算事件 ID 时出错: %v", err)
-		return err
-	}
+	id := RecordEventID(payload.ID)
 
 	// 将当前时间转换为时间戳
 	t := time.Now().Unix()
@@ -346,11 +359,7 @@ func (p *Processor) ProcessInteractionEvent(data *dto.WSInteractionData) error {
 	var event *signaling.Event
 
 	// 获取 id
-	id, err := HashEventID(data.ID)
-	if err != nil {
-		log.Errorf("计算事件 ID 时出错: %v", err)
-		return err
-	}
+	id := RecordEventID(data.ID)
 
 	// 以当前时间作为时间戳
 	t := time.Now()
@@ -525,16 +534,6 @@ func getMessageLog(data interface{}) string {
 	}
 
 	return messageString
-}
-
-// HashEventID 计算事件 ID
-func HashEventID(payloadId string) (int64, error) {
-	h := fnv.New64a()
-	_, err := io.WriteString(h, payloadId)
-	if err != nil {
-		return 0, err
-	}
-	return int64(h.Sum64()), nil
 }
 
 // ConvertToMessageContent 将收到的消息转化为符合 Satori 协议的消息

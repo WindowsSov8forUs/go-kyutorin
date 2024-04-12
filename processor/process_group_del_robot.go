@@ -1,8 +1,6 @@
 package processor
 
 import (
-	"fmt"
-
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
@@ -23,10 +21,7 @@ func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.WSGro
 	var event *signaling.Event
 
 	// 获取事件 ID
-	id, err := HashEventID(payload.ID)
-	if err != nil {
-		return fmt.Errorf("计算事件 ID 时出错: %v", err)
-	}
+	id := RecordEventID(payload.ID)
 
 	// 构建 channel
 	channel := &channel.Channel{

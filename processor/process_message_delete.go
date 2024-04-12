@@ -40,10 +40,7 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 	var event *signaling.Event
 
 	// 获取事件 ID
-	id, err := HashEventID(payload.ID)
-	if err != nil {
-		return fmt.Errorf("计算事件 ID 时出错: %v", err)
-	}
+	id := RecordEventID(payload.ID)
 
 	// 将当前时间转换为时间戳
 	t := time.Now().Unix()

@@ -2,7 +2,6 @@ package websocket
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -47,7 +46,9 @@ func webSocketHandler(token string, p *processor.Processor, c *gin.Context) {
 
 	// 创建 WebSocket
 	ws := &WebSocket{
-		Conn: conn,
+		Conn:     conn,
+		Token:    token,
+		IsClosed: make(chan bool),
 	}
 	// 添加到 processor 中
 	p.WebSocket = ws
@@ -125,17 +126,10 @@ func webSocketHandler(token string, p *processor.Processor, c *gin.Context) {
 	if sequence > 0 {
 		log.Infof("开始进行事件补发，起始序列号: %d", sequence)
 		// 处理事件队列
-		p.EventQueue.ResumeEvents(sequence)
+		events := p.EventQueue.ResumeEvents(sequence)
 
 		// 循环补发事件直到队列清空
-		for {
-			// 从队列中获取事件
-			event := p.EventQueue.PopEvent()
-			if event == nil {
-				// 队列已清空
-				break
-			}
-
+		for _, event := range events {
 			// 构建 WebSocket 信令
 			sgnl := &signaling.Signaling{
 				Op:   signaling.SIGNALING_EVENT,
@@ -260,5 +254,5 @@ func (ws *WebSocket) authorize(authorization string) bool {
 	}
 
 	// 如果设置的令牌不为空则进行鉴权
-	return authorization == fmt.Sprintf("Bearer %s", ws.Token)
+	return authorization == ws.Token
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -151,7 +152,9 @@ func main() {
 			IsBot:  me.Bot,
 		}
 		processor.SetBot("qq", bot)
+		processor.SetStatus("qq", login.CONNECT)
 		processor.SetBot("qqguild", bot)
+		processor.SetStatus("qqguild", login.CONNECT)
 		processor.SelfId = me.ID
 
 		// 获取 WebSocket 信息
@@ -190,6 +193,10 @@ func main() {
 
 		log.Info("已成功连接 QQ 开放平台")
 		log.Infof("欢迎使用机器人: %s ！", me.Username)
+
+		// 不明原因无法接收到 ReadyEvent ！！！！！
+		processor.SetStatus("qq", login.ONLINE)
+		processor.SetStatus("qqguild", login.ONLINE)
 
 		// 开启本地文件服务器
 		var hasFileServer bool
@@ -277,7 +284,7 @@ func main() {
 
 		// 在一个新的 goroutine 中启动 http.Server
 		go func() {
-			if err := httpServer.ListenAndServe(); err != nil {
+			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				log.Fatalf("Satori 服务器运行时出错: %v", err)
 			}
 		}()
@@ -292,8 +299,10 @@ func main() {
 		log.Info("正在关闭 Satori 服务器...")
 
 		// 关闭 WebSocket 服务器
-		if err := p.WebSocket.Close(); err != nil {
-			log.Errorf("关闭 WebSocket 服务器时出错: %v", err)
+		if p.WebSocket != nil {
+			if err := p.WebSocket.Close(); err != nil {
+				log.Errorf("关闭 WebSocket 服务器时出错: %v", err)
+			}
 		}
 
 		// 使用一个超时关闭 http.Server
@@ -308,15 +317,11 @@ func main() {
 // ReadyHandler 自定义 ReadyHandler 感知连接成功事件
 func ReadyHandler() event.ReadyHandler {
 	return func(event *dto.WSPayload, data *dto.WSReadyData) {
-		log.Infof("连接成功，欢迎使用 %s ！", data.User.Username)
+		log.Info("连接成功！")
 		processor.SetStatus("qq", login.ONLINE)
 
 		// 构建事件
-		id, err := processor.HashEventID("READY-QQ" + time.Now().String())
-		if err != nil {
-			log.Errorf("构建事件 ID 时出错: %v", err)
-			return
-		}
+		id := processor.RecordEventID(fmt.Sprintf("QQ-%s", strconv.Itoa(int(event.Seq))))
 
 		satoriEvent := &signaling.Event{
 			Id:        id,
@@ -336,11 +341,7 @@ func ReadyHandler() event.ReadyHandler {
 		processor.SetStatus("qqguild", login.ONLINE)
 
 		// 构建事件
-		id, err = processor.HashEventID("READY-QQGUILD" + time.Now().String())
-		if err != nil {
-			log.Errorf("构建事件 ID 时出错: %v", err)
-			return
-		}
+		id = processor.RecordEventID(fmt.Sprintf("QQGUILD-%s", strconv.Itoa(int(event.Seq))))
 
 		satoriEvent = &signaling.Event{
 			Id:        id,
@@ -364,14 +365,8 @@ func ErrorNotifyHandler() event.ErrorNotifyHandler {
 	return func(err error) {
 		log.Errorf("QQ 开放平台连接出现错误：%v", err)
 
-		processor.SetStatus("qq", login.OFFLINE)
-
 		// 构建事件
-		id, err := processor.HashEventID("ERROR-QQ" + err.Error())
-		if err != nil {
-			log.Errorf("构建事件 ID 时出错: %v", err)
-			return
-		}
+		id := processor.RecordEventID(fmt.Sprintf("ERROR-QQ-%s", err.Error()))
 
 		satoriEvent := &signaling.Event{
 			Id:        id,
@@ -383,19 +378,15 @@ func ErrorNotifyHandler() event.ErrorNotifyHandler {
 				User:     processor.GetBot("qq"),
 				SelfId:   processor.SelfId,
 				Platform: "qq",
-				Status:   login.OFFLINE,
+				Status:   login.DISCONNECT,
 			},
 		}
 		p.BroadcastEvent(satoriEvent)
 
-		processor.SetStatus("qqguild", login.OFFLINE)
+		processor.SetStatus("qq", login.OFFLINE)
 
 		// 构建事件
-		id, err = processor.HashEventID("ERROR-QQGUILD" + err.Error())
-		if err != nil {
-			log.Errorf("构建事件 ID 时出错: %v", err)
-			return
-		}
+		id = processor.RecordEventID(fmt.Sprintf("ERROR-QQGUILD-%s", err.Error()))
 
 		satoriEvent = &signaling.Event{
 			Id:        id,
@@ -407,28 +398,27 @@ func ErrorNotifyHandler() event.ErrorNotifyHandler {
 				User:     processor.GetBot("qqguild"),
 				SelfId:   processor.SelfId,
 				Platform: "qqguild",
-				Status:   login.OFFLINE,
+				Status:   login.DISCONNECT,
 			},
 		}
 		p.BroadcastEvent(satoriEvent)
+
+		processor.SetStatus("qqguild", login.OFFLINE)
 	}
 }
 
 // HelloHandler 处理 Hello 事件
 func HelloHandler() event.HelloHandler {
+	// 此事件也会发送 LoginAdded 事件
 	return func(event *dto.WSPayload) {
 		processor.SetStatus("qq", login.ONLINE)
 
 		// 构建事件
-		id, err := processor.HashEventID("HELLO-QQ" + time.Now().String())
-		if err != nil {
-			log.Errorf("构建事件 ID 时出错: %v", err)
-			return
-		}
+		id := processor.RecordEventID(fmt.Sprintf("QQ-%s", strconv.Itoa(int(event.Seq))))
 
 		satoriEvent := &signaling.Event{
 			Id:        id,
-			Type:      signaling.EVENT_TYPE_LOGIN_UPDATED,
+			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
 			Platform:  "qq",
 			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
@@ -444,11 +434,7 @@ func HelloHandler() event.HelloHandler {
 		processor.SetStatus("qqguild", login.ONLINE)
 
 		// 构建事件
-		id, err = processor.HashEventID("HELLO-QQGUILD" + time.Now().String())
-		if err != nil {
-			log.Errorf("构建事件 ID 时出错: %v", err)
-			return
-		}
+		id = processor.RecordEventID(fmt.Sprintf("QQGUILD-%s", strconv.Itoa(int(event.Seq))))
 
 		satoriEvent = &signaling.Event{
 			Id:        id,
@@ -470,14 +456,8 @@ func HelloHandler() event.HelloHandler {
 // ReconnectHandler 处理 Reconnect 事件
 func ReconnectHandler() event.ReconnectHandler {
 	return func(event *dto.WSPayload) {
-		processor.SetStatus("qq", login.RECONNECT)
-
 		// 构建事件
-		id, err := processor.HashEventID("RECONNECT-QQ" + time.Now().String())
-		if err != nil {
-			log.Errorf("构建事件 ID 时出错: %v", err)
-			return
-		}
+		id := processor.RecordEventID(fmt.Sprintf("QQ-%s", strconv.Itoa(int(event.Seq))))
 
 		satoriEvent := &signaling.Event{
 			Id:        id,
@@ -494,14 +474,10 @@ func ReconnectHandler() event.ReconnectHandler {
 		}
 		p.BroadcastEvent(satoriEvent)
 
-		processor.SetStatus("qqguild", login.RECONNECT)
+		processor.SetStatus("qq", login.OFFLINE)
 
 		// 构建事件
-		id, err = processor.HashEventID("RECONNECT-QQGUILD" + time.Now().String())
-		if err != nil {
-			log.Errorf("构建事件 ID 时出错: %v", err)
-			return
-		}
+		id = processor.RecordEventID(fmt.Sprintf("QQGUILD-%s", strconv.Itoa(int(event.Seq))))
 
 		satoriEvent = &signaling.Event{
 			Id:        id,
@@ -517,6 +493,8 @@ func ReconnectHandler() event.ReconnectHandler {
 			},
 		}
 		p.BroadcastEvent(satoriEvent)
+
+		processor.SetStatus("qqguild", login.OFFLINE)
 	}
 }
 

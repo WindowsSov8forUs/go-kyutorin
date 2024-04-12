@@ -24,10 +24,7 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 	var event *signaling.Event
 
 	// 获取事件 ID
-	id, err := HashEventID(payload.ID)
-	if err != nil {
-		return fmt.Errorf("计算事件 ID 时出错: %v", err)
-	}
+	id := RecordEventID(payload.ID)
 
 	// 将事件字符串转换为时间戳
 	t, err := time.Parse(time.RFC3339, string(data.Timestamp))
