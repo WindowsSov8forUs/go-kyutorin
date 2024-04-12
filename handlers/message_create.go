@@ -162,7 +162,7 @@ func HandleMessageCreate(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message cal
 // logContent 将内容处理为输出内容
 func logContent(content string) string {
 	if len(content) > 50 {
-		return content[40:] + "..." + content[:10]
+		return content[:40] + "..." + content[len(content)-10:]
 	} else {
 		return content
 	}
