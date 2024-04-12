@@ -7,7 +7,7 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 	"github.com/WindowsSov8forUs/go-kyutorin/webhook"
 
-	"github.com/dezhishen/satori-model-go/pkg/login"
+	"github.com/satori-protocol-go/satori-model-go/pkg/login"
 )
 
 // LoginListResponse 获取登录信息列表响应

@@ -1,92 +1,86 @@
 package message
 
-// 粗体
+import (
+	"golang.org/x/net/html"
+)
+
 type MessageElementStrong struct {
-	*childrenMessageElement
+	*ChildrenMessageElement
+	*ExtendAttributes
 }
 
 func (e *MessageElementStrong) Tag() string {
 	return "b"
 }
-
 func (e *MessageElementStrong) Alias() []string {
 	return []string{"strong"}
 }
 
 func (e *MessageElementStrong) Stringify() string {
-	return e.stringifyByTag(e.Tag())
-}
-
-func (e *MessageElementStrong) SetChildren(children []MessageElement) {
-	// 首先判断是否已被初始化
-	if e.childrenMessageElement == nil {
-		e.childrenMessageElement = &childrenMessageElement{}
+	result := e.stringifyAttributes()
+	childrenStr := e.stringifyChildren()
+	if childrenStr == "" {
+		return `<` + e.Tag() + result + `/>`
 	}
-	e.childrenMessageElement.Children = children
+	return `<` + e.Tag() + result + `>` + childrenStr + `</` + e.Tag() + `>`
 }
 
-func (e *MessageElementStrong) parse(n *Node) (MessageElement, error) {
-	var children []MessageElement
-	err := parseChildrenNode(n, func(e MessageElement) {
-		children = append(children, e)
-	})
+func (e *MessageElementStrong) Parse(n *html.Node) (MessageElement, error) {
+	attrMap := attrList2MapVal(n.Attr)
+	result := &MessageElementStrong{}
+	for key, value := range attrMap {
+		result.ExtendAttributes = result.AddAttribute(key, value)
+	}
+	children, err := result.parseChildren(n)
 	if err != nil {
 		return nil, err
 	}
-	return &MessageElementStrong{
-		&childrenMessageElement{
-			Children: children,
-		},
-	}, nil
+	result.ChildrenMessageElement = children
+	return result, nil
 }
 
-// 斜体
 type MessageElementEm struct {
-	*childrenMessageElement
+	*ChildrenMessageElement
+	*ExtendAttributes
 }
 
 func (e *MessageElementEm) Tag() string {
 	return "i"
 }
-
 func (e *MessageElementEm) Alias() []string {
 	return []string{"em"}
 }
 
 func (e *MessageElementEm) Stringify() string {
-	return e.stringifyByTag(e.Tag())
-}
-
-func (e *MessageElementEm) SetChildren(children []MessageElement) {
-	// 首先判断是否已被初始化
-	if e.childrenMessageElement == nil {
-		e.childrenMessageElement = &childrenMessageElement{}
+	result := e.stringifyAttributes()
+	childrenStr := e.stringifyChildren()
+	if childrenStr == "" {
+		return `<` + e.Tag() + result + `/>`
 	}
-	e.childrenMessageElement.Children = children
+	return `<` + e.Tag() + result + `>` + childrenStr + `</` + e.Tag() + `>`
 }
 
-func (e *MessageElementEm) parse(n *Node) (MessageElement, error) {
-	var children []MessageElement
-	err := parseChildrenNode(n, func(e MessageElement) {
-		children = append(children, e)
-	})
+func (e *MessageElementEm) Parse(n *html.Node) (MessageElement, error) {
+	attrMap := attrList2MapVal(n.Attr)
+	result := &MessageElementEm{}
+	for key, value := range attrMap {
+		result.ExtendAttributes = result.AddAttribute(key, value)
+	}
+	children, err := result.parseChildren(n)
 	if err != nil {
 		return nil, err
 	}
-	return &MessageElementEm{
-		&childrenMessageElement{
-			Children: children,
-		},
-	}, nil
+	result.ChildrenMessageElement = children
+	return result, nil
 }
 
-// 下划线
 type MessageElementIns struct {
-	*childrenMessageElement
+	*ChildrenMessageElement
+	*ExtendAttributes
 }
 
 func (e *MessageElementIns) Tag() string {
-	return "s"
+	return "u"
 }
 
 func (e *MessageElementIns) Alias() []string {
@@ -94,35 +88,31 @@ func (e *MessageElementIns) Alias() []string {
 }
 
 func (e *MessageElementIns) Stringify() string {
-	return e.stringifyByTag(e.Tag())
-}
-
-func (e *MessageElementIns) SetChildren(children []MessageElement) {
-	// 首先判断是否已被初始化
-	if e.childrenMessageElement == nil {
-		e.childrenMessageElement = &childrenMessageElement{}
+	result := e.stringifyAttributes()
+	childrenStr := e.stringifyChildren()
+	if childrenStr == "" {
+		return `<` + e.Tag() + result + `/>`
 	}
-	e.childrenMessageElement.Children = children
+	return `<` + e.Tag() + result + `>` + childrenStr + `</` + e.Tag() + `>`
 }
 
-func (e *MessageElementIns) parse(n *Node) (MessageElement, error) {
-	var children []MessageElement
-	err := parseChildrenNode(n, func(e MessageElement) {
-		children = append(children, e)
-	})
+func (e *MessageElementIns) Parse(n *html.Node) (MessageElement, error) {
+	attrMap := attrList2MapVal(n.Attr)
+	result := &MessageElementIns{}
+	for key, value := range attrMap {
+		result.ExtendAttributes = result.AddAttribute(key, value)
+	}
+	children, err := result.parseChildren(n)
 	if err != nil {
 		return nil, err
 	}
-	return &MessageElementIns{
-		&childrenMessageElement{
-			Children: children,
-		},
-	}, nil
+	result.ChildrenMessageElement = children
+	return result, nil
 }
 
-// 删除线
 type MessageElementDel struct {
-	*childrenMessageElement
+	*ChildrenMessageElement
+	*ExtendAttributes
 }
 
 func (e *MessageElementDel) Tag() string {
@@ -134,36 +124,32 @@ func (e *MessageElementDel) Alias() []string {
 }
 
 func (e *MessageElementDel) Stringify() string {
-	return e.stringifyByTag(e.Tag())
-}
-
-func (e *MessageElementDel) SetChildren(children []MessageElement) {
-	// 首先判断是否已被初始化
-	if e.childrenMessageElement == nil {
-		e.childrenMessageElement = &childrenMessageElement{}
+	result := e.stringifyAttributes()
+	childrenStr := e.stringifyChildren()
+	if childrenStr == "" {
+		return `<` + e.Tag() + result + `/>`
 	}
-	e.childrenMessageElement.Children = children
+	return `<` + e.Tag() + result + `>` + childrenStr + `</` + e.Tag() + `>`
 }
 
-func (e *MessageElementDel) parse(n *Node) (MessageElement, error) {
-	var children []MessageElement
-	err := parseChildrenNode(n, func(e MessageElement) {
-		children = append(children, e)
-	})
+func (e *MessageElementDel) Parse(n *html.Node) (MessageElement, error) {
+	attrMap := attrList2MapVal(n.Attr)
+	result := &MessageElementDel{}
+	for key, value := range attrMap {
+		result.ExtendAttributes = result.AddAttribute(key, value)
+	}
+	children, err := result.parseChildren(n)
 	if err != nil {
 		return nil, err
 	}
-	return &MessageElementDel{
-		childrenMessageElement: &childrenMessageElement{
-			Children: children,
-		},
-	}, nil
+	result.ChildrenMessageElement = children
+	return result, nil
 }
 
-// 剧透
 type MessageElementSpl struct {
 	*noAliasMessageElement
-	*childrenMessageElement
+	*ChildrenMessageElement
+	*ExtendAttributes
 }
 
 func (e *MessageElementSpl) Tag() string {
@@ -171,36 +157,32 @@ func (e *MessageElementSpl) Tag() string {
 }
 
 func (e *MessageElementSpl) Stringify() string {
-	return e.stringifyByTag(e.Tag())
-}
-
-func (e *MessageElementSpl) SetChildren(children []MessageElement) {
-	// 首先判断是否已被初始化
-	if e.childrenMessageElement == nil {
-		e.childrenMessageElement = &childrenMessageElement{}
+	result := e.stringifyAttributes()
+	childrenStr := e.stringifyChildren()
+	if childrenStr == "" {
+		return `<` + e.Tag() + result + `/>`
 	}
-	e.childrenMessageElement.Children = children
+	return `<` + e.Tag() + result + `>` + childrenStr + `</` + e.Tag() + `>`
 }
 
-func (e *MessageElementSpl) parse(n *Node) (MessageElement, error) {
-	var children []MessageElement
-	err := parseChildrenNode(n, func(e MessageElement) {
-		children = append(children, e)
-	})
+func (e *MessageElementSpl) Parse(n *html.Node) (MessageElement, error) {
+	attrMap := attrList2MapVal(n.Attr)
+	result := &MessageElementSpl{}
+	for key, value := range attrMap {
+		result.ExtendAttributes = result.AddAttribute(key, value)
+	}
+	children, err := result.parseChildren(n)
 	if err != nil {
 		return nil, err
 	}
-	return &MessageElementSpl{
-		childrenMessageElement: &childrenMessageElement{
-			Children: children,
-		},
-	}, nil
+	result.ChildrenMessageElement = children
+	return result, nil
 }
 
-// 代码
 type MessageElementCode struct {
-	*childrenMessageElement
+	*ChildrenMessageElement
 	*noAliasMessageElement
+	*ExtendAttributes
 }
 
 func (e *MessageElementCode) Tag() string {
@@ -208,36 +190,32 @@ func (e *MessageElementCode) Tag() string {
 }
 
 func (e *MessageElementCode) Stringify() string {
-	return e.stringifyByTag(e.Tag())
-}
-
-func (e *MessageElementCode) SetChildren(children []MessageElement) {
-	// 首先判断是否已被初始化
-	if e.childrenMessageElement == nil {
-		e.childrenMessageElement = &childrenMessageElement{}
+	result := e.stringifyAttributes()
+	childrenStr := e.stringifyChildren()
+	if childrenStr == "" {
+		return `<` + e.Tag() + result + `/>`
 	}
-	e.childrenMessageElement.Children = children
+	return `<` + e.Tag() + result + `>` + childrenStr + `</` + e.Tag() + `>`
 }
 
-func (e *MessageElementCode) parse(n *Node) (MessageElement, error) {
-	var children []MessageElement
-	err := parseChildrenNode(n, func(e MessageElement) {
-		children = append(children, e)
-	})
+func (e *MessageElementCode) Parse(n *html.Node) (MessageElement, error) {
+	attrMap := attrList2MapVal(n.Attr)
+	result := &MessageElementCode{}
+	for key, value := range attrMap {
+		result.ExtendAttributes = result.AddAttribute(key, value)
+	}
+	children, err := result.parseChildren(n)
 	if err != nil {
 		return nil, err
 	}
-	return &MessageElementCode{
-		childrenMessageElement: &childrenMessageElement{
-			Children: children,
-		},
-	}, nil
+	result.ChildrenMessageElement = children
+	return result, nil
 }
 
-// 上标
 type MessageElementSup struct {
-	*childrenMessageElement
+	*ChildrenMessageElement
 	*noAliasMessageElement
+	*ExtendAttributes
 }
 
 func (e *MessageElementSup) Tag() string {
@@ -245,36 +223,32 @@ func (e *MessageElementSup) Tag() string {
 }
 
 func (e *MessageElementSup) Stringify() string {
-	return e.stringifyByTag(e.Tag())
-}
-
-func (e *MessageElementSup) SetChildren(children []MessageElement) {
-	// 首先判断是否已被初始化
-	if e.childrenMessageElement == nil {
-		e.childrenMessageElement = &childrenMessageElement{}
+	result := e.stringifyAttributes()
+	childrenStr := e.stringifyChildren()
+	if childrenStr == "" {
+		return `<` + e.Tag() + result + `/>`
 	}
-	e.childrenMessageElement.Children = children
+	return `<` + e.Tag() + result + `>` + childrenStr + `</` + e.Tag() + `>`
 }
 
-func (e *MessageElementSup) parse(n *Node) (MessageElement, error) {
-	var children []MessageElement
-	err := parseChildrenNode(n, func(e MessageElement) {
-		children = append(children, e)
-	})
+func (e *MessageElementSup) Parse(n *html.Node) (MessageElement, error) {
+	attrMap := attrList2MapVal(n.Attr)
+	result := &MessageElementSup{}
+	for key, value := range attrMap {
+		result.ExtendAttributes = result.AddAttribute(key, value)
+	}
+	children, err := result.parseChildren(n)
 	if err != nil {
 		return nil, err
 	}
-	return &MessageElementSup{
-		childrenMessageElement: &childrenMessageElement{
-			Children: children,
-		},
-	}, nil
+	result.ChildrenMessageElement = children
+	return result, nil
 }
 
-// 下标
 type MessageElementSub struct {
-	*childrenMessageElement
+	*ChildrenMessageElement
 	*noAliasMessageElement
+	*ExtendAttributes
 }
 
 func (e *MessageElementSub) Tag() string {
@@ -282,39 +256,35 @@ func (e *MessageElementSub) Tag() string {
 }
 
 func (e *MessageElementSub) Stringify() string {
-	return e.stringifyByTag(e.Tag())
-}
-
-func (e *MessageElementSub) SetChildren(children []MessageElement) {
-	// 首先判断是否已被初始化
-	if e.childrenMessageElement == nil {
-		e.childrenMessageElement = &childrenMessageElement{}
+	result := e.stringifyAttributes()
+	childrenStr := e.stringifyChildren()
+	if childrenStr == "" {
+		return `<` + e.Tag() + result + `/>`
 	}
-	e.childrenMessageElement.Children = children
+	return `<` + e.Tag() + result + `>` + childrenStr + `</` + e.Tag() + `>`
 }
 
-func (e *MessageElementSub) parse(n *Node) (MessageElement, error) {
-	var children []MessageElement
-	err := parseChildrenNode(n, func(e MessageElement) {
-		children = append(children, e)
-	})
+func (e *MessageElementSub) Parse(n *html.Node) (MessageElement, error) {
+	attrMap := attrList2MapVal(n.Attr)
+	result := &MessageElementSub{}
+	for key, value := range attrMap {
+		result.ExtendAttributes = result.AddAttribute(key, value)
+	}
+	children, err := result.parseChildren(n)
 	if err != nil {
 		return nil, err
 	}
-	return &MessageElementSub{
-		childrenMessageElement: &childrenMessageElement{
-			Children: children,
-		},
-	}, nil
+	result.ChildrenMessageElement = children
+	return result, nil
 }
 
 func init() {
-	regsiterParserElement(&MessageElementStrong{})
-	regsiterParserElement(&MessageElementEm{})
-	regsiterParserElement(&MessageElementIns{})
-	regsiterParserElement(&MessageElementDel{})
-	regsiterParserElement(&MessageElementSpl{})
-	regsiterParserElement(&MessageElementCode{})
-	regsiterParserElement(&MessageElementSup{})
-	regsiterParserElement(&MessageElementSub{})
+	RegsiterParserElement(&MessageElementStrong{})
+	RegsiterParserElement(&MessageElementEm{})
+	RegsiterParserElement(&MessageElementIns{})
+	RegsiterParserElement(&MessageElementDel{})
+	RegsiterParserElement(&MessageElementSpl{})
+	RegsiterParserElement(&MessageElementCode{})
+	RegsiterParserElement(&MessageElementSup{})
+	RegsiterParserElement(&MessageElementSub{})
 }

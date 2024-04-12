@@ -5,7 +5,7 @@ import (
 
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
-	"github.com/dezhishen/satori-model-go/pkg/user"
+	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/openapi"
 )
 

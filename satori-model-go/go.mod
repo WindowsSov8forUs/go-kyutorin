@@ -1,4 +1,4 @@
-module github.com/dezhishen/satori-model-go
+module github.com/satori-protocol-go/satori-model-go
 
 go 1.20
 

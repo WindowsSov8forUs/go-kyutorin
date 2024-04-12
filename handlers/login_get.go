@@ -7,8 +7,8 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 
-	"github.com/dezhishen/satori-model-go/pkg/login"
-	"github.com/dezhishen/satori-model-go/pkg/user"
+	"github.com/satori-protocol-go/satori-model-go/pkg/login"
+	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/openapi"
 )

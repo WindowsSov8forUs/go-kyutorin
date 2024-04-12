@@ -1,14 +1,14 @@
 package signaling
 
 import (
-	"github.com/dezhishen/satori-model-go/pkg/channel"
-	"github.com/dezhishen/satori-model-go/pkg/guild"
-	"github.com/dezhishen/satori-model-go/pkg/guildmember"
-	"github.com/dezhishen/satori-model-go/pkg/guildrole"
-	"github.com/dezhishen/satori-model-go/pkg/interaction"
-	"github.com/dezhishen/satori-model-go/pkg/login"
-	"github.com/dezhishen/satori-model-go/pkg/message"
-	"github.com/dezhishen/satori-model-go/pkg/user"
+	"github.com/satori-protocol-go/satori-model-go/pkg/channel"
+	"github.com/satori-protocol-go/satori-model-go/pkg/guild"
+	"github.com/satori-protocol-go/satori-model-go/pkg/guildmember"
+	"github.com/satori-protocol-go/satori-model-go/pkg/guildrole"
+	"github.com/satori-protocol-go/satori-model-go/pkg/interaction"
+	"github.com/satori-protocol-go/satori-model-go/pkg/login"
+	"github.com/satori-protocol-go/satori-model-go/pkg/message"
+	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 )
 
 // Signaling WebSocket 发送的信令的数据结构

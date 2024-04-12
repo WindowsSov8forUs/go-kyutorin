@@ -7,7 +7,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/dezhishen/satori-model-go/pkg/message"
+	"github.com/satori-protocol-go/satori-model-go/pkg/message"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )

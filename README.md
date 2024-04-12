@@ -11,7 +11,7 @@ _✨ 基于 [Satori](https://satori.js.org/zh-CN/) 协议的 QQ 官方机器人 
 本项目引用了这些项目，并进行了一些改动
 
 - [`tencent-connect/botgo`](https://github.com/tencent-connect/botgo)
-- [`dezhishen/satori-model-go`](https://github.com/dezhishen/satori-model-go)
+- [`satori-protocol-go/satori-model-go`](https://github.com/satori-protocol-go/satori-model-go)
 
 ## 说明
 

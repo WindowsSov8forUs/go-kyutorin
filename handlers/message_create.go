@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
@@ -13,11 +14,11 @@ import (
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 
-	"github.com/dezhishen/satori-model-go/pkg/channel"
-	"github.com/dezhishen/satori-model-go/pkg/guild"
-	"github.com/dezhishen/satori-model-go/pkg/guildmember"
-	satoriMessage "github.com/dezhishen/satori-model-go/pkg/message"
-	"github.com/dezhishen/satori-model-go/pkg/user"
+	"github.com/satori-protocol-go/satori-model-go/pkg/channel"
+	"github.com/satori-protocol-go/satori-model-go/pkg/guild"
+	"github.com/satori-protocol-go/satori-model-go/pkg/guildmember"
+	satoriMessage "github.com/satori-protocol-go/satori-model-go/pkg/message"
+	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/dto/keyboard"
 	"github.com/tencent-connect/botgo/openapi"
@@ -272,13 +273,23 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 					}
 				}
 			}
-		case *satoriMessage.MessageElementPassive:
-			// 被动元素处理，作为消息发送的基础
-			dtoMessageToCreate.MsgID = e.Id
-			dtoMessageToCreate.MsgSeq = e.Seq
 		case *satoriMessage.MessageElementButton:
 			// TODO: 频道的按钮怎么处理？
 			continue
+		case *satoriMessage.MessageElementExtend:
+			// 从扩展消息中选取有用的消息
+			switch e.Type {
+			case "qq:passive":
+				// 被动元素处理，作为消息发送的基础
+				if id, ok := e.Get("id"); ok {
+					dtoMessageToCreate.MsgID = id
+				}
+				if seq, ok := e.Get("seq"); ok {
+					if intSeq, err := strconv.Atoi(seq); err == nil {
+						dtoMessageToCreate.MsgSeq = intSeq
+					}
+				}
+			}
 		default:
 			continue
 		}
@@ -523,12 +534,22 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 					}
 				}
 			}
-		case *satoriMessage.MessageElementPassive:
-			// 被动元素处理，作为消息发送的基础
-			dtoMessageToCreate.MsgID = e.Id
-			dtoMessageToCreate.MsgSeq = e.Seq
 		case *satoriMessage.MessageElementButton:
 			dtoMessageToCreate.Keyboard = convertButtonToKeyboard(e)
+		case *satoriMessage.MessageElementExtend:
+			// 从扩展消息中选取有用的消息
+			switch e.Type {
+			case "qq:passive":
+				// 被动元素处理，作为消息发送的基础
+				if id, ok := e.Get("id"); ok {
+					dtoMessageToCreate.MsgID = id
+				}
+				if seq, ok := e.Get("seq"); ok {
+					if intSeq, err := strconv.Atoi(seq); err == nil {
+						dtoMessageToCreate.MsgSeq = intSeq
+					}
+				}
+			}
 		default:
 			continue
 		}

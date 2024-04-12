@@ -22,9 +22,9 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/webhook"
 	wsServer "github.com/WindowsSov8forUs/go-kyutorin/websocket"
 
-	"github.com/dezhishen/satori-model-go/pkg/login"
-	"github.com/dezhishen/satori-model-go/pkg/user"
 	"github.com/gin-gonic/gin"
+	"github.com/satori-protocol-go/satori-model-go/pkg/login"
+	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/event"

@@ -4,7 +4,7 @@ go 1.21.5
 
 require github.com/tencent-connect/botgo v0.1.6
 
-require github.com/dezhishen/satori-model-go v0.0.4
+require github.com/satori-protocol-go/satori-model-go v0.0.8
 
 require (
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
@@ -41,7 +41,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.9.1
-	github.com/go-resty/resty/v2 v2.6.0 // indirect
+	github.com/go-resty/resty/v2 v2.6.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tidwall/gjson v1.9.3 // indirect
@@ -53,4 +53,4 @@ require (
 
 replace github.com/tencent-connect/botgo => ./botgo
 
-replace github.com/dezhishen/satori-model-go => ./satori-model-go
+replace github.com/satori-protocol-go/satori-model-go => ./satori-model-go

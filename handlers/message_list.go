@@ -9,11 +9,11 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/echo"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 
-	"github.com/dezhishen/satori-model-go/pkg/channel"
-	"github.com/dezhishen/satori-model-go/pkg/guild"
-	"github.com/dezhishen/satori-model-go/pkg/guildmember"
-	satoriMessage "github.com/dezhishen/satori-model-go/pkg/message"
-	"github.com/dezhishen/satori-model-go/pkg/user"
+	"github.com/satori-protocol-go/satori-model-go/pkg/channel"
+	"github.com/satori-protocol-go/satori-model-go/pkg/guild"
+	"github.com/satori-protocol-go/satori-model-go/pkg/guildmember"
+	satoriMessage "github.com/satori-protocol-go/satori-model-go/pkg/message"
+	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/openapi"
 )

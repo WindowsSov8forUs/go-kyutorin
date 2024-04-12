@@ -1,14 +1,11 @@
 package message
 
-import (
-	"fmt"
-	"strconv"
-)
+import "golang.org/x/net/html"
 
-// 引用
 type MessageElementQuote struct {
 	*noAliasMessageElement
-	*childrenMessageElement
+	*ChildrenMessageElement
+	*ExtendAttributes
 }
 
 func (e *MessageElementQuote) Tag() string {
@@ -16,38 +13,35 @@ func (e *MessageElementQuote) Tag() string {
 }
 
 func (e *MessageElementQuote) Stringify() string {
-	return e.stringifyByTag(e.Tag())
-}
-
-func (e *MessageElementQuote) SetChildren(children []MessageElement) {
-	// 首先判断是否已被初始化
-	if e.childrenMessageElement == nil {
-		e.childrenMessageElement = &childrenMessageElement{}
+	result := e.stringifyAttributes()
+	childrenStr := e.stringifyChildren()
+	if childrenStr == "" {
+		return `<` + e.Tag() + result + `/>`
 	}
-	e.childrenMessageElement.Children = children
+	return `<` + e.Tag() + result + `>` + childrenStr + `</` + e.Tag() + `>`
 }
 
-func (e *MessageElementQuote) parse(n *Node) (MessageElement, error) {
-	var children []MessageElement
-	err := parseChildrenNode(n, func(e MessageElement) {
-		children = append(children, e)
-	})
+func (e *MessageElementQuote) Parse(n *html.Node) (MessageElement, error) {
+	attrMap := attrList2MapVal(n.Attr)
+	result := &MessageElementQuote{}
+	for key, value := range attrMap {
+		result.ExtendAttributes = result.AddAttribute(key, value)
+	}
+	children, err := result.parseChildren(n)
 	if err != nil {
 		return nil, err
 	}
-	return &MessageElementQuote{
-		childrenMessageElement: &childrenMessageElement{
-			Children: children,
-		},
-	}, nil
+	result.ChildrenMessageElement = children
+	return result, nil
 }
 
-// 作者
 type MessageElementAuthor struct {
 	*noAliasMessageElement
-	Id     string // 用户 ID
-	Name   string // 昵称
-	Avatar string // 头像 URL
+	*ChildrenMessageElement
+	*ExtendAttributes
+	Id     string
+	Name   string
+	Avatar string
 }
 
 func (e *MessageElementAuthor) Tag() string {
@@ -55,61 +49,44 @@ func (e *MessageElementAuthor) Tag() string {
 }
 
 func (e *MessageElementAuthor) Stringify() string {
-	result := "<" + e.Tag()
+	result := ""
 	if e.Id != "" {
-		result += ` id="` + Escape(e.Id) + `"`
+		result += ` id="` + escape(e.Id, true) + `"`
 	}
 	if e.Name != "" {
-		result += ` name="` + Escape(e.Name) + `"`
+		result += ` name="` + escape(e.Name, true) + `"`
 	}
 	if e.Avatar != "" {
-		result += ` avatar="` + Escape(e.Avatar) + `"`
+		result += ` avatar="` + escape(e.Avatar, true) + `"`
 	}
-	return result + "/>"
+	result += e.stringifyAttributes()
+	childrenStr := e.stringifyChildren()
+	if childrenStr == "" {
+		return `<` + e.Tag() + result + `/>`
+	}
+	return `<` + e.Tag() + result + `>` + childrenStr + `</` + e.Tag() + `>`
 }
 
-func (e *MessageElementAuthor) parse(n *Node) (MessageElement, error) {
+func (e *MessageElementAuthor) Parse(n *html.Node) (MessageElement, error) {
+	attrMap := attrList2MapVal(n.Attr)
 	result := &MessageElementAuthor{
-		Id:     n.Attrs["id"],
-		Name:   n.Attrs["name"],
-		Avatar: n.Attrs["avatar"],
+		Id:     attrMap["id"],
+		Name:   attrMap["name"],
+		Avatar: attrMap["avatar"],
 	}
+	for key, value := range attrMap {
+		if key != "id" && key != "name" && key != "avatar" {
+			result.ExtendAttributes = result.AddAttribute(key, value)
+		}
+	}
+	children, err := result.parseChildren(n)
+	if err != nil {
+		return nil, err
+	}
+	result.ChildrenMessageElement = children
 	return result, nil
 }
-
-// 被动
-type MessageElementPassive struct {
-	*noAliasMessageElement
-	Id  string // 被动消息 ID
-	Seq int    // 被动消息序号
-}
-
-func (e *MessageElementPassive) Tag() string {
-	return "passive"
-}
-
-func (e *MessageElementPassive) Stringify() string {
-	result := "<" + e.Tag()
-	if e.Id != "" {
-		result += ` id="` + e.Id + `"`
-	}
-	if e.Seq != 0 {
-		result += ` seq="` + fmt.Sprint(e.Seq) + `"`
-	}
-	return result + "/>"
-}
-
-func (e *MessageElementPassive) parse(n *Node) (MessageElement, error) {
-	seq, _ := strconv.Atoi(n.Attrs["seq"])
-	result := &MessageElementPassive{
-		Id:  n.Attrs["id"],
-		Seq: seq,
-	}
-	return result, nil
-}
-
 func init() {
-	regsiterParserElement(&MessageElementQuote{})
-	regsiterParserElement(&MessageElementAuthor{})
-	regsiterParserElement(&MessageElementPassive{})
+	RegsiterParserElement(&MessageElementQuote{})
+	RegsiterParserElement(&MessageElementAuthor{})
 }

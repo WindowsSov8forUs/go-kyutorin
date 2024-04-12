@@ -14,9 +14,9 @@ import (
 	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
-	"github.com/dezhishen/satori-model-go/pkg/login"
-	satoriMessage "github.com/dezhishen/satori-model-go/pkg/message"
-	"github.com/dezhishen/satori-model-go/pkg/user"
+	"github.com/satori-protocol-go/satori-model-go/pkg/login"
+	satoriMessage "github.com/satori-protocol-go/satori-model-go/pkg/message"
+	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/openapi"
 )
@@ -615,12 +615,11 @@ func ConvertToMessageContent(data interface{}) string {
 		} else if strings.HasPrefix(r, "<emoji:") && strings.HasSuffix(r, ">") {
 			// 提取 emoji ID
 			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<emoji:")
-			emoji := satoriMessage.MessageElementCustom{
-				Platform:  "qqguild",
-				CustomTag: "emoji",
-				Attrs:     map[string]interface{}{"id": id},
+			emoji := &satoriMessage.MessageElementExtend{
+				Type: "qqguild:emoji",
 			}
-			messageSegments = append(messageSegments, &emoji)
+			emoji.ExtendAttributes = emoji.AddAttribute("id", id)
+			messageSegments = append(messageSegments, emoji)
 		} else {
 			// 普通文本
 			text := satoriMessage.MessageElementText{Content: r}
@@ -635,9 +634,9 @@ func ConvertToMessageContent(data interface{}) string {
 		case strings.HasPrefix(attachment.ContentType, "image"):
 			image := satoriMessage.MessageElementImg{}
 			if strings.HasPrefix(attachment.URL, "http") {
-				image.SetSrc(attachment.URL)
+				image.Src = attachment.URL
 			} else {
-				image.SetSrc("https://" + attachment.URL)
+				image.Src = "https://" + attachment.URL
 			}
 
 			// 添加可能存在的长宽属性
@@ -651,25 +650,25 @@ func ConvertToMessageContent(data interface{}) string {
 		case strings.HasPrefix(attachment.ContentType, "audio"):
 			audio := satoriMessage.MessageElementAudio{}
 			if strings.HasPrefix(attachment.URL, "http") {
-				audio.SetSrc(attachment.URL)
+				audio.Src = attachment.URL
 			} else {
-				audio.SetSrc("https://" + attachment.URL)
+				audio.Src = "https://" + attachment.URL
 			}
 			messageSegments = append(messageSegments, &audio)
 		case strings.HasPrefix(attachment.ContentType, "video"):
 			video := satoriMessage.MessageElementVideo{}
 			if strings.HasPrefix(attachment.URL, "http") {
-				video.SetSrc(attachment.URL)
+				video.Src = attachment.URL
 			} else {
-				video.SetSrc("https://" + attachment.URL)
+				video.Src = "https://" + attachment.URL
 			}
 			messageSegments = append(messageSegments, &video)
 		default:
 			file := satoriMessage.MessageElementFile{}
 			if strings.HasPrefix(attachment.URL, "http") {
-				file.SetSrc(attachment.URL)
+				file.Src = attachment.URL
 			} else {
-				file.SetSrc("https://" + attachment.URL)
+				file.Src = "https://" + attachment.URL
 			}
 			messageSegments = append(messageSegments, &file)
 		}
@@ -680,8 +679,11 @@ func ConvertToMessageContent(data interface{}) string {
 		message := satoriMessage.MessageElementMessage{
 			Id: msg.MessageReference.MessageID,
 		}
-		quote := satoriMessage.MessageElementQuote{}
-		quote.SetChildren([]satoriMessage.MessageElement{&message})
+		quote := satoriMessage.MessageElementQuote{
+			ChildrenMessageElement: &satoriMessage.ChildrenMessageElement{
+				Children: []satoriMessage.MessageElement{&message},
+			},
+		}
 
 		// 添加为第一个元素
 		messageSegments = append([]satoriMessage.MessageElement{&quote}, messageSegments...)

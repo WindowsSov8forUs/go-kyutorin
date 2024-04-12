@@ -2,14 +2,16 @@ package message
 
 import (
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
-type messageElementParserFunc func(n *Node) (MessageElement, error)
+type messageElementParserFunc func(n *html.Node) (MessageElement, error)
 
-type messageElementParser interface {
+type MessageElementParser interface {
 	Tag() string
 	Alias() []string
-	parse(n *Node) (MessageElement, error)
+	Parse(n *html.Node) (MessageElement, error)
 }
 
 type parsersStruct struct {
@@ -25,46 +27,64 @@ func (parsers *parsersStruct) get(tag string) (messageElementParserFunc, bool) {
 	return val, ok
 }
 
+func attrList2MapVal(attrs []html.Attribute) map[string]string {
+	var result = make(map[string]string)
+	for _, attr := range attrs {
+		result[attr.Key] = attr.Val
+	}
+	return result
+}
+
 var factory = &parsersStruct{
 	_storage: make(map[string]messageElementParserFunc),
 }
 
-func regsiterParserElement(parser messageElementParser) {
-	factory.set(parser.Tag(), parser.parse)
+func RegsiterParserElement(parser MessageElementParser) {
+	factory.set(parser.Tag(), parser.Parse)
 	if len(parser.Alias()) > 0 {
 		for _, tag := range parser.Alias() {
-			factory.set(tag, parser.parse)
+			factory.set(tag, parser.Parse)
 		}
 	}
 
 }
 
-func parseNode(n *Node, callback func(e MessageElement)) error {
-	// 获取节点解析函数
-	parseFunc, ok := factory.get(n.Type)
-	if ok {
-		// 解析节点
-		element, err := parseFunc(n)
-		if err != nil {
-			return err
+func parseHtmlNode(n *html.Node, callback func(e MessageElement)) error {
+	parsed := false
+	if n.Type == html.ElementNode {
+		var parserOfTagFunc messageElementParserFunc
+		parserOfTagFunc, parsed = factory.get(n.Data)
+		if parsed {
+			e, err := parserOfTagFunc(n)
+			if err != nil {
+				return err
+			}
+			callback(e)
+		} else {
+			e, err := ExtendParser.Parse(n)
+			if err != nil {
+				return err
+			}
+			callback(e)
+			parsed = true
 		}
-		callback(element)
-	} else {
-		// 尝试解析自定义节点
-		element, err := parseCustomNode(n)
-		if err != nil {
-			return err
+	} else if n.Type == html.TextNode {
+		content := strings.TrimSpace(n.Data)
+		if content != "" {
+			callback(&MessageElementText{
+				Content: content,
+			})
 		}
-		if element != nil {
-			callback(element)
-		}
+		parsed = true
+	}
+	if !parsed {
+		parseHtmlChildrenNode(n, callback)
 	}
 	return nil
 }
-
-func parseChildrenNode(n *Node, callback func(e MessageElement)) error {
-	for _, c := range n.Children {
-		err := parseNode(c, callback)
+func parseHtmlChildrenNode(n *html.Node, callback func(e MessageElement)) error {
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		err := parseHtmlNode(c, callback)
 		if err != nil {
 			return err
 		}
@@ -73,37 +93,27 @@ func parseChildrenNode(n *Node, callback func(e MessageElement)) error {
 }
 
 func Parse(source string) ([]MessageElement, error) {
-	nodes := parse(source)
+	doc := xhtmlParse(source)
 	var result []MessageElement
-	for _, node := range nodes {
-		err := parseNode(node, func(e MessageElement) {
-			if e != nil {
-				result = append(result, e)
-			}
-		})
-		if err != nil {
-			return nil, err
+	err := parseHtmlNode(doc, func(e MessageElement) {
+		if e != nil {
+			result = append(result, e)
 		}
+	})
+	if err != nil {
+		return nil, err
 	}
 	return result, nil
 }
 
-func Stringify([]MessageElement) (string, error) {
-	return "", nil
-}
+func Stringify(elements []MessageElement) (string, error) {
+	if len(elements) == 0 {
+		return "", nil
+	}
+	result := ""
+	for _, e := range elements {
+		result += e.Stringify()
+	}
+	return result, nil
 
-func Escape(source string) string {
-	result := strings.ReplaceAll(source, "&", "&amp;")
-	result = strings.ReplaceAll(result, "<", "&lt;")
-	result = strings.ReplaceAll(result, ">", "&gt;")
-	result = strings.ReplaceAll(result, "\"", "&quot;")
-	return result
-}
-
-func Unescape(source string) string {
-	result := strings.ReplaceAll(source, "&amp;", "&")
-	result = strings.ReplaceAll(result, "&lt;", "<")
-	result = strings.ReplaceAll(result, "&gt;", ">")
-	result = strings.ReplaceAll(result, "&quot;", "\"")
-	return result
 }

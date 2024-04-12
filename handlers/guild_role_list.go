@@ -6,7 +6,7 @@ import (
 
 	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
 
-	"github.com/dezhishen/satori-model-go/pkg/guildrole"
+	"github.com/satori-protocol-go/satori-model-go/pkg/guildrole"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/openapi"
 )
