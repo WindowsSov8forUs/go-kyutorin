@@ -123,7 +123,7 @@ func webSocketHandler(token string, p *processor.Processor, c *gin.Context) {
 	}
 
 	// 进行事件补发
-	if sequence >= 0 {
+	if sequence > 0 {
 		// 处理事件队列
 		events := p.EventQueue.ResumeEvents(sequence)
 
