@@ -54,7 +54,7 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 	// 填充事件数据
 	event = &signaling.Event{
 		Id:        id,
-		Type:      signaling.EVENT_TYPE_MESSAGE_CREATED,
+		Type:      signaling.EventTypeMessageCreated,
 		Platform:  "qq",
 		SelfId:    SelfId,
 		Timestamp: t.Unix(),

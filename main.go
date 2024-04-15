@@ -325,7 +325,7 @@ func ReadyHandler() event.ReadyHandler {
 
 		satoriEvent := &signaling.Event{
 			Id:        id,
-			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
+			Type:      signaling.EventTypeLoginAdded,
 			Platform:  "qq",
 			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
@@ -345,7 +345,7 @@ func ReadyHandler() event.ReadyHandler {
 
 		satoriEvent = &signaling.Event{
 			Id:        id,
-			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
+			Type:      signaling.EventTypeLoginAdded,
 			Platform:  "qqguild",
 			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
@@ -370,7 +370,7 @@ func ErrorNotifyHandler() event.ErrorNotifyHandler {
 
 		satoriEvent := &signaling.Event{
 			Id:        id,
-			Type:      signaling.EVENT_TYPE_LOGIN_REMOVED,
+			Type:      signaling.EventTypeLoginRemoved,
 			Platform:  "qq",
 			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
@@ -390,7 +390,7 @@ func ErrorNotifyHandler() event.ErrorNotifyHandler {
 
 		satoriEvent = &signaling.Event{
 			Id:        id,
-			Type:      signaling.EVENT_TYPE_LOGIN_REMOVED,
+			Type:      signaling.EventTypeLoginRemoved,
 			Platform:  "qqguild",
 			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
@@ -418,7 +418,7 @@ func HelloHandler() event.HelloHandler {
 
 		satoriEvent := &signaling.Event{
 			Id:        id,
-			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
+			Type:      signaling.EventTypeLoginAdded,
 			Platform:  "qq",
 			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
@@ -438,7 +438,7 @@ func HelloHandler() event.HelloHandler {
 
 		satoriEvent = &signaling.Event{
 			Id:        id,
-			Type:      signaling.EVENT_TYPE_LOGIN_ADDED,
+			Type:      signaling.EventTypeLoginAdded,
 			Platform:  "qqguild",
 			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
@@ -461,7 +461,7 @@ func ReconnectHandler() event.ReconnectHandler {
 
 		satoriEvent := &signaling.Event{
 			Id:        id,
-			Type:      signaling.EVENT_TYPE_LOGIN_UPDATED,
+			Type:      signaling.EventTypeLoginUpdated,
 			Platform:  "qq",
 			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,
@@ -481,7 +481,7 @@ func ReconnectHandler() event.ReconnectHandler {
 
 		satoriEvent = &signaling.Event{
 			Id:        id,
-			Type:      signaling.EVENT_TYPE_LOGIN_UPDATED,
+			Type:      signaling.EventTypeLoginUpdated,
 			Platform:  "qqguild",
 			SelfId:    processor.SelfId,
 			Timestamp: time.Now().UnixNano() / 1e6,

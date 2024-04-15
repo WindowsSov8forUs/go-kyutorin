@@ -80,7 +80,7 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 	// 填充事件数据
 	event = &signaling.Event{
 		Id:        id,
-		Type:      signaling.EVENT_TYPE_MESSAGE_DELETED,
+		Type:      signaling.EventTypeMessageDeleted,
 		Platform:  "qqguild",
 		SelfId:    SelfId,
 		Timestamp: t,

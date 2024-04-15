@@ -33,9 +33,9 @@ func (p *Processor) ProcessMessageReaction(payload *dto.WSPayload, data *dto.WSM
 	var eventType signaling.EventType
 	switch payload.Type {
 	case dto.EventMessageReactionAdd:
-		eventType = signaling.EVENT_TYPE_REACTION_ADDED
+		eventType = signaling.EventTypeReactionAdded
 	case dto.EventMessageReactionRemove:
-		eventType = signaling.EVENT_TYPE_REACTION_REMOVED
+		eventType = signaling.EventTypeReactionRemoved
 	default:
 		return fmt.Errorf("无法处理的消息回应事件: %v", data)
 	}

@@ -224,7 +224,7 @@ func (p *Processor) BroadcastEvent(event *signaling.Event) error {
 
 	// 构建 WebSocket 信令
 	sgnl := &signaling.Signaling{
-		Op:   signaling.SIGNALING_EVENT,
+		Op:   signaling.SignalingEvent,
 		Body: (*signaling.EventBody)(event),
 	}
 	// 转换为 []byte
@@ -310,7 +310,7 @@ func (p *Processor) ProcessQQInternal(payload *dto.WSPayload, data interface{}) 
 	// 填充事件数据
 	event = &signaling.Event{
 		Id:        id,
-		Type:      signaling.EVENT_TYPE_INTERNAL,
+		Type:      signaling.EventTypeInternal,
 		Platform:  "qq",
 		SelfId:    SelfId,
 		Timestamp: t,
@@ -345,7 +345,7 @@ func (p *Processor) ProcessQQGuildInternal(payload *dto.WSPayload, data interfac
 	// 填充事件数据
 	event = &signaling.Event{
 		Id:        id,
-		Type:      signaling.EVENT_TYPE_INTERNAL,
+		Type:      signaling.EventTypeInternal,
 		Platform:  "qqguild",
 		SelfId:    SelfId,
 		Timestamp: t,
@@ -380,7 +380,7 @@ func (p *Processor) ProcessInteractionEvent(data *dto.WSInteractionData) error {
 
 	event = &signaling.Event{
 		Id:        id,
-		Type:      signaling.EVENT_TYPE_INTERNAL,
+		Type:      signaling.EventTypeInternal,
 		Platform:  platform,
 		SelfId:    SelfId,
 		Timestamp: t.Unix(),

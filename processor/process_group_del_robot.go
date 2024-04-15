@@ -46,7 +46,7 @@ func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.WSGro
 	// 填充事件数据
 	event = &signaling.Event{
 		Id:        id,
-		Type:      signaling.EVENT_TYPE_GUILD_REMOVED,
+		Type:      signaling.EventTypeGuildRemoved,
 		Platform:  "qq",
 		SelfId:    SelfId,
 		Timestamp: data.Timestamp,

@@ -64,7 +64,7 @@ func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGrou
 	// 填充事件数据
 	event = &signaling.Event{
 		Id:        id,
-		Type:      signaling.EVENT_TYPE_MESSAGE_CREATED,
+		Type:      signaling.EventTypeMessageCreated,
 		Platform:  "qq",
 		SelfId:    SelfId,
 		Timestamp: t.Unix(),

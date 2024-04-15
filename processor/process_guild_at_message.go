@@ -79,7 +79,7 @@ func (p *Processor) ProcessGuildATMessage(payload *dto.WSPayload, data *dto.WSAT
 	// 填充事件数据
 	event = &signaling.Event{
 		Id:        id,
-		Type:      signaling.EVENT_TYPE_MESSAGE_CREATED,
+		Type:      signaling.EventTypeMessageCreated,
 		Platform:  "qqguild",
 		SelfId:    SelfId,
 		Timestamp: t.Unix(),

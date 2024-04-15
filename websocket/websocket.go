@@ -73,7 +73,7 @@ func webSocketHandler(token string, p *processor.Processor, c *gin.Context) {
 		// 判断接收到的信令类型
 		select {
 		case sgnl := <-signalingChan:
-			if sgnl.Op == signaling.SIGNALING_IDENTIFY {
+			if sgnl.Op == signaling.SignalingIdentify {
 				// 鉴权
 				body, err := json.Marshal(sgnl.Body)
 				if err != nil {
@@ -95,7 +95,7 @@ func webSocketHandler(token string, p *processor.Processor, c *gin.Context) {
 				// 发送 READY 信令
 				readyBody := processor.GetReadyBody()
 				readySignaling := signaling.Signaling{
-					Op:   signaling.SIGNALING_READY,
+					Op:   signaling.SignalingReady,
 					Body: readyBody,
 				}
 				// 转换为 []byte 并发送
@@ -134,7 +134,7 @@ func webSocketHandler(token string, p *processor.Processor, c *gin.Context) {
 			for _, event := range events {
 				// 构建 WebSocket 信令
 				sgnl := &signaling.Signaling{
-					Op:   signaling.SIGNALING_EVENT,
+					Op:   signaling.SignalingEvent,
 					Body: (*signaling.EventBody)(event),
 				}
 				// 转换为 []byte
@@ -209,10 +209,10 @@ func (ws *WebSocket) listenHeartbeat() {
 	for {
 		select {
 		case sgnl := <-signalingChan:
-			if sgnl.Op == signaling.SIGNALING_PING {
+			if sgnl.Op == signaling.SignalingPing {
 				// 收到心跳信令，回复心跳信令
 				spongSignaling := signaling.Signaling{
-					Op: signaling.SIGNALING_PONG,
+					Op: signaling.SignalingPong,
 				}
 				message, err := json.Marshal(spongSignaling)
 				if err != nil {

@@ -27,7 +27,7 @@ func (p *Processor) ProcessChannelEvent(payload *dto.WSPayload, data *dto.WSChan
 	// 填充事件数据
 	event = &signaling.Event{
 		Id:        id,
-		Type:      signaling.EVENT_TYPE_INTERNAL,
+		Type:      signaling.EventTypeInternal,
 		Platform:  "qqguild",
 		SelfId:    SelfId,
 		Timestamp: t.Unix(),

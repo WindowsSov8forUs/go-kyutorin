@@ -326,6 +326,7 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 		// 根据元素类型进行处理
 		switch e := element.(type) {
 		case *satoriMessage.MessageElementText:
+			fmt.Printf("send: %s", e.Content)
 			dtoMessageToCreate.Content += e.Content
 		case *satoriMessage.MessageElementAt:
 			// 群聊/单聊目前似乎是不支持的
@@ -535,6 +536,17 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 				}
 			}
 		case *satoriMessage.MessageElementButton:
+			fmt.Println("markdown: 102076262_1712992980")
+			dtoMessageToCreate.MsgType = 2
+			dtoMessageToCreate.Markdown = &dto.Markdown{
+				CustomTemplateID: "102076262_1712992980",
+				Params: []*dto.MarkdownParams{
+					{
+						Key:    "test",
+						Values: []string{"test"},
+					},
+				},
+			}
 			dtoMessageToCreate.Keyboard = convertButtonToKeyboard(e)
 		case *satoriMessage.MessageElementExtend:
 			// 从扩展消息中选取有用的消息
@@ -763,7 +775,7 @@ func convertDtoMessageV2ToMessage(dtoMessage *dto.Message) (*satoriMessage.Messa
 
 // convertButtonToKeyboard 将 Satori 协议的按钮转换为 QQ 的按钮
 func convertButtonToKeyboard(button *satoriMessage.MessageElementButton) *keyboard.MessageKeyboard {
-	// TODO: 或许需要支持更多的方式
+	// 目前官方 Bot 不再新增支持除指定模板 ID 以外的所有形式
 
 	var messageKeyboard keyboard.MessageKeyboard
 

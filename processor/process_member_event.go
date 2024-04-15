@@ -31,11 +31,11 @@ func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuild
 	var eventType signaling.EventType
 	switch payload.Type {
 	case dto.EventGuildMemberAdd:
-		eventType = signaling.EVENT_TYPE_GUILD_MEMBER_ADDED
+		eventType = signaling.EventTypeGuildMemberAdded
 	case dto.EventGuildMemberUpdate:
-		eventType = signaling.EVENT_TYPE_GUILD_MEMBER_UPDATED
+		eventType = signaling.EventTypeGuildMemberUpdated
 	case dto.EventGuildMemberRemove:
-		eventType = signaling.EVENT_TYPE_GUILD_MEMBER_REMOVED
+		eventType = signaling.EventTypeGuildMemberRemoved
 	default:
 		return fmt.Errorf("未知的 payload.Type: %v", payload.Type)
 	}

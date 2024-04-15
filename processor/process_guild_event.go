@@ -30,11 +30,11 @@ func (p *Processor) ProcessGuildEvent(payload *dto.WSPayload, data *dto.WSGuildD
 	var eventType signaling.EventType
 	switch payload.Type {
 	case dto.EventGuildCreate:
-		eventType = signaling.EVENT_TYPE_GUILD_ADDED
+		eventType = signaling.EventTypeGuildAdded
 	case dto.EventGuildUpdate:
-		eventType = signaling.EVENT_TYPE_GUILD_UPDATED
+		eventType = signaling.EventTypeGuildUpdated
 	case dto.EventGuildDelete:
-		eventType = signaling.EVENT_TYPE_GUILD_REMOVED
+		eventType = signaling.EventTypeGuildRemoved
 	default:
 		return fmt.Errorf("未知的 payload.Type: %v", payload.Type)
 	}
