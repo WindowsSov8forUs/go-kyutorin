@@ -127,6 +127,12 @@ func NewEventQueue() *EventQueue {
 func (q *EventQueue) PushEvent(event *signaling.Event) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
+	for {
+		if len(q.Events) < 1000 {
+			break
+		}
+		q.PopEvent()
+	}
 	q.Events = append(q.Events, event)
 }
 
