@@ -312,10 +312,11 @@ func convertToMessageToCreateV2(content string, OpenId string, messageType strin
 		return nil, err
 	}
 
-	// Content 字段不能为空
-	if dtoMessageToCreate.Content == "" {
+	// MsgType 为 7 时 Content 字段不能为空
+	if dtoMessageToCreate.Content == "" && dtoMessageToCreate.MsgType == 7 {
 		dtoMessageToCreate.Content = " "
 	}
+	fmt.Printf("[%s]\n", dtoMessageToCreate.Content)
 	return dtoMessageToCreate, nil
 }
 
@@ -326,7 +327,6 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 		// 根据元素类型进行处理
 		switch e := element.(type) {
 		case *satoriMessage.MessageElementText:
-			fmt.Printf("send: %s", e.Content)
 			dtoMessageToCreate.Content += e.Content
 		case *satoriMessage.MessageElementAt:
 			// 群聊/单聊目前似乎是不支持的
@@ -487,7 +487,7 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 				dtoMessageToCreate.Media.FileInfo = fileInfo
 			}
 			dtoMessageToCreate.MsgType = 7
-		// TODO: 修饰元素全部视为子元素集合，或许可以变成 dto.markdown ？
+		// 修饰元素全部视为子元素集合，Markdown 是别想了
 		case *satoriMessage.MessageElementStrong:
 			// 递归调用
 			parseElementsInMessageToCreateV2(e.Children, dtoMessageToCreate, OpenId, messageType, apiv2)
@@ -536,17 +536,7 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 				}
 			}
 		case *satoriMessage.MessageElementButton:
-			fmt.Println("markdown: 102076262_1712992980")
-			dtoMessageToCreate.MsgType = 2
-			dtoMessageToCreate.Markdown = &dto.Markdown{
-				CustomTemplateID: "102076262_1712992980",
-				Params: []*dto.MarkdownParams{
-					{
-						Key:    "test",
-						Values: []string{"test"},
-					},
-				},
-			}
+			// TODO: 放弃了，不想管了
 			dtoMessageToCreate.Keyboard = convertButtonToKeyboard(e)
 		case *satoriMessage.MessageElementExtend:
 			// 从扩展消息中选取有用的消息
