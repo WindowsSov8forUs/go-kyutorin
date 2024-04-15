@@ -193,7 +193,7 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 		// 根据元素类型进行处理
 		switch e := element.(type) {
 		case *satoriMessage.MessageElementText:
-			dtoMessageToCreate.Content += escape(e.Content)
+			dtoMessageToCreate.Content += e.Content
 		case *satoriMessage.MessageElementAt:
 			if e.Type == "all" {
 				dtoMessageToCreate.Content += "@everyone"
@@ -207,7 +207,7 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 		case *satoriMessage.MessageElementSharp:
 			dtoMessageToCreate.Content += fmt.Sprintf("<#%s>", e.Id)
 		case *satoriMessage.MessageElementA:
-			dtoMessageToCreate.Content += escape(e.Href)
+			dtoMessageToCreate.Content += e.Href
 		case *satoriMessage.MessageElementImg:
 			if dtoMessageToCreate.Image != "" {
 				// 只支持发一张图片
@@ -326,7 +326,7 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 		// 根据元素类型进行处理
 		switch e := element.(type) {
 		case *satoriMessage.MessageElementText:
-			dtoMessageToCreate.Content += escape(e.Content)
+			dtoMessageToCreate.Content += e.Content
 		case *satoriMessage.MessageElementAt:
 			// 群聊/单聊目前似乎是不支持的
 			continue
@@ -334,7 +334,7 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 			// 群聊/单聊目前似乎是不支持的
 			continue
 		case *satoriMessage.MessageElementA:
-			dtoMessageToCreate.Content += escape(e.Href)
+			dtoMessageToCreate.Content += e.Href
 		case *satoriMessage.MessageElementImg:
 			if dtoMessageToCreate.Media.FileInfo != "" {
 				// 富媒体信息只支持一个
@@ -882,12 +882,4 @@ func generateDtoRichMediaMessage(id string, element satoriMessage.MessageElement
 	}
 
 	return dtoRichMediaMessage, hash
-}
-
-// escape 转义
-func escape(source string) string {
-	source = strings.ReplaceAll(source, "&", "&amp;")
-	source = strings.ReplaceAll(source, "<", "&lt;")
-	source = strings.ReplaceAll(source, ">", "&gt;")
-	return source
 }
