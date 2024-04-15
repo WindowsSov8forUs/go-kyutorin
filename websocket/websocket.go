@@ -123,26 +123,29 @@ func webSocketHandler(token string, p *processor.Processor, c *gin.Context) {
 	}
 
 	// 进行事件补发
-	if sequence > 0 {
-		log.Infof("开始进行事件补发，起始序列号: %d", sequence)
+	if sequence >= 0 {
 		// 处理事件队列
 		events := p.EventQueue.ResumeEvents(sequence)
 
-		// 循环补发事件直到队列清空
-		for _, event := range events {
-			// 构建 WebSocket 信令
-			sgnl := &signaling.Signaling{
-				Op:   signaling.SIGNALING_EVENT,
-				Body: (*signaling.EventBody)(event),
-			}
-			// 转换为 []byte
-			data, err := json.Marshal(sgnl)
-			if err != nil {
-				log.Errorf("转换信令时出错: %v", err)
-				continue
-			}
-			if err := ws.SendMessage(data); err != nil {
-				log.Errorf("补发事件时出错: %v", err)
+		if len(events) > 0 {
+			log.Infof("开始进行事件补发，起始序列号: %d", sequence)
+
+			// 循环补发事件直到队列清空
+			for _, event := range events {
+				// 构建 WebSocket 信令
+				sgnl := &signaling.Signaling{
+					Op:   signaling.SIGNALING_EVENT,
+					Body: (*signaling.EventBody)(event),
+				}
+				// 转换为 []byte
+				data, err := json.Marshal(sgnl)
+				if err != nil {
+					log.Errorf("转换信令时出错: %v", err)
+					continue
+				}
+				if err := ws.SendMessage(data); err != nil {
+					log.Errorf("补发事件时出错: %v", err)
+				}
 			}
 		}
 	}
