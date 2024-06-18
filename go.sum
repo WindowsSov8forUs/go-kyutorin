@@ -107,6 +107,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/satori-protocol-go/satori-model-go v0.0.10 h1:gPcahAuC9qu0UE38X4865tUOrvfPiLcDJnX/3heB1NI=
 github.com/satori-protocol-go/satori-model-go v0.0.10/go.mod h1:R+7VkMNjo74rCmvHijpmQywU/Ahc9DcC/0YUCaYYLuE=
+github.com/satori-protocol-go/satori-model-go v0.0.12 h1:WLqvaXW8WTzzI3CnOz21VZIqXsIOXcDLB76VffPReT0=
+github.com/satori-protocol-go/satori-model-go v0.0.12/go.mod h1:R+7VkMNjo74rCmvHijpmQywU/Ahc9DcC/0YUCaYYLuE=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
