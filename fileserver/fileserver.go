@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
 	"github.com/gin-gonic/gin"
 )
 
