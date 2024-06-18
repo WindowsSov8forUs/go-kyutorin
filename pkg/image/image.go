@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -13,7 +14,6 @@ import (
 	"path"
 	"strings"
 
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 	"github.com/disintegration/imaging"
 )
 
@@ -64,46 +64,41 @@ func scanType(readerSeeker io.ReadSeeker) string {
 }
 
 // EncoderImage 重编码图像
-func EncoderImage(data []byte) []byte {
+func EncoderImage(data []byte) ([]byte, error) {
 	hash := md5.New()
 	_, err := hash.Write(data)
 	if err != nil {
-		log.Warn("计算 md5 时出错。")
-		return nil
+		return nil, fmt.Errorf("failed to compute md5: %v", err)
 	}
 	name := hex.EncodeToString(hash.Sum(nil))
-	mp4 := encode(data, name)
-	return mp4
+	return encode(data, name)
 }
 
 // encode 编码为 MP4
-func encode(data []byte, name string) (imageData []byte) {
+func encode(data []byte, name string) (imageData []byte, err error) {
 	// 0. 创建缓存目录
-	err := createDirectoryIfNotExist(cachePath)
+	err = createDirectoryIfNotExist(cachePath)
 	if err != nil {
-		log.Warnf("创建图像缓存目录失败: %v", err)
+		return nil, fmt.Errorf("failed to create image cache directory: %v", err)
 	}
 
 	// 1. 创建临时文件
 	rawPath := path.Join(cachePath, name)
 	err = os.WriteFile(rawPath, data, os.ModePerm)
 	if err != nil {
-		log.Errorf("创建临时文件失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to create temporary file: %v", err)
 	}
 	defer os.Remove(rawPath)
 
 	// 2. 检查图像格式
 	img, err := imaging.Open(rawPath)
 	if err != nil {
-		log.Errorf("打开临时图像文件失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to open temporary file: %v", err)
 	}
 	reader := bytes.NewReader(data)
 	_, format, err := image.DecodeConfig(reader)
 	if err != nil {
-		log.Errorf("解码临时图像文件失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to decode temporary file: %v", err)
 	}
 
 	// 3. 根据不同图像格式处理
@@ -113,21 +108,19 @@ func encode(data []byte, name string) (imageData []byte) {
 		// 转换为 JPG
 		err = jpeg.Encode(buffer, img, nil)
 		if err != nil {
-			log.Errorf("转换图像格式失败: %v", err)
-			return nil
+			return nil, fmt.Errorf("failed to convert image to jpg: %v", err)
 		}
 		imageData = buffer.Bytes()
 	default:
 		// 转换为 PNG
 		err = png.Encode(buffer, img)
 		if err != nil {
-			log.Errorf("转换图像格式失败: %v", err)
-			return nil
+			return nil, fmt.Errorf("failed to convert image to png: %v", err)
 		}
 		imageData = buffer.Bytes()
 	}
 
-	return imageData
+	return imageData, nil
 }
 
 // createDirectoryIfNotExist 检查目录是否存在，不存在则创建

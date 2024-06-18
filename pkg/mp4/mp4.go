@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
-
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 )
 
 const cachePath = "data/cache"
@@ -52,32 +51,29 @@ func scanType(readerSeeker io.ReadSeeker) string {
 }
 
 // EncoderMP4 编码为 MP4
-func EncoderMP4(data []byte) []byte {
+func EncoderMP4(data []byte) ([]byte, error) {
 	hash := md5.New()
 	_, err := hash.Write(data)
 	if err != nil {
-		log.Warn("计算 md5 时出错。")
-		return nil
+		return nil, fmt.Errorf("failed to compute md5: %v", err)
 	}
 	name := hex.EncodeToString(hash.Sum(nil))
-	mp4 := encode(data, name)
-	return mp4
+	return encode(data, name)
 }
 
 // encode 编码为 MP4
-func encode(data []byte, name string) (mp4Video []byte) {
+func encode(data []byte, name string) (mp4Video []byte, err error) {
 	// 0. 创建缓存目录
-	err := createDirectoryIfNotExist(cachePath)
+	err = createDirectoryIfNotExist(cachePath)
 	if err != nil {
-		log.Warnf("创建视频缓存目录失败: %v", err)
+		return nil, fmt.Errorf("failed to create video cache directory: %v", err)
 	}
 
 	// 1. 创建临时文件
 	rawPath := path.Join(cachePath, name)
 	err = os.WriteFile(rawPath, data, os.ModePerm)
 	if err != nil {
-		log.Errorf("创建临时文件失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to create temporary file: %v", err)
 	}
 	defer os.Remove(rawPath)
 
@@ -85,17 +81,17 @@ func encode(data []byte, name string) (mp4Video []byte) {
 	mp4Path := path.Join(cachePath, name+".mp4")
 	cmd := exec.Command("ffmpeg", "-i", rawPath, "-vcodec", "libx264", "-acodec", "aac", mp4Path)
 	if err := cmd.Run(); err != nil {
-		log.Errorf("转换 MP4 失败: %v", err)
-		return nil
+
+		return nil, fmt.Errorf("failed to convert to mp4: %v", err)
 	}
 	mp4Video, err = os.ReadFile(mp4Path)
 	if err != nil {
-		log.Errorf("读取 MP4 文件失败: %v", err)
-		return nil
+
+		return nil, fmt.Errorf("failed to read mp4 file: %v", err)
 	}
 	defer os.Remove(mp4Path)
 
-	return mp4Video
+	return mp4Video, nil
 }
 
 // createDirectoryIfNotExist 检查目录是否存在，不存在则创建

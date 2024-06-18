@@ -15,8 +15,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
 )
 
 //go:embed exec/*
@@ -55,32 +53,29 @@ func scanType(readerSeeker io.ReadSeeker) string {
 }
 
 // EncoderSilk 编码为 SILK
-func EncoderSilk(data []byte) []byte {
+func EncoderSilk(data []byte) ([]byte, error) {
 	hash := md5.New()
 	_, err := hash.Write(data)
 	if err != nil {
-		log.Warn("计算 md5 时出错。")
-		return nil
+		return nil, fmt.Errorf("failed to compute md5: %v", err)
 	}
 	name := hex.EncodeToString(hash.Sum(nil))
-	silk := encode(data, name)
-	return silk
+	return encode(data, name)
 }
 
 // encode 编码为 SILK
-func encode(data []byte, name string) (silkWav []byte) {
+func encode(data []byte, name string) (silkWav []byte, err error) {
 	// 0. 创建缓存目录
-	err := createDirectoryIfNotExist(cachePath)
+	err = createDirectoryIfNotExist(cachePath)
 	if err != nil {
-		log.Warnf("创建音频缓存目录失败: %v", err)
+		return nil, fmt.Errorf("failed to create audio cache directory: %v", err)
 	}
 
 	// 1. 创建临时文件
 	rawPath := path.Join(cachePath, name+".wav")
 	err = os.WriteFile(rawPath, data, os.ModePerm)
 	if err != nil {
-		log.Errorf("创建临时文件失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to create temporary file: %v", err)
 	}
 	defer os.Remove(rawPath)
 
@@ -92,8 +87,7 @@ func encode(data []byte, name string) (silkWav []byte) {
 		cmd.Err = nil
 	}
 	if err = cmd.Run(); err != nil {
-		log.Errorf("转换 PCM 失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to convert to pcm: %v", err)
 	}
 	defer os.Remove(pcmPath)
 
@@ -102,13 +96,11 @@ func encode(data []byte, name string) (silkWav []byte) {
 	// 3. 转换 SILK
 	codecFileName, err := getSilkCodecPath()
 	if err != nil {
-		log.Errorf("获取 SILK 编解码器路径失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to get silk codec path: %v", err)
 	}
 	codecData, err := silkCodecs.ReadFile(codecFileName)
 	if err != nil {
-		log.Errorf("读取 SILK 编解码器失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to read silk codec: %v", err)
 	}
 	filePattern := "silk_codec*"
 	if runtime.GOOS == "windows" {
@@ -116,43 +108,36 @@ func encode(data []byte, name string) (silkWav []byte) {
 	}
 	file, err := os.CreateTemp("", filePattern)
 	if err != nil {
-		log.Errorf("创建 SILK 编解码器临时文件失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to create silk codec temporary file: %v", err)
 	}
 	defer os.Remove(file.Name())
 	if _, err := file.Write(codecData); err != nil {
-		log.Errorf("写入 SILK 编解码器临时文件失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to write silk codec temporary file: %v", err)
 	}
 	if err := file.Close(); err != nil {
-		log.Errorf("关闭 SILK 编解码器临时文件失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to close silk codec temporary file: %v", err)
 	}
 	if err := os.Chmod(file.Name(), 0700); err != nil {
-		log.Errorf("修改 SILK 编解码器临时文件权限失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to change silk codec temporary file permission: %v", err)
 	}
 	if runtime.GOOS != "windows" {
 		cmd = exec.Command(file.Name(), "-i", pcmPath, "-o", silkPath, "-s", strconv.Itoa(sampleRate))
 		if err := cmd.Run(); err != nil {
-			log.Errorf("编码 SILK 失败: %v", err)
-			return nil
+			return nil, fmt.Errorf("failed to encode silk: %v", err)
 		}
 	} else {
 		cmd = exec.Command(file.Name(), "pts", "-i", pcmPath, "-o", silkPath, "-s", strconv.Itoa(sampleRate))
 		if err := cmd.Run(); err != nil {
-			log.Errorf("编码 SILK 失败: %v", err)
-			return nil
+			return nil, fmt.Errorf("failed to encode silk: %v", err)
 		}
 	}
 	silkWav, err = os.ReadFile(silkPath)
 	if err != nil {
-		log.Errorf("读取 SILK 文件失败: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to read silk file: %v", err)
 	}
 	defer os.Remove(silkPath)
 
-	return silkWav
+	return silkWav, nil
 }
 
 // createDirectoryIfNotExist 检查目录是否存在，不存在则创建
