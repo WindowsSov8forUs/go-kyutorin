@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"unsafe"
 
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
 
 	"golang.org/x/sys/windows"
 )

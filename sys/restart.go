@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
 )
 
 // RestartApplication 重启应用
