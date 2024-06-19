@@ -54,21 +54,21 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 		isClosed: make(chan bool),
 	}
 	// 添加到 server 中
-	server.rwMutex.Lock()
+	server.mutex.Lock()
 	server.websockets = append(server.websockets, ws)
-	server.rwMutex.Unlock()
+	server.mutex.Unlock()
 
 	// 在 defer 语句前运行
 	defer func() {
 		// 从 server 中移除
-		server.rwMutex.Lock()
+		server.mutex.Lock()
 		for i, v := range server.websockets {
 			if v == ws {
 				server.websockets = append(server.websockets[:i], server.websockets[i+1:]...)
 				break
 			}
 		}
-		server.rwMutex.Unlock()
+		server.mutex.Unlock()
 		log.Infof("已断开与 Satori 应用的 WebSocket 连接，IP: %s", c.ClientIP())
 	}()
 	// 关闭连接

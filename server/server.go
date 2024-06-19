@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -16,12 +15,6 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 	"github.com/WindowsSov8forUs/go-kyutorin/server/httpapi"
 )
-
-var ErrBadRequest = errors.New("bad request")
-var ErrUnauthorized = errors.New("unauthorized")
-var ErrNotFound = errors.New("not found")
-var ErrMethodNotAllowed = errors.New("method not allowed")
-var ErrServerError = errors.New("server error")
 
 // EventQueue 事件队列
 type EventQueue struct {
@@ -86,7 +79,7 @@ func NewEventQueue() *EventQueue {
 }
 
 type Server struct {
-	rwMutex    sync.RWMutex
+	mutex      sync.Mutex
 	websockets []*WebSocket
 	webhooks   []*WebHook
 	httpServer *httpapi.Server
@@ -136,16 +129,17 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 }
 
 func NewServer(api, apiV2 openapi.OpenAPI, conf *config.Config) (*Server, error) {
+	server := &Server{
+		mutex:      sync.Mutex{},
+		websockets: make([]*WebSocket, 0),
+		webhooks:   make([]*WebHook, 0),
+		httpServer: nil,
+		conf:       conf,
+		events:     NewEventQueue(),
+	}
+
 	switch conf.Satori.Version {
 	case 1:
-		server := &Server{
-			rwMutex:    sync.RWMutex{},
-			websockets: make([]*WebSocket, 0),
-			webhooks:   make([]*WebHook, 0),
-			httpServer: nil,
-			conf:       conf,
-			events:     NewEventQueue(),
-		}
 		server.httpServer = httpapi.NewHttpServer(
 			fmt.Sprintf("%s:%d", conf.Satori.Server.Host, conf.Satori.Server.Port),
 			server.setupV1Engine(api, apiV2),
@@ -155,10 +149,11 @@ func NewServer(api, apiV2 openapi.OpenAPI, conf *config.Config) (*Server, error)
 		// 	Addr:    fmt.Sprintf("%s:%d", conf.Satori.Server.Host, conf.Satori.Server.Port),
 		// 	Handler: server.setupV1Engine(api, apiV2),
 		// }
-		return server, nil
 	default:
 		return nil, fmt.Errorf("unknown Satori protocol version: v%d", conf.Satori.Version)
 	}
+
+	return server, nil
 }
 
 func (server *Server) Run() error {
@@ -171,8 +166,8 @@ func (server *Server) Run() error {
 }
 
 func (server *Server) Send(event *operation.Event) {
-	server.rwMutex.RLock()
-	defer server.rwMutex.RUnlock()
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
 
 	server.events.PushEvent(event)
 
@@ -202,12 +197,12 @@ func (server *Server) Send(event *operation.Event) {
 				url := wh.GetURL()
 				switch err {
 				case ErrUnauthorized:
-					log.Errorf("WebHook 服务器 %s 鉴权失败，已停止对该 WebHook 服务器的事件推送。", url)
+					log.Errorf("WebHook 客户端 %s 鉴权失败，已停止对该 WebHook 客户端的事件推送。", url)
 					wh = nil
 				case ErrServerError:
-					log.Errorf("WebHook 服务器出现内部错误，请检查 WebHook 服务器是否正常。")
+					log.Errorf("WebHook 客户端出现内部错误，请检查 WebHook 客户端是否正常。")
 				default:
-					log.Errorf("向 WebHook 服务器 %s 发送事件时出错: %v", url, err)
+					log.Errorf("向 WebHook 客户端 %s 发送事件时出错: %v", url, err)
 					wh = nil
 				}
 			}
@@ -236,8 +231,8 @@ func (server *Server) Send(event *operation.Event) {
 }
 
 func (server *Server) Close() {
-	server.rwMutex.Lock()
-	defer server.rwMutex.Unlock()
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
 
 	log.Info(("正在关闭 Satori 服务器..."))
 

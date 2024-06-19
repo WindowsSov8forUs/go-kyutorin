@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -9,6 +10,12 @@ import (
 
 	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 )
+
+var ErrBadRequest = errors.New("bad request")
+var ErrUnauthorized = errors.New("unauthorized")
+var ErrNotFound = errors.New("not found")
+var ErrMethodNotAllowed = errors.New("method not allowed")
+var ErrServerError = errors.New("server error")
 
 // WebHook WebHook 客户端
 type WebHook struct {
@@ -45,8 +52,8 @@ func StartWebHook(url string, token string, server *Server) *WebHook {
 // CreateWebHook 创建 WebHook 客户端
 func (server *Server) CreateWebHook(url string, token string) error {
 	// 添加 WebHook 客户端
-	server.rwMutex.Lock()
-	defer server.rwMutex.Unlock()
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
 
 	// 检查重复 URL
 	for _, webhook := range server.webhooks {
@@ -65,8 +72,8 @@ func (server *Server) CreateWebHook(url string, token string) error {
 // DeleteWebHook 删除 WebHook 客户端
 func (server *Server) DeleteWebHook(url string) error {
 	// 删除 WebHook 客户端
-	server.rwMutex.Lock()
-	defer server.rwMutex.Unlock()
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
 
 	for i, webhook := range server.webhooks {
 		if webhook.GetURL() == url {
