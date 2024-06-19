@@ -81,7 +81,7 @@ func convertDtoMemberToGuildMember(dtoMember *dto.Member) (guildmember.GuildMemb
 // convertDtoTimestampToInt64 将 dto.Timestamp 转换为 int64
 func convertDtoTimestampToInt64(timestamp *dto.Timestamp) (int64, error) {
 	if timestamp == nil {
-		return 0, fmt.Errorf("empty timestamp.")
+		return 0, fmt.Errorf("empty timestamp")
 	}
 	time, err := timestamp.Time()
 	if err != nil {

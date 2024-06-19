@@ -33,7 +33,7 @@ func HandleReactionDelete(api, apiv2 openapi.OpenAPI, message *ActionMessage) (a
 	if message.Platform == "qqguild" {
 		// 不允许指定用户 ID
 		if request.UserId != "" {
-			return gin.H{}, &BadRequestError{fmt.Errorf(`"user_id" is not allowed in this request on platform "qqguild".`)}
+			return gin.H{}, &BadRequestError{fmt.Errorf(`"user_id" is not allowed in this request on platform "qqguild"`)}
 		}
 
 		dtoEmoji := dto.Emoji{

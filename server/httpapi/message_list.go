@@ -77,7 +77,7 @@ func HandleMessageList(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any,
 	}
 
 	if request.Next == "" && request.Direction != DirectionBefore {
-		return gin.H{}, &BadRequestError{err: errors.New(`"next" is required when "direction" is not "before".`)}
+		return gin.H{}, &BadRequestError{err: errors.New(`"next" is required when "direction" is not "before"`)}
 	}
 
 	if message.Platform == "qqguild" {

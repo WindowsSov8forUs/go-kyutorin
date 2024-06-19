@@ -37,7 +37,7 @@ func HandleChannelCreate(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message *Ac
 
 		// 不能通过这种方式创建私聊子频道
 		if request.Data.Type == channel.ChannelTypeDirect {
-			return gin.H{}, &BadRequestError{fmt.Errorf("cannot create direct channel using this api.")}
+			return gin.H{}, &BadRequestError{fmt.Errorf("cannot create direct channel using this api")}
 		}
 
 		var dtoChannel *dto.Channel
