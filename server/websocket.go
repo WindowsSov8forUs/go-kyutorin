@@ -271,10 +271,9 @@ func (ws *WebSocket) PostEvent(event *operation.Event) error {
 }
 
 // Close 关闭 WebSocket 连接
-func (ws *WebSocket) Close() error {
+func (ws *WebSocket) Close() {
 	// 发送关闭信号
 	ws.isClosed <- true
-	return nil
 }
 
 // authorize 鉴权

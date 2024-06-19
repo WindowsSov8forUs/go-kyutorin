@@ -231,16 +231,17 @@ func (server *Server) Send(event *operation.Event) {
 }
 
 func (server *Server) Close() {
-	server.mutex.Lock()
-	defer server.mutex.Unlock()
-
 	log.Info(("正在关闭 Satori 服务端..."))
 
 	for _, ws := range server.websockets {
-		err := ws.Close()
-		log.Warnf("关闭 WebSocket 服务器时出错: %v", err)
+		if ws != nil {
+			ws.Close()
+		}
 	}
 	server.websockets = make([]*WebSocket, 0)
+
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
 
 	server.webhooks = make([]*WebHook, 0)
 
