@@ -32,7 +32,7 @@ var upgrader = websocket.Upgrader{
 // WebSocketHandler 对外暴露的 WebSocket 处理函数
 func (server *Server) WebSocketHandler(token string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		go webSocketHandler(token, server, c)
+		webSocketHandler(token, server, c)
 	}
 }
 
@@ -224,7 +224,7 @@ func (ws *WebSocket) listenHeartbeat() {
 			if sgnl.Op == operation.OpCodePing {
 				// 收到心跳信令，回复心跳信令
 				operationPong := operation.Operation{
-					Op: operation.OpCodePing,
+					Op: operation.OpCodePong,
 				}
 				message, err := json.Marshal(operationPong)
 				if err != nil {
