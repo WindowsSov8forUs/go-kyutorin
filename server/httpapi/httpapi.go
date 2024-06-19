@@ -2,9 +2,11 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
@@ -13,6 +15,14 @@ import (
 	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/openapi"
 )
+
+type NoUnicodeString struct {
+	data string
+}
+
+func (noUniStr NoUnicodeString) MarshalJSON() ([]byte, error) {
+	return []byte(strconv.QuoteToASCII(noUniStr.data)), nil
+}
 
 // webHookServerManager WebHook 服务端管理器
 type webHookServerManager interface {
@@ -324,17 +334,41 @@ func resourceAPIHandler(c *gin.Context, api, apiV2 openapi.OpenAPI) {
 				"message": err.Error(),
 			})
 		case *InternalServerError:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":  http.StatusInternalServerError,
-				"error":   "server error",
-				"message": err.Error(),
-			})
+			// 针对这种情况进行特殊编码
+			value, err := json.Marshal(
+				gin.H{
+					"status":  http.StatusInternalServerError,
+					"error":   "server error",
+					"message": NoUnicodeString{err.Error()},
+				},
+			)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"status":  http.StatusInternalServerError,
+					"error":   "server error",
+					"message": err.Error(),
+				})
+			} else {
+				c.String(http.StatusInternalServerError, string(value))
+			}
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":  http.StatusInternalServerError,
-				"error":   "server error",
-				"message": err.Error(),
-			})
+			// 针对这种情况进行特殊编码
+			value, err := json.Marshal(
+				gin.H{
+					"status":  http.StatusInternalServerError,
+					"error":   "server error",
+					"message": NoUnicodeString{err.Error()},
+				},
+			)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"status":  http.StatusInternalServerError,
+					"error":   "server error",
+					"message": err.Error(),
+				})
+			} else {
+				c.String(http.StatusInternalServerError, string(value))
+			}
 		}
 	} else {
 		// 返回结果
