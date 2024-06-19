@@ -134,12 +134,12 @@ func HandleMessageList(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any,
 
 			time, err := dtoMessage.Member.JoinedAt.Time()
 			if err == nil {
-				m.Member.JoinedAt = time.UnixNano()
+				m.Member.JoinedAt = time.UnixMilli()
 			}
 
 			time, err = dtoMessage.Timestamp.Time()
 			if err == nil {
-				m.CreateAt = time.UnixNano()
+				m.CreateAt = time.UnixMilli()
 			}
 
 			if request.Order == OrderAsc {

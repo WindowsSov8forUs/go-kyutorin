@@ -66,7 +66,7 @@ func HandleMessageGet(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, 
 		}
 		time, err := dtoMessage.Member.JoinedAt.Time()
 		if err == nil {
-			response.Member.JoinedAt = time.UnixNano()
+			response.Member.JoinedAt = time.UnixMilli()
 		}
 
 		response.User = &user.User{
@@ -78,12 +78,12 @@ func HandleMessageGet(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, 
 
 		time, err = dtoMessage.Timestamp.Time()
 		if err == nil {
-			response.CreateAt = time.UnixNano()
+			response.CreateAt = time.UnixMilli()
 		}
 
 		time, err = dtoMessage.EditedTimestamp.Time()
 		if err == nil {
-			response.UpdateAt = time.UnixNano()
+			response.UpdateAt = time.UnixMilli()
 		}
 
 		return response, nil

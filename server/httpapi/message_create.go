@@ -597,7 +597,7 @@ func convertDtoMessageToMessage(dtoMessage *dto.Message) (*satoriMessage.Message
 			if err != nil {
 				return nil, err
 			}
-			guildMember.JoinedAt = time.UnixNano()
+			guildMember.JoinedAt = time.UnixMilli()
 		}
 
 		message.Channel = channel
@@ -638,7 +638,7 @@ func convertDtoMessageToMessage(dtoMessage *dto.Message) (*satoriMessage.Message
 				if err != nil {
 					return nil, err
 				}
-				guildMember.JoinedAt = time.UnixNano()
+				guildMember.JoinedAt = time.UnixMilli()
 			}
 
 			message.Channel = channel
@@ -666,7 +666,7 @@ func convertDtoMessageToMessage(dtoMessage *dto.Message) (*satoriMessage.Message
 	if err != nil {
 		return nil, err
 	}
-	message.CreateAt = time.UnixNano()
+	message.CreateAt = time.UnixMilli()
 
 	return &message, nil
 }
@@ -716,7 +716,7 @@ func convertDtoMessageV2ToMessage(dtoMessage *dto.Message) (*satoriMessage.Messa
 			if err != nil {
 				return nil, err
 			}
-			guildMember.JoinedAt = time.UnixNano()
+			guildMember.JoinedAt = time.UnixMilli()
 		}
 
 		message.Channel = channel
@@ -747,7 +747,7 @@ func convertDtoMessageV2ToMessage(dtoMessage *dto.Message) (*satoriMessage.Messa
 	if err != nil {
 		return nil, err
 	}
-	message.CreateAt = time.UnixNano()
+	message.CreateAt = time.UnixMilli()
 
 	return &message, nil
 }

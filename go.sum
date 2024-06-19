@@ -111,6 +111,10 @@ github.com/satori-protocol-go/satori-model-go v0.0.12 h1:WLqvaXW8WTzzI3CnOz21VZI
 github.com/satori-protocol-go/satori-model-go v0.0.12/go.mod h1:R+7VkMNjo74rCmvHijpmQywU/Ahc9DcC/0YUCaYYLuE=
 github.com/satori-protocol-go/satori-model-go v0.0.13 h1:7JFiYe/iJNQ1oyHoN62IPCAoSzDZixS2SzxFU+PUCvY=
 github.com/satori-protocol-go/satori-model-go v0.0.13/go.mod h1:R+7VkMNjo74rCmvHijpmQywU/Ahc9DcC/0YUCaYYLuE=
+github.com/satori-protocol-go/satori-model-go v0.0.14 h1:KJ36Wdta5atw5JIFxW8mUwpicD/MubRiFaomaEr321c=
+github.com/satori-protocol-go/satori-model-go v0.0.14/go.mod h1:R+7VkMNjo74rCmvHijpmQywU/Ahc9DcC/0YUCaYYLuE=
+github.com/satori-protocol-go/satori-model-go v0.0.15 h1:BWQ0pg6qDJ2DDeMIx24FQDtvv834uDbGLg3oGvruKVc=
+github.com/satori-protocol-go/satori-model-go v0.0.15/go.mod h1:R+7VkMNjo74rCmvHijpmQywU/Ahc9DcC/0YUCaYYLuE=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -18,11 +19,11 @@ type WebHook struct {
 }
 
 // StartWebHook 启动 WebHook 客户端
-func StartWebHook(url string, server *Server) *WebHook {
+func StartWebHook(url string, token string, server *Server) *WebHook {
 	// 创建 WebHook 客户端
 	webhook := &WebHook{
 		url:    url,
-		token:  server.conf.Satori.Token,
+		token:  token,
 		client: resty.New(),
 	}
 
@@ -42,27 +43,39 @@ func StartWebHook(url string, server *Server) *WebHook {
 }
 
 // CreateWebHook 创建 WebHook 客户端
-func (server *Server) CreateWebHook(url string) {
-	// 创建 WebHook 客户端
-	webhook := StartWebHook(url, server)
-
+func (server *Server) CreateWebHook(url string, token string) error {
 	// 添加 WebHook 客户端
 	server.rwMutex.Lock()
 	defer server.rwMutex.Unlock()
+
+	// 检查重复 URL
+	for _, webhook := range server.webhooks {
+		if webhook.GetURL() == url {
+			return fmt.Errorf("webhook %s already exists", url)
+		}
+	}
+
+	// 创建 WebHook 客户端
+	webhook := StartWebHook(url, token, server)
+
 	server.webhooks = append(server.webhooks, webhook)
+	return nil
 }
 
-// DelWebHook 删除 WebHook 客户端
-func (server *Server) DelWebHook(url string) {
+// DeleteWebHook 删除 WebHook 客户端
+func (server *Server) DeleteWebHook(url string) error {
 	// 删除 WebHook 客户端
 	server.rwMutex.Lock()
 	defer server.rwMutex.Unlock()
+
 	for i, webhook := range server.webhooks {
 		if webhook.GetURL() == url {
 			server.webhooks = append(server.webhooks[:i], server.webhooks[i+1:]...)
-			return
+			return nil
 		}
 	}
+	// 运行到这里说明没有找到对应的 WebHook 客户端
+	return fmt.Errorf("webhook %s not found", url)
 }
 
 // PostEvent 发送事件

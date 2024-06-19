@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -90,7 +89,7 @@ type Server struct {
 	rwMutex    sync.RWMutex
 	websockets []*WebSocket
 	webhooks   []*WebHook
-	httpServer *http.Server
+	httpServer *httpapi.Server
 	conf       *config.Config
 	events     *EventQueue
 }
@@ -99,29 +98,40 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 	engine := gin.New()
 	engine.Use(gin.Recovery())
 
-	group := engine.Group(fmt.Sprintf("%s/v1", server.conf.Satori.Path))
+	webSocketGroup := engine.Group(fmt.Sprintf("%s/v1", server.conf.Satori.Path))
 	// WebSocket 处理函数
-	group.GET("/events", server.WebSocketHandler(server.conf.Satori.Token))
+	webSocketGroup.GET("/events", server.WebSocketHandler(server.conf.Satori.Token))
 
-	// 接口处理函数
-	group.POST("/*action", func(c *gin.Context) {
-		action := c.Param("action")
+	adminGroup := engine.Group(fmt.Sprintf("%s/v1/admin", server.conf.Satori.Path))
+	// 管理接口处理函数
+	adminGroup.POST("/*method", func(c *gin.Context) {
+		method := c.Param("method")
+		// 将请求输出
+		log.Debugf(
+			"收到请求: /admin/%s %s，请求头：%v，请求体：%v",
+			c.Request.Method,
+			method,
+			c.Request.Header,
+			c.Request.Body,
+		)
+		httpapi.AdminMiddleware()(c)
+	})
+
+	resourceGroup := engine.Group(fmt.Sprintf("%s/v1", server.conf.Satori.Path))
+	// 资源接口处理函数
+	resourceGroup.POST("/*method", func(c *gin.Context) {
+		method := c.Param("method")
 		// 将请求输出
 		log.Debugf(
 			"收到请求: %s %s，请求头：%v，请求体：%v",
 			c.Request.Method,
-			action,
+			method,
 			c.Request.Header,
 			c.Request.Body,
 		)
-		if strings.HasPrefix(action, "/admin") {
-			// 管理接口
-			httpapi.AdminMiddleware()(c)
-		} else {
-			// 资源接口
-			httpapi.ResourceMiddleware(api, apiV2)(c)
-		}
+		httpapi.ResourceMiddleware(api, apiV2)(c)
 	})
+
 	return engine
 }
 
@@ -136,18 +146,24 @@ func NewServer(api, apiV2 openapi.OpenAPI, conf *config.Config) (*Server, error)
 			conf:       conf,
 			events:     NewEventQueue(),
 		}
-		server.httpServer = &http.Server{
-			Addr:    fmt.Sprintf("%s:%d", conf.Satori.Server.Host, conf.Satori.Server.Port),
-			Handler: server.setupV1Engine(api, apiV2),
-		}
+		server.httpServer = httpapi.NewHttpServer(
+			fmt.Sprintf("%s:%d", conf.Satori.Server.Host, conf.Satori.Server.Port),
+			server.setupV1Engine(api, apiV2),
+			server,
+		)
+		// server.httpServer = &http.Server{
+		// 	Addr:    fmt.Sprintf("%s:%d", conf.Satori.Server.Host, conf.Satori.Server.Port),
+		// 	Handler: server.setupV1Engine(api, apiV2),
+		// }
 		return server, nil
 	default:
-		return nil, fmt.Errorf("未知的 Satori 协议版本: v%d", conf.Satori.Version)
+		return nil, fmt.Errorf("unknown Satori protocol version: v%d", conf.Satori.Version)
 	}
 }
 
 func (server *Server) Run() error {
-	err := server.httpServer.ListenAndServe()
+	log.Infof("Satori 服务器已启动，地址: %s", server.httpServer.Addr())
+	err := server.httpServer.Run()
 	if err != nil && err != http.ErrServerClosed {
 		return err
 	}

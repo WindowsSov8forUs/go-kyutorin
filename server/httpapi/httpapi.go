@@ -1,7 +1,7 @@
 package httpapi
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,6 +13,43 @@ import (
 	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/openapi"
 )
+
+// webHookServerManager WebHook 服务端管理器
+type webHookServerManager interface {
+	CreateWebHook(url, token string) error
+	DeleteWebHook(url string) error
+}
+
+// Server HTTP 服务端
+type Server struct {
+	httpServer     *http.Server
+	webHookManager webHookServerManager
+}
+
+var instance *Server
+
+func (server *Server) Run() error {
+	return server.httpServer.ListenAndServe()
+}
+
+func (server *Server) Shutdown(ctx context.Context) error {
+	return server.httpServer.Shutdown(ctx)
+}
+
+func (server *Server) Addr() string {
+	return server.httpServer.Addr
+}
+
+func NewHttpServer(addr string, handler http.Handler, webHookManager webHookServerManager) *Server {
+	instance = &Server{
+		httpServer: &http.Server{
+			Addr:    addr,
+			Handler: handler,
+		},
+		webHookManager: webHookManager,
+	}
+	return instance
+}
 
 // APIError API 错误
 type APIError interface {
@@ -103,13 +140,6 @@ func (e *InternalServerError) Code() int {
 	return http.StatusInternalServerError
 }
 
-var ErrBadRequest = errors.New("bad request")
-var ErrUnauthorized = errors.New("unauthorized")
-var ErrForbidden = errors.New("forbidden")
-var ErrNotFound = errors.New("not found")
-var ErrMethodNotAllowed = errors.New("method not allowed")
-var ErrServerError = errors.New("server error")
-
 // ActionMessage Satori 应用发送的 HTTP API 调用信息
 type ActionMessage struct {
 	API      string     // 接口
@@ -198,8 +228,7 @@ func ResourceMiddleware(api, apiV2 openapi.OpenAPI) gin.HandlerFunc {
 // resourceAPIHandler 处理资源 API
 func resourceAPIHandler(c *gin.Context, api, apiV2 openapi.OpenAPI) {
 	// 提取路径中参数
-	action := c.Param("action")
-	method := strings.TrimLeft(action, "/")
+	method := strings.TrimLeft(c.Param("method"), "/")
 
 	// 提取请求头
 	contentType := c.GetHeader("Content-Type")
@@ -324,10 +353,7 @@ func AdminMiddleware() gin.HandlerFunc {
 // adminAPIHandler 处理管理 API
 func adminAPIHandler(c *gin.Context) {
 	// 提取路径中参数
-	action := c.Param("action")
-
-	// 提取 method
-	method := strings.TrimLeft(action, "/admin/")
+	method := strings.TrimLeft(c.Param("method"), "/")
 
 	// 提取请求头
 	contentType := c.GetHeader("Content-Type")
@@ -348,7 +374,7 @@ func adminAPIHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  http.StatusUnauthorized,
 			"error":   "unauthorized",
-			"message": "unauthorized",
+			"message": "authorize failed with token: " + authorization,
 		})
 		return
 	}

@@ -1,14 +1,19 @@
-package handlers
+package httpapi
 
 import (
 	"encoding/json"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
-	"github.com/WindowsSov8forUs/go-kyutorin/webhook"
+	"github.com/gin-gonic/gin"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/login"
 )
+
+func init() {
+	RegisterAdminHandler("login.list", HandlerLoginList)
+	RegisterAdminHandler("webhook.create", HandlerWebHookCreate)
+	RegisterAdminHandler("webhook.delete", HandlerWebHookDelete)
+}
 
 // LoginListResponse 获取登录信息列表响应
 type LoginListResponse []login.Login
@@ -25,7 +30,7 @@ type WebHookDeleteRequest struct {
 }
 
 // HandlerLoginList 处理获取登录信息列表请求
-func HandlerLoginList(message callapi.AdminMessage) (string, error) {
+func HandlerLoginList(message *AdminActionMessage) (any, APIError) {
 	var response LoginListResponse
 
 	bots := processor.GetBots()
@@ -39,35 +44,37 @@ func HandlerLoginList(message callapi.AdminMessage) (string, error) {
 		response = append(response, login)
 	}
 
-	data, err := json.Marshal(response)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
+	return response, nil
 }
 
 // HandlerWebHookCreate 处理创建 WebHook 请求
-func HandlerWebHookCreate(message callapi.AdminMessage) (string, error) {
+func HandlerWebHookCreate(message *AdminActionMessage) (any, APIError) {
 	var request WebHookCreateRequest
 	err := json.Unmarshal([]byte(message.Data), &request)
 	if err != nil {
-		return "", err
+		return gin.H{}, &BadRequestError{err}
 	}
 
-	webhook.CreateWebHook(request.URL, request.Token)
+	err = instance.webHookManager.CreateWebHook(request.URL, request.Token)
+	if err != nil {
+		return gin.H{}, &BadRequestError{err}
+	}
 
-	return "", nil
+	return gin.H{}, nil
 }
 
 // HandlerWebHookDelete 处理移除 WebHook 请求
-func HandlerWebHookDelete(message callapi.AdminMessage) (string, error) {
+func HandlerWebHookDelete(message *AdminActionMessage) (any, APIError) {
 	var request WebHookDeleteRequest
 	err := json.Unmarshal([]byte(message.Data), &request)
 	if err != nil {
-		return "", err
+		return gin.H{}, &BadRequestError{err}
 	}
 
-	webhook.DelWebHook(request.URL)
+	err = instance.webHookManager.DeleteWebHook(request.URL)
+	if err != nil {
+		return gin.H{}, &BadRequestError{err}
+	}
 
-	return "", nil
+	return gin.H{}, nil
 }
