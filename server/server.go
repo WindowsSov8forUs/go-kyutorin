@@ -91,28 +91,13 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 	engine := gin.New()
 	engine.Use(gin.Recovery())
 
-	webSocketGroup := engine.Group(fmt.Sprintf("%s/v1", server.conf.Satori.Path))
+	webSocketGroup := engine.Group(fmt.Sprintf("%s/v1/events", server.conf.Satori.Path))
 	// WebSocket 处理函数
-	webSocketGroup.GET("/events", server.WebSocketHandler(server.conf.Satori.Token))
+	webSocketGroup.GET("", server.WebSocketHandler(server.conf.Satori.Token))
 
-	adminGroup := engine.Group(fmt.Sprintf("%s/v1/admin", server.conf.Satori.Path))
-	// 管理接口处理函数
-	adminGroup.POST("/*method", func(c *gin.Context) {
-		method := c.Param("method")
-		// 将请求输出
-		log.Debugf(
-			"收到请求: /admin/%s %s，请求头：%v，请求体：%v",
-			c.Request.Method,
-			method,
-			c.Request.Header,
-			c.Request.Body,
-		)
-		httpapi.AdminMiddleware()(c)
-	})
-
-	resourceGroup := engine.Group(fmt.Sprintf("%s/v1", server.conf.Satori.Path))
+	resourceGroup := engine.Group(fmt.Sprintf("%s/v1/", server.conf.Satori.Path))
 	// 资源接口处理函数
-	resourceGroup.POST("/*method", func(c *gin.Context) {
+	resourceGroup.POST(":method", func(c *gin.Context) {
 		method := c.Param("method")
 		// 将请求输出
 		log.Debugf(
@@ -123,6 +108,21 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 			c.Request.Body,
 		)
 		httpapi.ResourceMiddleware(api, apiV2)(c)
+	})
+
+	adminGroup := engine.Group(fmt.Sprintf("%s/v1/admin/", server.conf.Satori.Path))
+	// 管理接口处理函数
+	adminGroup.POST(":method", func(c *gin.Context) {
+		method := c.Param("method")
+		// 将请求输出
+		log.Debugf(
+			"收到请求: /admin/%s %s，请求头：%v，请求体：%v",
+			c.Request.Method,
+			method,
+			c.Request.Header,
+			c.Request.Body,
+		)
+		httpapi.AdminMiddleware()(c)
 	})
 
 	return engine
@@ -234,7 +234,7 @@ func (server *Server) Close() {
 	server.mutex.Lock()
 	defer server.mutex.Unlock()
 
-	log.Info(("正在关闭 Satori 服务器..."))
+	log.Info(("正在关闭 Satori 服务端..."))
 
 	for _, ws := range server.websockets {
 		err := ws.Close()
