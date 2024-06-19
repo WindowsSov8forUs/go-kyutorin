@@ -76,15 +76,15 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 
 	// 开始鉴权流程
 	var sequence int64
-	signalingChan := make(chan operation.Operation)
+	operationChan := make(chan operation.Operation)
 	// 开始一个 10s 的计时器
 	timer := time.NewTimer(10 * time.Second)
 	for {
 		// 启动一个一次性接收信令的协程
-		go ws.receiveAtOnce(signalingChan)
+		go ws.receiveAtOnce(operationChan)
 		// 判断接收到的信令类型
 		select {
-		case sgnl := <-signalingChan:
+		case sgnl := <-operationChan:
 			if sgnl.Op == operation.OpCodeIdentify {
 				// 鉴权
 				body, err := json.Marshal(sgnl.Body)
@@ -106,12 +106,12 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 				sequence = identify.Sequence
 				// 发送 READY 信令
 				readyBody := processor.GetReadyBody()
-				readySignaling := operation.Operation{
+				readyOperation := operation.Operation{
 					Op:   operation.OpCodeReady,
 					Body: readyBody,
 				}
 				// 转换为 []byte 并发送
-				message, err := json.Marshal(readySignaling)
+				message, err := json.Marshal(readyOperation)
 				if err != nil {
 					log.Fatalf("发送 READY 信令时出错: %v", err)
 					return
