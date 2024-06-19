@@ -6,6 +6,7 @@ before:
     - go generate ./...
     - go install github.com/akavel/rsrc@latest
     - which rsrc
+    - rm -rf ./dist
 
 builds:
   - id: nowin
