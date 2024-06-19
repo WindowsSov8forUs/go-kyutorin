@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/channel"
 	"github.com/satori-protocol-go/satori-model-go/pkg/guild"
@@ -22,13 +22,13 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 	switch v := data.(type) {
 	case *dto.WSMessageDeleteData:
 		messageDelete = (*dto.MessageDelete)(v)
-		channelType = channel.CHANNEL_TYPE_TEXT
+		channelType = channel.ChannelTypeText
 	case *dto.WSPublicMessageDeleteData:
 		messageDelete = (*dto.MessageDelete)(v)
-		channelType = channel.CHANNEL_TYPE_TEXT
+		channelType = channel.ChannelTypeText
 	case *dto.WSDirectMessageDeleteData:
 		messageDelete = (*dto.MessageDelete)(v)
-		channelType = channel.CHANNEL_TYPE_DIRECT
+		channelType = channel.ChannelTypeDirect
 	default:
 		return fmt.Errorf("无法处理的消息撤回事件: %v", data)
 	}
@@ -37,13 +37,13 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 	printMessageDeleteEvent(payload, messageDelete)
 
 	// 构建事件数据
-	var event *signaling.Event
+	var event *operation.Event
 
 	// 获取事件 ID
-	id := RecordEventID(payload.ID)
+	id := SaveEventID(payload.ID)
 
 	// 将当前时间转换为时间戳
-	t := time.Now().Unix()
+	t := time.Now().UnixMilli()
 
 	// 构建 channel
 	channel := &channel.Channel{
@@ -78,9 +78,9 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 	}
 
 	// 填充事件数据
-	event = &signaling.Event{
+	event = &operation.Event{
 		Id:        id,
-		Type:      signaling.EventTypeMessageDeleted,
+		Type:      operation.EventTypeMessageDeleted,
 		Platform:  "qqguild",
 		SelfId:    SelfId,
 		Timestamp: t,

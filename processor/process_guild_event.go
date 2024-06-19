@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/guild"
 	"github.com/satori-protocol-go/satori-model-go/pkg/user"
@@ -21,20 +21,20 @@ func (p *Processor) ProcessGuildEvent(payload *dto.WSPayload, data *dto.WSGuildD
 	printGuildEvent(payload, data)
 
 	// 构建事件数据
-	var event *signaling.Event
+	var event *operation.Event
 
 	// 获取事件 ID
-	id := RecordEventID(payload.ID)
+	id := SaveEventID(payload.ID)
 
 	// 根据不同的 payload.Type 设置不同的 event.Type
-	var eventType signaling.EventType
+	var eventType operation.EventType
 	switch payload.Type {
 	case dto.EventGuildCreate:
-		eventType = signaling.EventTypeGuildAdded
+		eventType = operation.EventTypeGuildAdded
 	case dto.EventGuildUpdate:
-		eventType = signaling.EventTypeGuildUpdated
+		eventType = operation.EventTypeGuildUpdated
 	case dto.EventGuildDelete:
-		eventType = signaling.EventTypeGuildRemoved
+		eventType = operation.EventTypeGuildRemoved
 	default:
 		return fmt.Errorf("未知的 payload.Type: %v", payload.Type)
 	}
@@ -64,12 +64,12 @@ func (p *Processor) ProcessGuildEvent(payload *dto.WSPayload, data *dto.WSGuildD
 	}
 
 	// 填充事件数据
-	event = &signaling.Event{
+	event = &operation.Event{
 		Id:        id,
 		Type:      eventType,
 		Platform:  "qqguild",
 		SelfId:    SelfId,
-		Timestamp: t.Unix(),
+		Timestamp: t.UnixMilli(),
 		Guild:     guild,
 		Operator:  operator,
 	}

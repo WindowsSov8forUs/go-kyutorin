@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 
 	"github.com/tencent-connect/botgo/dto"
 )
@@ -16,21 +16,21 @@ func (p *Processor) ProcessChannelEvent(payload *dto.WSPayload, data *dto.WSChan
 	printChannelEvent(payload, data)
 
 	// 构建事件数据
-	var event *signaling.Event
+	var event *operation.Event
 
 	// 获取事件 ID
-	id := RecordEventID(payload.ID)
+	id := SaveEventID(payload.ID)
 
 	// 获取当前时间作为时间戳
-	t := time.Now()
+	t := time.Now().UnixMilli()
 
 	// 填充事件数据
-	event = &signaling.Event{
+	event = &operation.Event{
 		Id:        id,
-		Type:      signaling.EventTypeInternal,
+		Type:      operation.EventTypeInternal,
 		Platform:  "qqguild",
 		SelfId:    SelfId,
-		Timestamp: t.Unix(),
+		Timestamp: t,
 		Type_:     string(payload.Type),
 		Data_:     data,
 	}

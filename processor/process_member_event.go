@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/guild"
 	"github.com/satori-protocol-go/satori-model-go/pkg/guildmember"
@@ -22,20 +22,20 @@ func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuild
 	printMemberEvent(payload, data)
 
 	// 构建事件数据
-	var event *signaling.Event
+	var event *operation.Event
 
 	// 获取事件 ID
-	id := RecordEventID(payload.ID)
+	id := SaveEventID(payload.ID)
 
 	// 根据不同的 payload.Type 设置不同的 event.Type
-	var eventType signaling.EventType
+	var eventType operation.EventType
 	switch payload.Type {
 	case dto.EventGuildMemberAdd:
-		eventType = signaling.EventTypeGuildMemberAdded
+		eventType = operation.EventTypeGuildMemberAdded
 	case dto.EventGuildMemberUpdate:
-		eventType = signaling.EventTypeGuildMemberUpdated
+		eventType = operation.EventTypeGuildMemberUpdated
 	case dto.EventGuildMemberRemove:
-		eventType = signaling.EventTypeGuildMemberRemoved
+		eventType = operation.EventTypeGuildMemberRemoved
 	default:
 		return fmt.Errorf("未知的 payload.Type: %v", payload.Type)
 	}
@@ -66,7 +66,7 @@ func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuild
 	if err != nil {
 		return fmt.Errorf("解析时间戳时出错: %v", err)
 	}
-	member.JoinedAt = joinedAt.Unix()
+	member.JoinedAt = joinedAt.UnixMilli()
 
 	// 构建 operator
 	operator := &user.User{
@@ -82,12 +82,12 @@ func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuild
 	}
 
 	// 填充事件数据
-	event = &signaling.Event{
+	event = &operation.Event{
 		Id:        id,
 		Type:      eventType,
 		Platform:  "qqguild",
 		SelfId:    SelfId,
-		Timestamp: t.Unix(),
+		Timestamp: t.UnixMilli(),
 		Guild:     guild,
 		Member:    member,
 		Operator:  operator,

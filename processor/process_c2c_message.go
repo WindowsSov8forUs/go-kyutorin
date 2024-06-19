@@ -5,9 +5,8 @@ import (
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/database"
-	"github.com/WindowsSov8forUs/go-kyutorin/echo"
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/channel"
 	"github.com/satori-protocol-go/satori-model-go/pkg/message"
@@ -21,10 +20,10 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 	printC2CMessage(data)
 
 	// 构建事件数据
-	var event *signaling.Event
+	var event *operation.Event
 
 	// 获取事件 ID
-	id := RecordEventID(payload.ID)
+	id := SaveEventID(payload.ID)
 
 	// 将事件字符串转换为时间戳
 	t, err := time.Parse(time.RFC3339, string(data.Timestamp))
@@ -35,15 +34,15 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 	// 构建 channel
 	channel := &channel.Channel{
 		Id:   data.Author.UserOpenID,
-		Type: channel.CHANNEL_TYPE_DIRECT,
+		Type: channel.ChannelTypeDirect,
 	}
-	echo.SetOpenIdType(data.Author.UserOpenID, "private")
+	SetOpenIdType(data.Author.UserOpenID, "private")
 
 	// 构建 message
 	message := &message.Message{
 		Id:       data.ID,
 		Content:  ConvertToMessageContent(data),
-		CreateAt: t.Unix(),
+		CreateAt: t.UnixMilli(),
 	}
 
 	// 构建 user
@@ -52,12 +51,12 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 	}
 
 	// 填充事件数据
-	event = &signaling.Event{
+	event = &operation.Event{
 		Id:        id,
-		Type:      signaling.EventTypeMessageCreated,
+		Type:      operation.EventTypeMessageCreated,
 		Platform:  "qq",
 		SelfId:    SelfId,
-		Timestamp: t.Unix(),
+		Timestamp: t.UnixMilli(),
 		Channel:   channel,
 		Message:   message,
 		User:      user,

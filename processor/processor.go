@@ -1,35 +1,21 @@
 package processor
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"regexp"
-	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
-
-	"github.com/WindowsSov8forUs/go-kyutorin/callapi"
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/login"
-	satoriMessage "github.com/satori-protocol-go/satori-model-go/pkg/message"
 	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/openapi"
+	"github.com/tencent-connect/botgo/token"
+
+	"github.com/WindowsSov8forUs/go-kyutorin/config"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 )
-
-// Processor 消息处理器
-type Processor struct {
-	Api        openapi.OpenAPI
-	Apiv2      openapi.OpenAPI
-	WebSocket  callapi.WebSocketServer
-	WebHooks   []callapi.WebHookClient
-	EventQueue *EventQueue
-}
-
-var instance *Processor
 
 type EventIDTable struct {
 	m     sync.Map
@@ -38,8 +24,8 @@ type EventIDTable struct {
 
 var table = &EventIDTable{}
 
-// RecordEventID 保存事件 ID
-func RecordEventID(id string) int64 {
+// SaveEventID 保存事件 ID
+func SaveEventID(id string) int64 {
 	number := atomic.AddInt64(&table.count, 1) - 1
 	table.m.Store(number, id)
 	return number
@@ -110,70 +96,8 @@ func GetStatus(platform string) login.LoginStatus {
 	return globalStatusMapping.mapping[platform]
 }
 
-// EventQueue 事件队列
-type EventQueue struct {
-	Events []*signaling.Event
-	mu     sync.Mutex
-}
-
-// NewEventQueue 创建事件队列
-func NewEventQueue() *EventQueue {
-	return &EventQueue{
-		Events: make([]*signaling.Event, 0),
-	}
-}
-
-// PushEvent 推送事件
-func (q *EventQueue) PushEvent(event *signaling.Event) {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-	for {
-		if len(q.Events) < 1000 {
-			break
-		}
-		q.PopEvent()
-	}
-	q.Events = append(q.Events, event)
-}
-
-// PopEvent 弹出事件
-func (q *EventQueue) PopEvent() *signaling.Event {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-	if len(q.Events) == 0 {
-		return nil
-	}
-	event := q.Events[0]
-	q.Events = q.Events[1:]
-	return event
-}
-
-// ResumeEvents 恢复事件
-func (q *EventQueue) ResumeEvents(Sequence int64) []*signaling.Event {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-	var events []*signaling.Event
-	var isFound bool = false
-	for _, event := range q.Events {
-		if event.Id == Sequence {
-			isFound = true
-		}
-		if isFound {
-			events = append(events, event)
-		}
-	}
-	return events
-}
-
-// Clear 清空事件队列
-func (q *EventQueue) Clear() {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-	q.Events = make([]*signaling.Event, 0)
-}
-
 // GetReadyBody 创建 READY 信令的信令数据
-func GetReadyBody() *signaling.ReadyBody {
+func GetReadyBody() *operation.ReadyBody {
 	var logins []*login.Login
 	for platform, bot := range GetBots() {
 		login := &login.Login{
@@ -184,531 +108,149 @@ func GetReadyBody() *signaling.ReadyBody {
 		}
 		logins = append(logins, login)
 	}
-	return &signaling.ReadyBody{
+	return &operation.ReadyBody{
 		Logins: logins,
 	}
 }
 
+// DirectChannelIdMapping 私聊频道 ID 映射
+type DirectChannelIdMapping struct {
+	mapping map[string]string
+	mu      sync.Mutex
+}
+
+// OpenIdMapping 开放 ID 映射
+type OpenIdMapping struct {
+	mapping map[string]string
+	mu      sync.Mutex
+}
+
+// globalDirectChannelIdMapping 全局频道 ID 映射
+var globalDirectChannelIdMappingInstance = &DirectChannelIdMapping{
+	mapping: make(map[string]string),
+}
+
+// globalOpenIdMapping 全局开放 ID 映射
+var globalOpenIdMappingInstance = &OpenIdMapping{
+	mapping: make(map[string]string),
+}
+
+// GetDirectChannelGuild 获取私聊频道 ID
+func GetDirectChannelGuild(channelId string) string {
+	globalDirectChannelIdMappingInstance.mu.Lock()
+	defer globalDirectChannelIdMappingInstance.mu.Unlock()
+	return globalDirectChannelIdMappingInstance.mapping[channelId]
+}
+
+// SetDirectChannel 设置频道类型
+func SetDirectChannel(channelId string, guildId string) {
+	globalDirectChannelIdMappingInstance.mu.Lock()
+	defer globalDirectChannelIdMappingInstance.mu.Unlock()
+	globalDirectChannelIdMappingInstance.mapping[channelId] = guildId
+}
+
+// GetOpenIdType 获取开放 ID 类型
+func GetOpenIdType(openId string) string {
+	globalOpenIdMappingInstance.mu.Lock()
+	defer globalOpenIdMappingInstance.mu.Unlock()
+	return globalOpenIdMappingInstance.mapping[openId]
+}
+
+// SetOpenIdType 设置开放 ID 类型
+func SetOpenIdType(openId string, openIdType string) {
+	globalOpenIdMappingInstance.mu.Lock()
+	defer globalOpenIdMappingInstance.mu.Unlock()
+	globalOpenIdMappingInstance.mapping[openId] = openIdType
+}
+
+// DelOpenId 删除开放 ID
+func DelOpenId(openId string) {
+	globalOpenIdMappingInstance.mu.Lock()
+	defer globalOpenIdMappingInstance.mu.Unlock()
+	delete(globalOpenIdMappingInstance.mapping, openId)
+}
+
+// GetOpenIdData 获取开放 ID 数据
+func GetOpenIdData() map[string]string {
+	globalOpenIdMappingInstance.mu.Lock()
+	defer globalOpenIdMappingInstance.mu.Unlock()
+	return globalOpenIdMappingInstance.mapping
+}
+
+// Server 服务端接口
+type Server interface {
+	Run() error
+	Send(*operation.Event)
+	Close()
+}
+
+// Processor 消息处理器
+type Processor struct {
+	Api    openapi.OpenAPI
+	ApiV2  openapi.OpenAPI
+	Me     *dto.User
+	Token  *token.Token
+	Server Server
+	conf   *config.Config
+}
+
 // NewProcessor 创建消息处理器
-func NewProcessor(api openapi.OpenAPI, apiv2 openapi.OpenAPI) *Processor {
-	if instance == nil {
-		instance = &Processor{
-			Api:        api,
-			Apiv2:      apiv2,
-			WebSocket:  nil,
-			WebHooks:   make([]callapi.WebHookClient, 0),
-			EventQueue: NewEventQueue(),
-		}
+func NewProcessor(conf *config.Config) (*Processor, context.Context, error) {
+	if conf.Account.Token == "" {
+		return nil, nil, fmt.Errorf("bot account token is empty")
 	}
-	return instance
-}
+	ctx := context.Background()
 
-// SetWebHookClient 设置 WebHook 客户端
-func SetWebHookClient(webhook callapi.WebHookClient) {
-	instance.WebHooks = append(instance.WebHooks, webhook)
-}
-
-// DelWebHookClient 删除 WebHook 客户端
-func DelWebHookClient(url string) {
-	for i, webhook := range instance.WebHooks {
-		if webhook.GetURL() == url {
-			instance.WebHooks = append(instance.WebHooks[:i], instance.WebHooks[i+1:]...)
-			break
-		}
-	}
-}
-
-// BroadcastEvent 向 Satori 应用发送事件
-func (p *Processor) BroadcastEvent(event *signaling.Event) error {
-	var errors []string
-
-	// 构建 WebSocket 信令
-	sgnl := &signaling.Signaling{
-		Op:   signaling.SignalingEvent,
-		Body: (*signaling.EventBody)(event),
-	}
-	// 转换为 []byte
-	data, err := json.Marshal(sgnl)
+	// 获取 token
+	token, err := getToken(conf, ctx)
 	if err != nil {
-		errors = append(errors, fmt.Sprintf("转换信令时出错: %v", err))
-	} else {
-		p.EventQueue.PushEvent(event)
-		// 判断 WebSocket 服务器是否已建立
-		if p.WebSocket != nil {
-			// 发送
-			if err := p.WebSocket.SendMessage(data); err != nil {
-				errors = append(errors, fmt.Sprintf("发送信令时出错: %v", err))
-			}
-		}
-
-		// 广播到 WebHook 服务器
-		var validWebHooks []callapi.WebHookClient
-		results := make(chan callapi.WebHookClient, len(p.WebHooks))
-
-		for _, webhook := range p.WebHooks {
-			go func(w callapi.WebHookClient) {
-				if w == nil {
-					results <- nil
-					return
-				}
-				err := w.PostEvent(event)
-				if err != nil {
-					url := w.GetURL()
-					switch err {
-					case callapi.ErrUnauthorized:
-						log.Errorf("WebHook 服务器 %s 鉴权失败，已停止对该 WebHook 服务器的事件推送。", url)
-						w = nil
-					case callapi.ErrServerError:
-						log.Warnf("WebHook 服务器出现内部错误，请检查 WebHook 服务器是否正常。")
-					default:
-						errors = append(errors, fmt.Sprintf("向 WebHook 服务器 %s 发送事件时出错: %v", url, err))
-						w = nil
-					}
-				}
-				results <- w
-			}(webhook)
-		}
-
-		// 等待所有 goroutine 完成
-		for i := 0; i < len(p.WebHooks); i++ {
-			webhook := <-results
-			if webhook != nil {
-				validWebHooks = append(validWebHooks, webhook)
-			}
-		}
-
-		p.WebHooks = validWebHooks
+		return nil, nil, err
 	}
 
-	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, "\n"))
+	// 创建 api
+	api, apiV2, err := createOpenAPI(token, conf)
+	if err != nil {
+		return nil, nil, err
 	}
 
+	// 获取机器人信息
+	me, err := getBotMe(api, ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	processor := &Processor{
+		Api:    api,
+		ApiV2:  apiV2,
+		Me:     me,
+		Token:  token,
+		Server: nil,
+		conf:   conf,
+	}
+
+	return processor, ctx, err
+}
+
+func (p *Processor) Run(ctx context.Context, server Server) error {
+	p.Server = server
+	go func() {
+		if err := p.Server.Run(); err != nil {
+			log.Fatalf("Satori 服务器运行时出错: %v", err)
+		}
+	}()
+
+	err := establishWebSocket(p, p.ApiV2, p.Token, ctx, p.conf)
+	if err != nil {
+		return err
+	}
+
+	log.Info("已成功连接 QQ 开放平台")
+	log.Infof("欢迎使用机器人：%s ！", p.Me.Username)
 	return nil
 }
 
-// ProcessInternal 将 qq 事件转换为 Satori 的 Internal 事件
-func (p *Processor) ProcessQQInternal(payload *dto.WSPayload, data interface{}) error {
-	// 构建事件数据
-	var event *signaling.Event
-
-	// 获取 id
-	id := RecordEventID(payload.ID)
-
-	// 将当前时间转换为时间戳
-	t := time.Now().Unix()
-
-	// 如果 data 是 []byte ，将其转换为 json.RawMessage
-	var data_ json.RawMessage
-	switch v := data.(type) {
-	case []byte:
-		data_ = v
-	default:
-		data_, _ = json.Marshal(data)
-	}
-
-	// 填充事件数据
-	event = &signaling.Event{
-		Id:        id,
-		Type:      signaling.EventTypeInternal,
-		Platform:  "qq",
-		SelfId:    SelfId,
-		Timestamp: t,
-		Type_:     string(payload.Type),
-		Data_:     data_,
-	}
-
-	// 上报消息到 Satori 应用
-	return p.BroadcastEvent(event)
-}
-
-// ProcessInternal 将 qqguild 事件转换为 Satori 的 Internal 事件
-func (p *Processor) ProcessQQGuildInternal(payload *dto.WSPayload, data interface{}) error {
-	// 构建事件数据
-	var event *signaling.Event
-
-	// 获取 id
-	id := RecordEventID(payload.ID)
-
-	// 将当前时间转换为时间戳
-	t := time.Now().Unix()
-
-	// 如果 data 是 []byte ，将其转换为 json.RawMessage
-	var data_ json.RawMessage
-	switch v := data.(type) {
-	case []byte:
-		data_ = v
-	default:
-		data_, _ = json.Marshal(data)
-	}
-
-	// 填充事件数据
-	event = &signaling.Event{
-		Id:        id,
-		Type:      signaling.EventTypeInternal,
-		Platform:  "qqguild",
-		SelfId:    SelfId,
-		Timestamp: t,
-		Type_:     string(payload.Type),
-		Data_:     data_,
-	}
-
-	// 上报消息到 Satori 应用
-	return p.BroadcastEvent(event)
-}
-
-// ProcessInteractionEvent 处理交互事件
-func (p *Processor) ProcessInteractionEvent(data *dto.WSInteractionData) error {
-	// TODO: 目前无法将这个事件与 interaction/button 事件适配
-
-	// 构建事件数据
-	var event *signaling.Event
-
-	// 获取 id
-	id := RecordEventID(data.ID)
-
-	// 以当前时间作为时间戳
-	t := time.Now()
-
-	// 根据不同的 设置不同的 platform
-	var platform string
-	if data.ChatType == 0 {
-		platform = "qqguild"
-	} else {
-		platform = "qq"
-	}
-
-	event = &signaling.Event{
-		Id:        id,
-		Type:      signaling.EventTypeInternal,
-		Platform:  platform,
-		SelfId:    SelfId,
-		Timestamp: t.Unix(),
-		Type_:     string(dto.EventInteractionCreate),
-		Data_:     data,
-	}
-
-	// 上报消息到 Satori 应用
-	return p.BroadcastEvent(event)
-}
-
-// getMessageLog 获取消息日志
-func getMessageLog(data interface{}) string {
-	// 强制类型转换获取 Message 结构
-	var msg *dto.Message
-	var isAt bool = false // 是否为 at 消息
-	switch v := data.(type) {
-	case *dto.WSGroupATMessageData:
-		msg = (*dto.Message)(v)
-		isAt = true
-	case *dto.WSATMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.WSMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.WSDirectMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.WSC2CMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.Message:
-		msg = v
-	default:
-		return ""
-	}
-	var messageString string
-
-	// 使用正则表达式查找特殊格式字符
-	re := regexp.MustCompile(`(@everyone|<@!\d+>|<#\d+>|<emoji:\d+>)`)
-
-	// 获取所有匹配项的位置
-	indexes := re.FindAllStringIndex(msg.Content, -1)
-
-	// 根据匹配项的位置分割字符串
-	var result []string
-	start := 0
-	for _, index := range indexes {
-		if start != index[0] {
-			part := msg.Content[start:index[0]]
-			if part != "" {
-				result = append(result, part)
-			}
-		}
-		result = append(result, msg.Content[index[0]:index[1]])
-		start = index[1]
-	}
-	if start != len(msg.Content) {
-		part := msg.Content[start:]
-		if part != "" {
-			result = append(result, part)
-		}
-	}
-
-	// 匹配检查每个结果
-	for _, r := range result {
-		if r == "@everyone" {
-			if msg.MentionEveryone {
-				messageString += "@全体成员"
-			}
-		} else if strings.HasPrefix(r, "<@!") && strings.HasSuffix(r, ">") {
-			// 提取 ID
-			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<@!")
-			for _, mention := range msg.Mentions {
-				if mention.ID == id {
-					messageString += "@" + mention.Username
-					break
-				}
-			}
-		} else if strings.HasPrefix(r, "<#") && strings.HasSuffix(r, ">") {
-			// 提取频道 ID
-			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<#")
-			messageString += "#" + id
-		} else if strings.HasPrefix(r, "<emoji:") && strings.HasSuffix(r, ">") {
-			// 提取 emoji ID
-			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<emoji:")
-			messageString += ":emoji:" + id + ":"
-		} else {
-			// 普通文本
-			messageString += r
-		}
-	}
-
-	// 处理 Attachments 字段
-	for _, attachment := range msg.Attachments {
-		if attachment == nil {
-			continue
-		}
-		// 根据 ContentType 前缀判断文件类型
-		switch {
-		case strings.HasPrefix(attachment.ContentType, "image"):
-			image := "[图片]"
-			if strings.HasPrefix(attachment.URL, "http") {
-				image += "(" + attachment.URL + ")"
-			} else {
-				image += "(https://" + attachment.URL + ")"
-			}
-			messageString += image
-		case strings.HasPrefix(attachment.ContentType, "audio"):
-			audio := "[语音]"
-			if strings.HasPrefix(attachment.URL, "http") {
-				audio += "(" + attachment.URL + ")"
-			} else {
-				audio += "(https://" + attachment.URL + ")"
-			}
-			messageString += audio
-		case strings.HasPrefix(attachment.ContentType, "video"):
-			video := "[视频]"
-			if strings.HasPrefix(attachment.URL, "http") {
-				video += "(" + attachment.URL + ")"
-			} else {
-				video += "(https://" + attachment.URL + ")"
-			}
-			messageString += video
-		default:
-			file := "[文件]"
-			if strings.HasPrefix(attachment.URL, "http") {
-				file += "(" + attachment.URL + ")"
-			} else {
-				file += "(https://" + attachment.URL + ")"
-			}
-			messageString += file
-		}
-	}
-
-	// 添加 embed 消息
-	for _, embed := range msg.Embeds {
-		if embed == nil {
-			continue
-		}
-		messageString += fmt.Sprintf("[embed](%s)", embed.Title)
-	}
-
-	// 添加 ark 消息
-	if msg.Ark != nil {
-		messageString += fmt.Sprintf("[ark](%d)", msg.Ark.TemplateID)
-	}
-
-	// 添加消息回复
-	if msg.MessageReference != nil {
-		messageString = "[回复消息]" + "(" + msg.MessageReference.MessageID + ")" + messageString
-	}
-
-	// 添加消息前 at
-	if isAt {
-		bot := GetBot("qq") // 获取 qq 平台机器人实例
-		if bot != nil {
-			messageString = "@" + bot.Name + messageString
-		}
-	}
-
-	return messageString
-}
-
-// ConvertToMessageContent 将收到的消息转化为符合 Satori 协议的消息
-func ConvertToMessageContent(data interface{}) string {
-	// 强制类型转换获取 Message 结构
-	var msg *dto.Message
-	var isAt bool = false // 是否为 at 消息
-	switch v := data.(type) {
-	case *dto.WSGroupATMessageData:
-		msg = (*dto.Message)(v)
-		isAt = true
-	case *dto.WSATMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.WSMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.WSDirectMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.WSC2CMessageData:
-		msg = (*dto.Message)(v)
-	case *dto.Message:
-		msg = v
-	default:
-		return ""
-	}
-	var messageSegments []satoriMessage.MessageElement
-
-	// 使用正则表达式查找特殊格式字符
-	re := regexp.MustCompile(`(@everyone|<@!\d+>|<#\d+>|<emoji:\d+>)`)
-
-	// 获取所有匹配项的位置
-	indexes := re.FindAllStringIndex(msg.Content, -1)
-
-	// 根据匹配项的位置分割字符串
-	var result []string
-	start := 0
-	for _, index := range indexes {
-		if start != index[0] {
-			part := msg.Content[start:index[0]]
-			if part != "" {
-				result = append(result, part)
-			}
-		}
-		result = append(result, msg.Content[index[0]:index[1]])
-		start = index[1]
-	}
-	if start != len(msg.Content) {
-		part := msg.Content[start:]
-		if part != "" {
-			result = append(result, part)
-		}
-	}
-
-	// 匹配检查每个结果
-	for _, r := range result {
-		if r == "@everyone" {
-			if msg.MentionEveryone {
-				at := satoriMessage.MessageElementAt{Type: "all"}
-				messageSegments = append(messageSegments, &at)
-			}
-		} else if strings.HasPrefix(r, "<@!") && strings.HasSuffix(r, ">") {
-			// 提取 ID
-			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<@!")
-			for _, mention := range msg.Mentions {
-				if mention.ID == id {
-					at := satoriMessage.MessageElementAt{
-						Id:   mention.ID,
-						Name: mention.Username,
-					}
-					messageSegments = append(messageSegments, &at)
-					break
-				}
-			}
-		} else if strings.HasPrefix(r, "<#") && strings.HasSuffix(r, ">") {
-			// 提取频道 ID
-			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<#")
-			sharp := satoriMessage.MessageElementSharp{Id: id}
-			messageSegments = append(messageSegments, &sharp)
-		} else if strings.HasPrefix(r, "<emoji:") && strings.HasSuffix(r, ">") {
-			// 提取 emoji ID
-			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<emoji:")
-			emoji := &satoriMessage.MessageElementExtend{
-				Type: "qqguild:emoji",
-			}
-			emoji.ExtendAttributes = emoji.AddAttribute("id", id)
-			messageSegments = append(messageSegments, emoji)
-		} else {
-			// 普通文本
-			text := satoriMessage.MessageElementText{Content: r}
-			messageSegments = append(messageSegments, &text)
-		}
-	}
-
-	// 处理 Attachments 字段
-	for _, attachment := range msg.Attachments {
-		// 根据 ContentType 前缀判断文件类型
-		switch {
-		case strings.HasPrefix(attachment.ContentType, "image"):
-			image := satoriMessage.MessageElementImg{}
-			if strings.HasPrefix(attachment.URL, "http") {
-				image.Src = attachment.URL
-			} else {
-				image.Src = "https://" + attachment.URL
-			}
-
-			// 添加可能存在的长宽属性
-			if attachment.Width != 0 {
-				image.Width = uint32(attachment.Width)
-			}
-			if attachment.Height != 0 {
-				image.Height = uint32(attachment.Height)
-			}
-			messageSegments = append(messageSegments, &image)
-		case strings.HasPrefix(attachment.ContentType, "audio"):
-			audio := satoriMessage.MessageElementAudio{}
-			if strings.HasPrefix(attachment.URL, "http") {
-				audio.Src = attachment.URL
-			} else {
-				audio.Src = "https://" + attachment.URL
-			}
-			messageSegments = append(messageSegments, &audio)
-		case strings.HasPrefix(attachment.ContentType, "video"):
-			video := satoriMessage.MessageElementVideo{}
-			if strings.HasPrefix(attachment.URL, "http") {
-				video.Src = attachment.URL
-			} else {
-				video.Src = "https://" + attachment.URL
-			}
-			messageSegments = append(messageSegments, &video)
-		default:
-			file := satoriMessage.MessageElementFile{}
-			if strings.HasPrefix(attachment.URL, "http") {
-				file.Src = attachment.URL
-			} else {
-				file.Src = "https://" + attachment.URL
-			}
-			messageSegments = append(messageSegments, &file)
-		}
-	}
-
-	// 添加消息回复
-	if msg.MessageReference != nil {
-		message := satoriMessage.MessageElementMessage{
-			Id: msg.MessageReference.MessageID,
-		}
-		quote := satoriMessage.MessageElementQuote{
-			ChildrenMessageElement: &satoriMessage.ChildrenMessageElement{
-				Children: []satoriMessage.MessageElement{&message},
-			},
-		}
-
-		// 添加为第一个元素
-		messageSegments = append([]satoriMessage.MessageElement{&quote}, messageSegments...)
-	}
-
-	// 添加消息前 at
-	if isAt {
-		bot := GetBot("qq") // 获取 qq 平台机器人实例
-		at := satoriMessage.MessageElementAt{
-			Id:   bot.Id,
-			Name: bot.Name,
-		}
-		// 添加为第一个元素
-		messageSegments = append([]satoriMessage.MessageElement{&at}, messageSegments...)
-	}
-
-	// 拼接消息
-	var content string
-	for _, segment := range messageSegments {
-		content += segment.Stringify()
-	}
-	return content
+// BroadcastEvent 向 Satori 应用发送事件
+func (p *Processor) BroadcastEvent(event *operation.Event) error {
+	p.Server.Send(event)
+	return nil
 }
