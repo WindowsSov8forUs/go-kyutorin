@@ -2,11 +2,9 @@ package httpapi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
@@ -15,14 +13,6 @@ import (
 	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/openapi"
 )
-
-type NoUnicodeString struct {
-	data string
-}
-
-func (noUniStr NoUnicodeString) MarshalJSON() ([]byte, error) {
-	return []byte(strconv.QuoteToASCII(noUniStr.data)), nil
-}
 
 // webHookServerManager WebHook 服务端管理器
 type webHookServerManager interface {
@@ -243,40 +233,24 @@ func resourceAPIHandler(c *gin.Context, api, apiV2 openapi.OpenAPI) {
 
 	// 判断请求头错误
 	if contentType != "application/json" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"error":   "bad request",
-			"message": "content type must be application/json",
-		})
+		c.String(http.StatusBadRequest, "content type must be application/json")
 		return
 	}
 
 	// 鉴权
 	if !authorize(authorization) {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  http.StatusUnauthorized,
-			"error":   "unauthorized",
-			"message": "authorize failed with token: " + authorization,
-		})
+		c.String(http.StatusUnauthorized, "authorize failed with token: "+authorization)
 		return
 	}
 
 	// 判断平台与 SelfID 是否正确
 	bot := processor.GetBot(xPlatform)
 	if bot == nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"error":   "bad request",
-			"message": fmt.Sprintf(`invalid platform "%s"`, xPlatform),
-		})
+		c.String(http.StatusBadRequest, `invalid platform "%s"`, xPlatform)
 		return
 	}
 	if xSelfID != processor.SelfId {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"error":   "bad request",
-			"message": fmt.Sprintf(`invalid self id "%s"`, xSelfID),
-		})
+		c.String(http.StatusBadRequest, `invalid self id "%s"`, xSelfID)
 		return
 	}
 
@@ -285,11 +259,7 @@ func resourceAPIHandler(c *gin.Context, api, apiV2 openapi.OpenAPI) {
 	defer body.Close()
 	bodyBytes, err := io.ReadAll(body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"error":   "bad request",
-			"message": err.Error(),
-		})
+		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 	actionMessage := NewActionMessage(method, bot, xPlatform, bodyBytes)
@@ -299,71 +269,19 @@ func resourceAPIHandler(c *gin.Context, api, apiV2 openapi.OpenAPI) {
 	if err != nil {
 		switch err.(type) {
 		case *BadRequestError:
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status":  http.StatusBadRequest,
-				"error":   "bad request",
-				"message": err.Error(),
-			})
+			c.String(http.StatusBadRequest, err.Error())
 		case *UnauthorizedError:
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"status":  http.StatusUnauthorized,
-				"error":   "unauthorized",
-				"message": err.Error(),
-			})
+			c.String(http.StatusUnauthorized, err.Error())
 		case *ForbiddenError:
-			c.JSON(http.StatusForbidden, gin.H{
-				"status":  http.StatusForbidden,
-				"error":   "forbidden",
-				"message": err.Error(),
-			})
+			c.String(http.StatusForbidden, err.Error())
 		case *NotFoundError:
-			c.JSON(http.StatusNotFound, gin.H{
-				"status":  http.StatusNotFound,
-				"error":   "not found",
-				"message": err.Error(),
-			})
+			c.String(http.StatusNotFound, err.Error())
 		case *MethodNotAllowedError:
-			c.JSON(http.StatusMethodNotAllowed, gin.H{
-				"status":  http.StatusMethodNotAllowed,
-				"error":   "method not allowed",
-				"message": err.Error(),
-			})
+			c.String(http.StatusMethodNotAllowed, err.Error())
 		case *InternalServerError:
-			// 针对这种情况进行特殊编码
-			value, err := json.Marshal(
-				gin.H{
-					"status":  http.StatusInternalServerError,
-					"error":   "server error",
-					"message": NoUnicodeString{err.Error()},
-				},
-			)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"status":  http.StatusInternalServerError,
-					"error":   "server error",
-					"message": err.Error(),
-				})
-			} else {
-				c.String(http.StatusInternalServerError, string(value))
-			}
+			c.String(http.StatusInternalServerError, err.Error())
 		default:
-			// 针对这种情况进行特殊编码
-			value, err := json.Marshal(
-				gin.H{
-					"status":  http.StatusInternalServerError,
-					"error":   "server error",
-					"message": NoUnicodeString{err.Error()},
-				},
-			)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"status":  http.StatusInternalServerError,
-					"error":   "server error",
-					"message": err.Error(),
-				})
-			} else {
-				c.String(http.StatusInternalServerError, string(value))
-			}
+			c.String(http.StatusInternalServerError, err.Error())
 		}
 	} else {
 		// 返回结果
@@ -390,21 +308,13 @@ func adminAPIHandler(c *gin.Context) {
 
 	// 判断请求头错误
 	if contentType != "application/json" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"error":   "bad request",
-			"message": "content type must be application/json",
-		})
+		c.String(http.StatusBadRequest, "content type must be application/json")
 		return
 	}
 
 	// 鉴权
 	if !authorize(authorization) {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  http.StatusUnauthorized,
-			"error":   "unauthorized",
-			"message": "authorize failed with token: " + authorization,
-		})
+		c.String(http.StatusUnauthorized, "authorize failed with token: "+authorization)
 		return
 	}
 
@@ -413,11 +323,7 @@ func adminAPIHandler(c *gin.Context) {
 	defer body.Close()
 	bodyBytes, err := io.ReadAll(body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"error":   "bad request",
-			"message": err.Error(),
-		})
+		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 	adminActionMessage := NewAdminActionMessage(method, bodyBytes)
@@ -427,47 +333,19 @@ func adminAPIHandler(c *gin.Context) {
 	if err != nil {
 		switch err.(type) {
 		case *BadRequestError:
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status":  http.StatusBadRequest,
-				"error":   "bad request",
-				"message": err.Error(),
-			})
+			c.String(http.StatusBadRequest, err.Error())
 		case *UnauthorizedError:
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"status":  http.StatusUnauthorized,
-				"error":   "unauthorized",
-				"message": err.Error(),
-			})
+			c.String(http.StatusUnauthorized, err.Error())
 		case *ForbiddenError:
-			c.JSON(http.StatusForbidden, gin.H{
-				"status":  http.StatusForbidden,
-				"error":   "forbidden",
-				"message": err.Error(),
-			})
+			c.String(http.StatusForbidden, err.Error())
 		case *NotFoundError:
-			c.JSON(http.StatusNotFound, gin.H{
-				"status":  http.StatusNotFound,
-				"error":   "not found",
-				"message": err.Error(),
-			})
+			c.String(http.StatusNotFound, err.Error())
 		case *MethodNotAllowedError:
-			c.JSON(http.StatusMethodNotAllowed, gin.H{
-				"status":  http.StatusMethodNotAllowed,
-				"error":   "method not allowed",
-				"message": err.Error(),
-			})
+			c.String(http.StatusMethodNotAllowed, err.Error())
 		case *InternalServerError:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":  http.StatusInternalServerError,
-				"error":   "server error",
-				"message": err.Error(),
-			})
+			c.String(http.StatusInternalServerError, err.Error())
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":  http.StatusInternalServerError,
-				"error":   "server error",
-				"message": err.Error(),
-			})
+			c.String(http.StatusInternalServerError, err.Error())
 		}
 	} else {
 		// 返回结果
