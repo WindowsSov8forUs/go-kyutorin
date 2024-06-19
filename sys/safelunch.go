@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"unsafe"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/log"
-
 	"golang.org/x/sys/windows"
 )
 
@@ -44,18 +42,13 @@ func NoMoreDoubleClick() error {
 	if err != nil {
 		return err
 	}
-	if err != nil {
-		log.Errorf("打开 run.bat失败: %v", err)
-		return nil
-	}
 	_ = f.Truncate(0)
 
 	ex, _ := os.Executable()
 	exPath := filepath.Base(ex)
 	_, err = f.WriteString("%Created by go-kyutorin. DO NOT EDIT ME!%\nstart cmd /K \"" + exPath + "\"")
 	if err != nil {
-		log.Errorf("写入 run.bat失败: %v", err)
-		return nil
+		return err
 	}
 	f.Close()
 	boxW(0, "已释出安全启动脚本，请双击 run.bat 启动", "提示", 0x00000000)
