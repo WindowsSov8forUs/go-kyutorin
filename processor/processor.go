@@ -233,11 +233,6 @@ func NewProcessor(conf *config.Config) (*Processor, context.Context, error) {
 
 func (p *Processor) Run(ctx context.Context, server Server) error {
 	p.Server = server
-	go func() {
-		if err := p.Server.Run(); err != nil {
-			log.Fatalf("Satori 服务器运行时出错: %v", err)
-		}
-	}()
 
 	err := establishWebSocket(p, p.ApiV2, p.Token, ctx, p.conf)
 	if err != nil {
@@ -246,6 +241,14 @@ func (p *Processor) Run(ctx context.Context, server Server) error {
 
 	log.Info("已成功连接 QQ 开放平台")
 	log.Infof("欢迎使用机器人：%s ！", p.Me.Username)
+
+	// 启动 Satori 服务端
+	go func() {
+		if err := p.Server.Run(); err != nil {
+			log.Fatalf("Satori 服务器运行时出错: %v", err)
+		}
+	}()
+
 	return nil
 }
 
