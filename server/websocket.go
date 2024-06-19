@@ -16,10 +16,11 @@ import (
 
 // WebSocket WebSocket 服务器
 type WebSocket struct {
-	conn     *websocket.Conn
-	token    string
-	mutex    *sync.Mutex
-	isClosed chan bool
+	conn      *websocket.Conn
+	token     string
+	mutex     *sync.Mutex
+	isClosed  chan bool
+	hasClosed chan bool
 }
 
 // 定义升级器
@@ -48,17 +49,17 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 
 	// 创建 WebSocket
 	ws := &WebSocket{
-		conn:     conn,
-		token:    token,
-		mutex:    &sync.Mutex{},
-		isClosed: make(chan bool),
+		conn:      conn,
+		token:     token,
+		mutex:     &sync.Mutex{},
+		isClosed:  make(chan bool),
+		hasClosed: make(chan bool, 1),
 	}
 	// 添加到 server 中
 	server.mutex.Lock()
 	server.websockets = append(server.websockets, ws)
 	server.mutex.Unlock()
 
-	// 在 defer 语句前运行
 	defer func() {
 		// 从 server 中移除
 		server.mutex.Lock()
@@ -70,9 +71,11 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 		}
 		server.mutex.Unlock()
 		log.Infof("已断开与 Satori 应用的 WebSocket 连接，IP: %s", c.ClientIP())
+
+		// 关闭连接
+		ws.conn.Close()
+		ws.hasClosed <- true
 	}()
-	// 关闭连接
-	defer ws.conn.Close()
 
 	// 开始鉴权流程
 	var sequence int64
@@ -274,6 +277,7 @@ func (ws *WebSocket) PostEvent(event *operation.Event) error {
 func (ws *WebSocket) Close() {
 	// 发送关闭信号
 	ws.isClosed <- true
+	<-ws.hasClosed
 }
 
 // authorize 鉴权
