@@ -196,11 +196,6 @@ func defaultResource(action *ActionMessage) (any, APIError) {
 	return gin.H{}, &NotFoundError{action.API, action.Platform}
 }
 
-// defaultAdmin 管理接口默认处理函数
-func defaultAdmin(action *AdminActionMessage) (any, APIError) {
-	return gin.H{}, &NotFoundError{api: action.API}
-}
-
 // RegisterHandler 注册特定资源与方法的处理函数
 func RegisterHandler(api string, handler HandlerFunc) {
 	handlers[api] = handler
