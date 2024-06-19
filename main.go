@@ -134,7 +134,5 @@ func main() {
 	// 等待信号
 	<-sigCh
 
-	log.Info("正在关闭 Satori 服务端...")
-
 	server.Close()
 }
