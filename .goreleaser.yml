@@ -59,8 +59,8 @@ archives:
       - goos: windows
         format: binary
 
-checksum:
-  name_template: 'checksums.txt'
+# checksum:
+#   name_template: 'checksums.txt'
 
 snapshot:
   name_template: "{{ .Tag }}-{{ .Commit }}"
