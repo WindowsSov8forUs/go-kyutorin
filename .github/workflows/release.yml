@@ -24,9 +24,6 @@ jobs:
           echo $PATH
           echo $(go env GOPATH)
       
-      - name: Setup Version
-        run: echo "VERSION=${GITHUB_REF/refs\tags\/v/}" >> $GITHUB_ENV
-      
       - name: Build binaries
         uses: goreleaser/goreleaser-action@v2
         with:
@@ -34,7 +31,6 @@ jobs:
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
-          GIT_TAG: ${{ env.VERSION }}
       
       - name: Check if release exists
         id: check_release
