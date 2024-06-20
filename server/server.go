@@ -97,7 +97,6 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 
 	webSocketGroup := engine.Group(fmt.Sprintf("%s/v1/events", server.conf.Satori.Path))
 	// WebSocket 处理函数
-	webSocketGroup.Use(httpapi.AuthenticateMiddleware("events"))
 	webSocketGroup.GET("", server.WebSocketHandler(server.conf.Satori.Token))
 
 	resourceGroup := engine.Group(fmt.Sprintf("%s/v1/", server.conf.Satori.Path))
