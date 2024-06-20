@@ -89,14 +89,23 @@ type Server struct {
 
 func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 	engine := gin.New()
-	engine.Use(gin.Recovery())
+	engine.Use(
+		gin.Recovery(),
+		httpapi.HeadersSetMiddleware("1.1"),
+		httpapi.HeadersValidateMiddleware(),
+	)
 
 	webSocketGroup := engine.Group(fmt.Sprintf("%s/v1/events", server.conf.Satori.Path))
 	// WebSocket 处理函数
+	webSocketGroup.Use(httpapi.AuthenticateMiddleware("events"))
 	webSocketGroup.GET("", server.WebSocketHandler(server.conf.Satori.Token))
 
 	resourceGroup := engine.Group(fmt.Sprintf("%s/v1/", server.conf.Satori.Path))
 	// 资源接口处理函数
+	resourceGroup.Use(
+		httpapi.AuthenticateMiddleware("http_api"),
+		httpapi.BotValidateMiddleware(),
+	)
 	resourceGroup.POST(":method", func(c *gin.Context) {
 		method := c.Param("method")
 		// 将请求输出

@@ -6,9 +6,11 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
+	"github.com/WindowsSov8forUs/go-kyutorin/version"
 	"github.com/gin-gonic/gin"
 	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/openapi"
@@ -212,6 +214,85 @@ func CallAdminAPI(action *AdminActionMessage) (any, APIError) {
 	return adminHandlers[action.API](action)
 }
 
+// HeadersSetMiddleware 设置响应头中间件
+func HeadersSetMiddleware(satoriVersion string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		c.Header("Date", time.Now().Format(time.RFC1123))
+		c.Header("Server", fmt.Sprintf("Go-Kyutorin/%s", version.Version))
+		c.Header("X-Satori-Protocol", satoriVersion)
+		c.Next()
+	}
+}
+
+// HeadersValidateMiddleware 请求头验证中间件
+func HeadersValidateMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 提取请求头
+		contentType := c.GetHeader("Content-Type")
+
+		// 判断请求头错误
+		if contentType != "application/json" {
+			c.String(http.StatusBadRequest, "content type must be application/json")
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// AuthenticateMiddleware 鉴权中间件
+func AuthenticateMiddleware(realm string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 提取 Authorization 请求头
+		authorization := c.GetHeader("Authorization")
+
+		// 鉴权
+		if ok, err := authorize(authorization); !ok {
+			c.Header(
+				"WWW-Authenticate",
+				fmt.Sprintf(
+					`Bearer realm="%s", error="%s", error_description="%s", error_url="%s"`,
+					realm,
+					err.Error(),
+					"authorize failed with token: "+authorization,
+					`https://satori.js.org/zh-CN/protocol/api.html#%E9%89%B4%E6%9D%83`,
+				),
+			)
+			c.String(http.StatusUnauthorized, "authorize failed with token: "+authorization)
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// BotValidateMiddleware 机器人验证中间件
+func BotValidateMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 提取请求头
+		xPlatform := c.GetHeader("X-Platform")
+		xSelfID := c.GetHeader("X-Self-ID")
+
+		// 判断平台与 SelfID 是否正确
+		bot := processor.GetBot(xPlatform)
+		if bot == nil {
+			c.String(http.StatusBadRequest, `unknown platform "%s"`, xPlatform)
+			c.Abort()
+			return
+		}
+		if xSelfID != processor.SelfId {
+			c.String(http.StatusBadRequest, `unknown self id "%s"`, xSelfID)
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
 // ResourceMiddleware 资源中间件
 func ResourceMiddleware(api, apiV2 openapi.OpenAPI) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -223,36 +304,11 @@ func ResourceMiddleware(api, apiV2 openapi.OpenAPI) gin.HandlerFunc {
 // resourceAPIHandler 处理资源 API
 func resourceAPIHandler(c *gin.Context, api, apiV2 openapi.OpenAPI) {
 	// 提取路径中参数
-	method := strings.TrimLeft(c.Param("method"), "/")
+	method := c.Param("method")
 
-	// 提取请求头
-	contentType := c.GetHeader("Content-Type")
-	authorization := c.GetHeader("Authorization")
+	// 获取 bot 对象
 	xPlatform := c.GetHeader("X-Platform")
-	xSelfID := c.GetHeader("X-Self-ID")
-
-	// 判断请求头错误
-	if contentType != "application/json" {
-		c.String(http.StatusBadRequest, "content type must be application/json")
-		return
-	}
-
-	// 鉴权
-	if !authorize(authorization) {
-		c.String(http.StatusUnauthorized, "authorize failed with token: "+authorization)
-		return
-	}
-
-	// 判断平台与 SelfID 是否正确
 	bot := processor.GetBot(xPlatform)
-	if bot == nil {
-		c.String(http.StatusBadRequest, `invalid platform "%s"`, xPlatform)
-		return
-	}
-	if xSelfID != processor.SelfId {
-		c.String(http.StatusBadRequest, `invalid self id "%s"`, xSelfID)
-		return
-	}
 
 	// 构建 Action
 	body := c.Request.Body
@@ -300,23 +356,7 @@ func AdminMiddleware() gin.HandlerFunc {
 // adminAPIHandler 处理管理 API
 func adminAPIHandler(c *gin.Context) {
 	// 提取路径中参数
-	method := strings.TrimLeft(c.Param("method"), "/")
-
-	// 提取请求头
-	contentType := c.GetHeader("Content-Type")
-	authorization := c.GetHeader("Authorization")
-
-	// 判断请求头错误
-	if contentType != "application/json" {
-		c.String(http.StatusBadRequest, "content type must be application/json")
-		return
-	}
-
-	// 鉴权
-	if !authorize(authorization) {
-		c.String(http.StatusUnauthorized, "authorize failed with token: "+authorization)
-		return
-	}
+	method := c.Param("method")
 
 	// 构建 Action
 	body := c.Request.Body
@@ -354,15 +394,21 @@ func adminAPIHandler(c *gin.Context) {
 }
 
 // authorize 鉴权
-func authorize(authorization string) bool {
+func authorize(authorization string) (bool, error) {
 	// 获取令牌
 	token := config.GetSatoriToken()
 
 	// 如果令牌设置为空则不鉴权
 	if token == "" {
-		return true
+		return true, nil
 	}
 
 	// 构建并比对鉴权
-	return authorization == "Bearer "+token
+	if !strings.HasPrefix(authorization, "Bearer ") {
+		return false, fmt.Errorf("invalid_request")
+	} else if authorization != "Bearer "+token {
+		return false, fmt.Errorf("invalid_token")
+	} else {
+		return true, nil
+	}
 }
