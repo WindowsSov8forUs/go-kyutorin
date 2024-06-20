@@ -31,7 +31,7 @@ jobs:
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
-          GIT_TAG: ${{ github.ref#refs/tags/v }}
+          GIT_TAG: ${{ replace(github.ref, 'refs/tags/v', '') }}
       
       - name: Check if release exists
         id: check_release
