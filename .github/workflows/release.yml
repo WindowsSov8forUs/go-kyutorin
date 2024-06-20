@@ -24,14 +24,6 @@ jobs:
           echo $PATH
           echo $(go env GOPATH)
       
-      - name: Build binaries
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          version: latest
-          args: release
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
-      
       - name: Check if release exists
         id: check_release
         run: |
@@ -42,6 +34,15 @@ jobs:
           echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
           echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_ENV
 
+      - name: Build binaries
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+          IS_PRERELEASE: ${{ env.IS_PRERELEASE }}
+      
       # - name: Create Release
       #   id: create_release
       #   uses: actions/create-release@v1
