@@ -38,7 +38,9 @@ jobs:
           TAG_NAME=${{ github.ref }} # refs/tags/v0.1.0
           TAG_NAME=${TAG_NAME#refs/tags/} # v0.1.0
           RELEASE_ID=$(curl --silent --show-error --header "Authorization: token ${{ secrets.PAT }}" "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" | jq '.id')
+          IS_PRERELEASE=$(curl --silent --show-error --header "Authorization: token ${{ secrets.PAT }}" "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" | jq '.prerelease')
           echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+          echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_ENV
 
       # - name: Create Release
       #   id: create_release
