@@ -14,6 +14,7 @@ import (
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 	"github.com/WindowsSov8forUs/go-kyutorin/server"
 	"github.com/WindowsSov8forUs/go-kyutorin/sys"
+	"github.com/WindowsSov8forUs/go-kyutorin/version"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tencent-connect/botgo"
@@ -30,6 +31,8 @@ func main() {
 	if !*fastStart {
 		sys.InitBase()
 	}
+
+	fmt.Printf("Go-Kyutorin %s\n", version.Version)
 
 	// 检查 config.yml 是否存在
 	if _, err := os.Stat("config.yml"); os.IsNotExist(err) {
