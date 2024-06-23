@@ -101,10 +101,12 @@ func GetReadyBody() *operation.ReadyBody {
 	var logins []*login.Login
 	for platform, bot := range GetBots() {
 		login := &login.Login{
-			User:     bot,
-			SelfId:   SelfId,
-			Platform: platform,
-			Status:   GetStatus(platform),
+			User:      bot,
+			SelfId:    SelfId,
+			Platform:  platform,
+			Status:    GetStatus(platform),
+			Features:  Features(),
+			ProxyUrls: ProxyUrls(),
 		}
 		logins = append(logins, login)
 	}
@@ -175,6 +177,16 @@ func GetOpenIdData() map[string]string {
 	globalOpenIdMappingInstance.mu.Lock()
 	defer globalOpenIdMappingInstance.mu.Unlock()
 	return globalOpenIdMappingInstance.mapping
+}
+
+// 获取平台特性
+func Features() []string {
+	return []string{}
+}
+
+// 获取代理路径
+func ProxyUrls() []string {
+	return []string{}
 }
 
 // Server 服务端接口
