@@ -8,14 +8,14 @@ import (
 	"strings"
 	"sync"
 
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-
 	"gopkg.in/yaml.v3"
+
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
 )
 
 var (
 	instance *Config
-	mu       sync.Mutex
+	mutex    sync.Mutex
 )
 
 // Config 配置
@@ -90,8 +90,8 @@ func GetSatoriToken() string {
 
 // LoadConfig 加载配置
 func LoadConfig(path string) (*Config, error) {
-	mu.Lock()
-	defer mu.Unlock()
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	// 如果已经加载过配置，直接返回
 	if instance != nil {
@@ -109,7 +109,7 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	// 确保配置完整性
-	if err = ensureConfigComplete(config, path); err != nil {
+	if err = ensureConfigComplete(path); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +118,7 @@ func LoadConfig(path string) (*Config, error) {
 }
 
 // ensureConfigComplete 检查配置是否完整
-func ensureConfigComplete(config *Config, path string) error {
+func ensureConfigComplete(path string) error {
 	// 读取配置文件
 	configData, err := os.ReadFile(path)
 	if err != nil {
@@ -155,13 +155,13 @@ func ensureConfigComplete(config *Config, path string) error {
 	// 如果有缺失设置，处理缺失配置行
 	if len(missingSettings) > 0 {
 		fmt.Printf("检测到配置文件不完整，缺失以下设置：\n%s\n", missingSettings)
-		missingConfigLines, err := extractMissingConfigLines(missingSettings, ConfigTemplate)
+		_, err := extractMissingConfigLines(missingSettings, ConfigTemplate)
 		if err != nil {
 			return err
 		}
 
 		// 更新配置文件
-		if err = recreateToConfigFile(path, missingConfigLines); err != nil {
+		if err = recreateToConfigFile(path); err != nil {
 			return err
 		}
 
@@ -261,7 +261,7 @@ func extractMissingConfigLines(missingSettings map[string]string, configTemplate
 	return missingConfigLines, nil
 }
 
-func recreateToConfigFile(path string, lines []string) error {
+func recreateToConfigFile(path string) error {
 	// 将原配置文件重命名为 config_backup.yml
 	err := os.Rename(path, "config_backup.yml")
 	if err != nil {
@@ -285,8 +285,8 @@ func recreateToConfigFile(path string, lines []string) error {
 
 // IsFileServerEnabled 是否启用本地文件服务器
 func IsFileServerEnabled() bool {
-	mu.Lock()
-	defer mu.Unlock()
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	if instance == nil {
 		log.Warn("配置未加载，无法判断是否启用本地文件服务器。")
@@ -297,8 +297,8 @@ func IsFileServerEnabled() bool {
 
 // GetFileServerURL 获取本地文件服务器地址
 func GetFileServerURL() string {
-	mu.Lock()
-	defer mu.Unlock()
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	if instance == nil {
 		log.Warn("配置未加载，无法获取本地文件服务器地址。")

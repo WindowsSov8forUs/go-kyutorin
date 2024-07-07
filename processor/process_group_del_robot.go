@@ -1,9 +1,8 @@
 package processor
 
 import (
-	"github.com/WindowsSov8forUs/go-kyutorin/echo"
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/channel"
 	"github.com/satori-protocol-go/satori-model-go/pkg/guild"
@@ -18,17 +17,17 @@ func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.WSGro
 	printGroupDelRobot(data)
 
 	// 构建事件数据
-	var event *signaling.Event
+	var event *operation.Event
 
 	// 获取事件 ID
-	id := RecordEventID(payload.ID)
+	id := SaveEventID(payload.ID)
 
 	// 构建 channel
 	channel := &channel.Channel{
 		Id:   data.GroupOpenid,
-		Type: channel.CHANNEL_TYPE_TEXT,
+		Type: channel.ChannelTypeText,
 	}
-	echo.DelOpenId(data.GroupOpenid)
+	DelOpenId(data.GroupOpenid)
 
 	// 构建 guild
 	guild := &guild.Guild{
@@ -44,9 +43,9 @@ func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.WSGro
 	}
 
 	// 填充事件数据
-	event = &signaling.Event{
+	event = &operation.Event{
 		Id:        id,
-		Type:      signaling.EventTypeGuildRemoved,
+		Type:      operation.EventTypeGuildRemoved,
 		Platform:  "qq",
 		SelfId:    SelfId,
 		Timestamp: data.Timestamp,

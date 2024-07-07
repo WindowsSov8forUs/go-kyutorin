@@ -5,9 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/echo"
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/channel"
 	"github.com/satori-protocol-go/satori-model-go/pkg/guild"
@@ -24,32 +23,32 @@ func (p *Processor) ProcessMessageReaction(payload *dto.WSPayload, data *dto.WSM
 	printMessageReaction(payload, data)
 
 	// 构建事件数据
-	var event *signaling.Event
+	var event *operation.Event
 
 	// 获取事件 ID
-	id := RecordEventID(payload.ID)
+	id := SaveEventID(payload.ID)
 
 	// 根据 payload.Type 判断事件类型
-	var eventType signaling.EventType
+	var eventType operation.EventType
 	switch payload.Type {
 	case dto.EventMessageReactionAdd:
-		eventType = signaling.EventTypeReactionAdded
+		eventType = operation.EventTypeReactionAdded
 	case dto.EventMessageReactionRemove:
-		eventType = signaling.EventTypeReactionRemoved
+		eventType = operation.EventTypeReactionRemoved
 	default:
 		return fmt.Errorf("无法处理的消息回应事件: %v", data)
 	}
 
 	// 将当前时间转换为时间戳
-	t := time.Now().Unix()
+	t := time.Now().UnixMilli()
 
 	// 获取频道类型
 	var channelType channel.ChannelType
-	guildId := echo.GetDirectChannelGuild(data.ChannelID)
+	guildId := GetDirectChannelGuild(data.ChannelID)
 	if guildId != "" {
-		channelType = channel.CHANNEL_TYPE_DIRECT
+		channelType = channel.ChannelTypeDirect
 	} else {
-		channelType = channel.CHANNEL_TYPE_TEXT
+		channelType = channel.ChannelTypeText
 	}
 	// 构建 channel
 	channel := &channel.Channel{
@@ -81,7 +80,7 @@ func (p *Processor) ProcessMessageReaction(payload *dto.WSPayload, data *dto.WSM
 	}
 
 	// 填充事件数据
-	event = &signaling.Event{
+	event = &operation.Event{
 		Id:        id,
 		Type:      eventType,
 		Platform:  "qqguild",

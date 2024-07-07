@@ -24,33 +24,36 @@ jobs:
           echo $PATH
           echo $(go env GOPATH)
       
-      - name: Build binaries
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          version: latest
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
-      
       - name: Check if release exists
         id: check_release
         run: |
           TAG_NAME=${{ github.ref }} # refs/tags/v0.1.0
           TAG_NAME=${TAG_NAME#refs/tags/} # v0.1.0
           RELEASE_ID=$(curl --silent --show-error --header "Authorization: token ${{ secrets.PAT }}" "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" | jq '.id')
+          IS_PRERELEASE=$(curl --silent --show-error --header "Authorization: token ${{ secrets.PAT }}" "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" | jq '.prerelease')
           echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+          echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_ENV
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Build binaries
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-        if: env.RELEASE_ID == 'null'
+          IS_PRERELEASE: ${{ env.IS_PRERELEASE }}
+      
+      # - name: Create Release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.PAT }}
+      #   with:
+      #     tag_name: ${{ github.ref }}
+      #     release_name: Release ${{ github.ref }}
+      #     draft: false
+      #     prerelease: false
+      #   if: env.RELEASE_ID == 'null'
 
       - name: Upload Release Assets
         run: |

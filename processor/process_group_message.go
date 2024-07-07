@@ -5,9 +5,8 @@ import (
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/database"
-	"github.com/WindowsSov8forUs/go-kyutorin/echo"
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/channel"
 	"github.com/satori-protocol-go/satori-model-go/pkg/guild"
@@ -23,10 +22,10 @@ func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGrou
 	printGroupMessage(data)
 
 	// 构建事件数据
-	var event *signaling.Event
+	var event *operation.Event
 
 	// 获取事件 ID
-	id := RecordEventID(payload.ID)
+	id := SaveEventID(payload.ID)
 
 	// 将事件字符串转换为时间戳
 	t, err := time.Parse(time.RFC3339, string(data.Timestamp))
@@ -37,9 +36,9 @@ func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGrou
 	// 构建 channel
 	channel := &channel.Channel{
 		Id:   data.GroupID,
-		Type: channel.CHANNEL_TYPE_TEXT,
+		Type: channel.ChannelTypeText,
 	}
-	echo.SetOpenIdType(data.GroupID, "group")
+	SetOpenIdType(data.GroupID, "group")
 
 	// 构建 guild
 	guild := &guild.Guild{
@@ -53,7 +52,7 @@ func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGrou
 	message := &message.Message{
 		Id:       data.ID,
 		Content:  ConvertToMessageContent(data),
-		CreateAt: t.Unix(),
+		CreateAt: t.UnixMilli(),
 	}
 
 	// 构建 user
@@ -62,12 +61,12 @@ func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGrou
 	}
 
 	// 填充事件数据
-	event = &signaling.Event{
+	event = &operation.Event{
 		Id:        id,
-		Type:      signaling.EventTypeMessageCreated,
+		Type:      operation.EventTypeMessageCreated,
 		Platform:  "qq",
 		SelfId:    SelfId,
-		Timestamp: t.Unix(),
+		Timestamp: t.UnixMilli(),
 		Channel:   channel,
 		Guild:     guild,
 		Member:    member,

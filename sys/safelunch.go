@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"unsafe"
 
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-
 	"golang.org/x/sys/windows"
 )
 
@@ -32,7 +30,7 @@ func RunningByDoubleClick() bool {
 // NoMoreDoubleClick 提示不要双击运行，并生成启动脚本
 func NoMoreDoubleClick() error {
 	toHighDPI()
-	r := boxW(getConsoleWindows(), "请勿通过双击直接运行本程序, 这将导致一些非预料的后果.\n请在shell中运行./gensokyo.exe\n点击确认将释出安全启动脚本，点击取消则关闭程序", "警告", 0x00000030|0x00000001)
+	r := boxW(getConsoleWindows(), "请勿通过双击直接运行本程序, 这将导致一些非预料的后果.\n请在shell中运行 go-kyutorin \n点击确认将释出安全启动脚本，点击取消则关闭程序", "警告", 0x00000030|0x00000001)
 	if r == 2 {
 		return nil
 	}
@@ -44,18 +42,13 @@ func NoMoreDoubleClick() error {
 	if err != nil {
 		return err
 	}
-	if err != nil {
-		log.Errorf("打开 run.bat失败: %v", err)
-		return nil
-	}
 	_ = f.Truncate(0)
 
 	ex, _ := os.Executable()
 	exPath := filepath.Base(ex)
-	_, err = f.WriteString("%Created by go-satori-qq. DO NOT EDIT ME!%\nstart cmd /K \"" + exPath + "\"")
+	_, err = f.WriteString("%Created by go-kyutorin. DO NOT EDIT ME!%\nstart cmd /K \"" + exPath + "\"")
 	if err != nil {
-		log.Errorf("写入 run.bat失败: %v", err)
-		return nil
+		return err
 	}
 	f.Close()
 	boxW(0, "已释出安全启动脚本，请双击 run.bat 启动", "提示", 0x00000000)

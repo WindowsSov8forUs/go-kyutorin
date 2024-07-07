@@ -6,6 +6,10 @@ before:
     - go generate ./...
     - go install github.com/akavel/rsrc@latest
     - which rsrc
+    - rm -rf ./dist
+
+release:
+  prerelease: '{{ .Env.IS_PRERELEASE }}'
 
 builds:
   - id: nowin
@@ -25,7 +29,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w
+      - -s -w -X github.com/WindowsSov8forUs/go-kyutorin/version.Version={{ .Version }}
     ignore:
       - goos: darwin
         goarch: arm
@@ -47,7 +51,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w
+      - -s -w -X github.com/WindowsSov8forUs/go-kyutorin/version.Version={{ .Version }}
 
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
@@ -55,8 +59,8 @@ archives:
       - goos: windows
         format: binary
 
-checksum:
-  name_template: 'checksums.txt'
+# checksum:
+#   name_template: 'checksums.txt'
 
 snapshot:
   name_template: "{{ .Tag }}-{{ .Commit }}"

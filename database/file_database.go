@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
 
 	"github.com/syndtr/goleveldb/leveldb"
 )

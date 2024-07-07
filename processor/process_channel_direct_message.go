@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/echo"
-	log "github.com/WindowsSov8forUs/go-kyutorin/mylog"
-	"github.com/WindowsSov8forUs/go-kyutorin/signaling"
+	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/go-kyutorin/operation"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/channel"
 	"github.com/satori-protocol-go/satori-model-go/pkg/guild"
@@ -23,10 +22,10 @@ func (p *Processor) ProcessChannelDirectMessage(payload *dto.WSPayload, data *dt
 	printChannelDirectMessage(data)
 
 	// 构建事件数据
-	var event *signaling.Event
+	var event *operation.Event
 
 	// 获取事件 ID
-	id := RecordEventID(payload.ID)
+	id := SaveEventID(payload.ID)
 
 	// 将事件字符串转换为时间戳
 	t, err := time.Parse(time.RFC3339, string(data.Timestamp))
@@ -37,10 +36,10 @@ func (p *Processor) ProcessChannelDirectMessage(payload *dto.WSPayload, data *dt
 	// 构建 channel
 	channel := &channel.Channel{
 		Id:   data.ChannelID,
-		Type: channel.CHANNEL_TYPE_DIRECT,
+		Type: channel.ChannelTypeDirect,
 	}
 	// 记录私聊频道
-	echo.SetDirectChannel(data.ChannelID, data.GuildID)
+	SetDirectChannel(data.ChannelID, data.GuildID)
 
 	// 构建 guild
 	guild := &guild.Guild{
@@ -54,13 +53,13 @@ func (p *Processor) ProcessChannelDirectMessage(payload *dto.WSPayload, data *dt
 	}
 	member := &guildmember.GuildMember{
 		Nick:     data.Member.Nick,
-		JoinedAt: joinedTime.Unix(),
+		JoinedAt: joinedTime.UnixMilli(),
 	}
 
 	// 构建 message
 	message := &message.Message{
 		Id:       data.ID,
-		CreateAt: t.Unix(),
+		CreateAt: t.UnixMilli(),
 	}
 	// 转换消息格式
 	content := ConvertToMessageContent(data)
@@ -80,12 +79,12 @@ func (p *Processor) ProcessChannelDirectMessage(payload *dto.WSPayload, data *dt
 	}
 
 	// 填充事件数据
-	event = &signaling.Event{
+	event = &operation.Event{
 		Id:        id,
-		Type:      signaling.EventTypeMessageCreated,
+		Type:      operation.EventTypeMessageCreated,
 		Platform:  "qqguild",
 		SelfId:    SelfId,
-		Timestamp: t.Unix(),
+		Timestamp: t.UnixMilli(),
 		Channel:   channel,
 		Guild:     guild,
 		Member:    member,
