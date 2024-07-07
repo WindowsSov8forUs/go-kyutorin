@@ -542,13 +542,9 @@ func ConvertToMessageContent(data interface{}) string {
 
 	// 添加消息回复
 	if msg.MessageReference != nil {
-		message := satoriMessage.MessageElementMessage{
+		quote := satoriMessage.MessageElementQuote{
 			Id: msg.MessageReference.MessageID,
 		}
-		quote := satoriMessage.MessageElementQuote{
-			ChildrenMessageElement: &satoriMessage.ChildrenMessageElement{},
-		}
-		quote.ChildrenMessageElement = quote.SetChildren([]satoriMessage.MessageElement{&message})
 
 		// 添加为第一个元素
 		messageSegments = append([]satoriMessage.MessageElement{&quote}, messageSegments...)
