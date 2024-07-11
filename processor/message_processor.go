@@ -156,45 +156,51 @@ func SaveSrcToURL(src string) (string, string) {
 	}
 
 	// 检查是否是本地文件
-	if _, err := os.Stat(src); err == nil {
-		// 读取文件数据
-		data, err := os.ReadFile(src)
-		if err != nil {
-			return "", ""
+	re = regexp.MustCompile(`file:///(.*)`)
+	matches = re.FindStringSubmatch(src)
+	path, err := url.PathUnescape(matches[1])
+	if err == nil {
+		if _, err := os.Stat(path); err == nil {
+			// 读取文件数据
+			data, err := os.ReadFile(path)
+			if err != nil {
+				log.Errorf("failed to read file: %s", err.Error())
+				return "", ""
+			}
+
+			// 判断是否为音频文件
+			fileType := http.DetectContentType(data)
+			if strings.HasPrefix(fileType, "audio/") {
+				// 判断并转码
+				data, err = convertAudioToSilk(data)
+				if err != nil {
+					log.Errorf("转码音频文件失败: %s", err.Error())
+					return "", ""
+				}
+			} else if strings.HasPrefix(fileType, "video/") {
+				// 判断并转码
+				data, err = convertVideoToMP4(data)
+				if err != nil {
+					log.Errorf("转码视频文件失败: %s", err.Error())
+					return "", ""
+				}
+			} else if strings.HasPrefix(fileType, "image/") {
+				// 判断并转码
+				data, err = convertImage(data)
+				if err != nil {
+					log.Errorf("转码图像文件失败: %s", err.Error())
+					return "", ""
+				}
+			} else {
+				return "", ""
+			}
+
+			// 保存文件
+			u := fileserver.SaveFile(data)
+
+			// 返回 URL
+			return u, fileserver.GetHash(data)
 		}
-
-		// 判断是否为音频文件
-		fileType := http.DetectContentType(data)
-		if strings.HasPrefix(fileType, "audio/") {
-			// 判断并转码
-			data, err = convertAudioToSilk(data)
-			if err != nil {
-				log.Errorf("转码音频文件失败: %s", err.Error())
-				return "", ""
-			}
-		} else if strings.HasPrefix(fileType, "video/") {
-			// 判断并转码
-			data, err = convertVideoToMP4(data)
-			if err != nil {
-				log.Errorf("转码视频文件失败: %s", err.Error())
-				return "", ""
-			}
-		} else if strings.HasPrefix(fileType, "image/") {
-			// 判断并转码
-			data, err = convertImage(data)
-			if err != nil {
-				log.Errorf("转码图像文件失败: %s", err.Error())
-				return "", ""
-			}
-		} else {
-			return "", ""
-		}
-
-		// 保存文件
-		u := fileserver.SaveFile(data)
-
-		// 返回 URL
-		return u, fileserver.GetHash(data)
 	}
 
 	log.Errorf("无法解析的资源字符串: %s", src)
