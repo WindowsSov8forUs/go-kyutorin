@@ -120,7 +120,7 @@ func encode(data []byte, name string) (silkWav []byte, err error) {
 	if err := os.Chmod(file.Name(), 0700); err != nil {
 		return nil, fmt.Errorf("failed to change silk codec temporary file permission: %v", err)
 	}
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS == "windows" {
 		cmd = exec.Command(file.Name(), "-i", pcmPath, "-o", silkPath, "-s", strconv.Itoa(sampleRate))
 		if err := cmd.Run(); err != nil {
 			return nil, fmt.Errorf("failed to encode silk: %v", err)
