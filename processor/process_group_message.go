@@ -57,7 +57,8 @@ func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGrou
 
 	// 构建 user
 	user := &user.User{
-		Id: data.Author.MemberOpenID,
+		Id:     data.Author.MemberOpenID,
+		Avatar: p.getUserAvatar(data.Author.MemberOpenID),
 	}
 
 	// 填充事件数据

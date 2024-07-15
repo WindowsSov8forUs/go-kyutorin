@@ -47,7 +47,8 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 
 	// 构建 user
 	user := &user.User{
-		Id: data.Author.UserOpenID,
+		Id:     data.Author.UserOpenID,
+		Avatar: p.getUserAvatar(data.Author.UserOpenID),
 	}
 
 	// 填充事件数据

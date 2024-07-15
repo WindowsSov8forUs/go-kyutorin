@@ -226,7 +226,7 @@ func NewProcessor(conf *config.Config) (*Processor, context.Context, error) {
 	}
 
 	// 获取机器人信息
-	me, err := getBotMe(api, ctx)
+	me, err := getBotMe(api, ctx, conf)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -268,4 +268,10 @@ func (p *Processor) Run(ctx context.Context, server Server) error {
 func (p *Processor) BroadcastEvent(event *operation.Event) error {
 	p.Server.Send(event)
 	return nil
+}
+
+// getUserAvatar 获取用户头像
+func (p *Processor) getUserAvatar(userId string) string {
+	url := fmt.Sprintf("https://q.qlogo.cn/qqapp/%v/%s/3", p.conf.Account.AppID, userId)
+	return url
 }
