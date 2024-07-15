@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
@@ -65,13 +66,13 @@ func createOpenAPI(token *token.Token, conf *config.Config) (openapi.OpenAPI, op
 }
 
 // getBotMe 获取机器人信息
-func getBotMe(api openapi.OpenAPI, ctx context.Context) (*dto.User, error) {
+func getBotMe(api openapi.OpenAPI, ctx context.Context, conf *config.Config) (*dto.User, error) {
 	me, err := api.Me(ctx)
 	if err != nil {
 		return nil, err
 	}
 	bot := &user.User{
-		Id:     me.ID,
+		Id:     strconv.Itoa(int(conf.Account.BotID)),
 		Name:   me.Username,
 		Avatar: me.Avatar,
 		IsBot:  me.Bot,
@@ -80,7 +81,7 @@ func getBotMe(api openapi.OpenAPI, ctx context.Context) (*dto.User, error) {
 	SetBot("qqguild", bot)
 	SetStatus("qq", login.StatusOnline)
 	SetStatus("qqguild", login.StatusOnline)
-	SelfId = me.ID
+	SelfId = strconv.Itoa(int(conf.Account.BotID))
 	return me, nil
 }
 
