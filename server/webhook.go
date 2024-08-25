@@ -52,8 +52,8 @@ func StartWebHook(url string, token string, server *Server) *WebHook {
 // CreateWebHook 创建 WebHook 客户端
 func (server *Server) CreateWebHook(url string, token string) error {
 	// 添加 WebHook 客户端
-	server.mutex.Lock()
-	defer server.mutex.Unlock()
+	server.rwMutex.Lock()
+	defer server.rwMutex.Unlock()
 
 	// 检查重复 URL
 	for _, webhook := range server.webhooks {
@@ -72,8 +72,8 @@ func (server *Server) CreateWebHook(url string, token string) error {
 // DeleteWebHook 删除 WebHook 客户端
 func (server *Server) DeleteWebHook(url string) error {
 	// 删除 WebHook 客户端
-	server.mutex.Lock()
-	defer server.mutex.Unlock()
+	server.rwMutex.Lock()
+	defer server.rwMutex.Unlock()
 
 	for i, webhook := range server.webhooks {
 		if webhook.GetURL() == url {
