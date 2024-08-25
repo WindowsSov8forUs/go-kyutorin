@@ -16,6 +16,7 @@ import (
 
 // WebSocket WebSocket 服务器
 type WebSocket struct {
+	IP        string
 	conn      *websocket.Conn
 	token     string
 	mutex     *sync.Mutex
@@ -49,31 +50,15 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 
 	// 创建 WebSocket
 	ws := &WebSocket{
+		IP:        c.ClientIP(),
 		conn:      conn,
 		token:     token,
 		mutex:     &sync.Mutex{},
 		isClosed:  make(chan bool),
-		hasClosed: make(chan bool, 1),
+		hasClosed: make(chan bool),
 	}
-	// 添加到 server 中
-	server.mutex.Lock()
-	server.websockets = append(server.websockets, ws)
-	server.mutex.Unlock()
 
 	defer func() {
-		// 从 server 中移除
-		server.mutex.Lock()
-		for i, v := range server.websockets {
-			if v == ws {
-				server.websockets = append(server.websockets[:i], server.websockets[i+1:]...)
-				break
-			}
-		}
-		server.mutex.Unlock()
-		log.Infof("已断开与 Satori 应用的 WebSocket 连接，IP: %s", c.ClientIP())
-
-		// 关闭连接
-		ws.conn.Close()
 		ws.hasClosed <- true
 	}()
 
@@ -137,6 +122,30 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 		break
 	}
 
+	// 启动监听心跳
+	go ws.listenHeartbeat()
+
+	// 添加到 server 中
+	server.rwMutex.Lock()
+	server.websockets = append(server.websockets, ws)
+	server.rwMutex.Unlock()
+
+	defer func() {
+		// 从 server 中移除
+		server.rwMutex.Lock()
+		for i, v := range server.websockets {
+			if v == ws {
+				server.websockets = append(server.websockets[:i], server.websockets[i+1:]...)
+				break
+			}
+		}
+		server.rwMutex.Unlock()
+
+		// 关闭连接
+		ws.conn.Close()
+		log.Infof("已断开与 Satori 应用的 WebSocket 连接，IP: %s", c.ClientIP())
+	}()
+
 	// 进行事件补发
 	if sequence > 0 {
 		// 处理事件队列
@@ -164,9 +173,6 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 			}
 		}
 	}
-
-	// 监听心跳
-	go ws.listenHeartbeat()
 
 	<-ws.isClosed
 }
@@ -220,6 +226,7 @@ func (ws *WebSocket) listenHeartbeat() {
 	// 开始一个 11s 的计时器
 	timer := time.NewTimer(11 * time.Second)
 	go ws.receive(opChan, errChan)
+	log.Debugf("开始监听来自 WebSocket 客户端 (%s) 的心跳信令", ws.IP)
 	// 判断接收到的信令类型
 	for {
 		select {
@@ -256,6 +263,7 @@ func (ws *WebSocket) listenHeartbeat() {
 func (ws *WebSocket) SendMessage(message []byte) error {
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
+	log.Debugf("正在向 WebSocket 客户端 (%s) 发送信令: %s", ws.IP, message)
 	return ws.conn.WriteMessage(websocket.TextMessage, message)
 }
 
