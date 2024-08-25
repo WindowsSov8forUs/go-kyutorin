@@ -106,7 +106,7 @@ func printMessageDeleteEvent(payload *dto.WSPayload, data *dto.MessageDelete) {
 
 	// 构建成员名称
 	var memberName string
-	if data.Message.Member.Nick != "" {
+	if data.Message.Member != nil && data.Message.Member.Nick != "" {
 		memberName = fmt.Sprintf("%s(%s)", data.Message.Member.Nick, data.Message.Author.ID)
 	} else if data.Message.Author.Username != "" {
 		memberName = fmt.Sprintf("%s(%s)", data.Message.Author.Username, data.Message.Author.ID)
