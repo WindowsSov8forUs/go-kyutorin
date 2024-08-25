@@ -41,9 +41,37 @@ type Message struct {
 	SrcGuildID string `json:"src_guild_id"`
 	//返回的ret 超过主动限制会返回22009
 	Ret int `json:"ret,omitempty"`
+}
 
-	// 群聊场景下，该字段用来表示消息响应来自哪个群聊
-	GroupCode string `json:"group_code,omitempty"`
+// Forum 消息结构体定义
+type Forum struct {
+	// 消息ID
+	TaskId string `json:"task_id"`
+	// 发送时间 秒级时间戳
+	CreateTime string `json:"create_time"`
+}
+
+// GroupAddBotEvent 表示群添加机器人事件的数据结构
+type GroupAddBotEvent struct {
+	ID             string `json:"id"`
+	EventID        string `json:"event_id"`
+	GroupOpenID    string `json:"group_openid"`
+	OpMemberOpenID string `json:"op_member_openid"`
+	Timestamp      int64  `json:"timestamp"`
+}
+
+type GroupMsgRejectEvent struct {
+	EventID        string      `json:"event_id"`
+	GroupOpenID    string      `json:"group_openid"`
+	OpMemberOpenID string      `json:"op_member_openid"`
+	Timestamp      interface{} `json:"timestamp"`
+}
+
+type GroupMsgReceiveEvent struct {
+	EventID        string      `json:"event_id"`
+	GroupOpenID    string      `json:"group_openid"`
+	OpMemberOpenID string      `json:"op_member_openid"`
+	Timestamp      interface{} `json:"timestamp"`
 }
 
 type MediaResponse struct {

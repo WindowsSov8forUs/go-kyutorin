@@ -27,13 +27,15 @@ const (
 	channelRolesPermissionsURI uri = "/channels/{channel_id}/roles/{role_id}/permissions"
 
 	messagesURI       uri = "/channels/{channel_id}/messages"
+	fourmMessagesURI  uri = "/channels/{channel_id}/threads"
 	groupMessagesURI  uri = "/v2/groups/{group_id}/messages"
 	groupRichMediaURI uri = "/v2/groups/{group_id}/files"
 
 	c2cMessagesURI  uri = "/v2/users/{user_id}/messages"
 	c2cRichMediaURI uri = "/v2/users/{user_id}/files"
 
-	messageURI uri = "/channels/{channel_id}/messages/{message_id}"
+	messageURI       uri = "/channels/{channel_id}/messages/{message_id}"
+	groupMessagesURL uri = "/v2/groups/{group_id}/messages/{message_id}"
 
 	userMeURI       uri = "/users/@me"
 	userMeGuildsURI uri = "/users/@me/guilds"
@@ -52,6 +54,7 @@ const (
 
 	dmsURI        uri = "/dms/{guild_id}/messages"
 	dmsMessageURI uri = "/dms/{guild_id}/messages/{message_id}"
+	c2cMessageURI uri = "/v2/users/{user_id}/messages/{message_id}"
 
 	channelAnnouncesURI = "/channels/{channel_id}/announces"
 	channelAnnounceURI  = "/channels/{channel_id}/announces/{message_id}"

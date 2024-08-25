@@ -12,7 +12,7 @@ import (
 )
 
 // ProcessGroupAddRobot 处理群组添加机器人
-func (p *Processor) ProcessGroupAddRobot(payload *dto.WSPayload, data *dto.WSGroupAddRobotData) error {
+func (p *Processor) ProcessGroupAddRobot(payload *dto.WSPayload, data *dto.GroupAddBotEvent) error {
 	// 输出日志
 	printGroupAddRobot(data)
 
@@ -24,14 +24,14 @@ func (p *Processor) ProcessGroupAddRobot(payload *dto.WSPayload, data *dto.WSGro
 
 	// 构建 channel
 	channel := &channel.Channel{
-		Id:   data.GroupOpenid,
+		Id:   data.GroupOpenID,
 		Type: channel.ChannelTypeText,
 	}
-	SetOpenIdType(data.GroupOpenid, "group")
+	SetOpenIdType(data.GroupOpenID, "group")
 
 	// 构建 guild
 	guild := &guild.Guild{
-		Id: data.GroupOpenid,
+		Id: data.GroupOpenID,
 	}
 
 	// 构建 member
@@ -39,7 +39,7 @@ func (p *Processor) ProcessGroupAddRobot(payload *dto.WSPayload, data *dto.WSGro
 
 	// 构建 user
 	user := &user.User{
-		Id: data.OpMemberOpenid,
+		Id: data.OpMemberOpenID,
 	}
 
 	// 填充事件数据
@@ -59,6 +59,6 @@ func (p *Processor) ProcessGroupAddRobot(payload *dto.WSPayload, data *dto.WSGro
 	return p.BroadcastEvent(event)
 }
 
-func printGroupAddRobot(data *dto.WSGroupAddRobotData) {
-	log.Infof("机器人被 %s 添加进了群组 %s", data.OpMemberOpenid, data.GroupOpenid)
+func printGroupAddRobot(data *dto.GroupAddBotEvent) {
+	log.Infof("机器人被 %s 添加进了群组 %s", data.OpMemberOpenID, data.GroupOpenID)
 }

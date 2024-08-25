@@ -72,6 +72,20 @@ func (o *openAPI) PostMessage(ctx context.Context, channelID string, msg *dto.Me
 	return resp.Result().(*dto.Message), nil
 }
 
+// PostFourm 发帖子
+func (o *openAPI) PostFourm(ctx context.Context, channelID string, msg *dto.FourmToCreate) (*dto.Forum, error) {
+	resp, err := o.request(ctx).
+		SetResult(dto.Forum{}).
+		SetPathParam("channel_id", channelID).
+		SetBody(msg).
+		Put(o.getURL(fourmMessagesURI))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result().(*dto.Forum), nil
+}
+
 // PostMessageMultipart 发送消息使用multipart/form-data
 func (o *openAPI) PostMessageMultipart(ctx context.Context, channelID string, msg *dto.MessageToCreate, fileImageData []byte) (*dto.Message, error) {
 	request := o.request(ctx).SetResult(dto.Message{}).SetPathParam("channel_id", channelID)
@@ -158,6 +172,36 @@ func (o *openAPI) RetractMessage(ctx context.Context,
 		}
 	}
 	_, err := request.Delete(o.getURL(messageURI))
+	return err
+}
+
+// RetractMessage 撤回群消息
+func (o *openAPI) RetractGroupMessage(ctx context.Context,
+	groupID, msgID string, options ...openapi.RetractMessageOption) error {
+	request := o.request(ctx).
+		SetPathParam("group_id", groupID).
+		SetPathParam("message_id", string(msgID))
+	for _, option := range options {
+		if option == openapi.RetractMessageOptionHidetip {
+			request = request.SetQueryParam("hidetip", "true")
+		}
+	}
+	_, err := request.Delete(o.getURL(groupMessagesURL))
+	return err
+}
+
+// RetractMessage 撤回私聊消息
+func (o *openAPI) RetractC2CMessage(ctx context.Context,
+	UserID, msgID string, options ...openapi.RetractMessageOption) error {
+	request := o.request(ctx).
+		SetPathParam("user_id", UserID).
+		SetPathParam("message_id", string(msgID))
+	for _, option := range options {
+		if option == openapi.RetractMessageOptionHidetip {
+			request = request.SetQueryParam("hidetip", "true")
+		}
+	}
+	_, err := request.Delete(o.getURL(c2cMessageURI))
 	return err
 }
 
@@ -253,6 +297,27 @@ func (o *openAPI) PostC2CMessage(ctx context.Context, userID string, msg dto.API
 	default:
 		result.Message = resp.Result().(*dto.Message)
 	}
+
+	return result, nil
+}
+
+// PostC2CMessage 回复C2CSSE消息
+func (o *openAPI) PostC2CMessageSSE(ctx context.Context, userID string, msg dto.APIMessage) (*dto.C2CMessageResponse, error) {
+	var resp *resty.Response
+	var err error
+
+	resp, err = o.request(ctx).
+		SetResult(dto.Message{}). // 设置为消息类型
+		SetPathParam("user_id", userID).
+		SetBody(msg).
+		Post(o.getURL("/v2/users/{user_id}/messages"))
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := &dto.C2CMessageResponse{}
+	result.Message = resp.Result().(*dto.Message)
 
 	return result, nil
 }

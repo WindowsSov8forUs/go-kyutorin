@@ -12,7 +12,7 @@ import (
 )
 
 // ProcessGroupDelRobot 处理群组删除机器人
-func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.WSGroupDelRobotData) error {
+func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.GroupAddBotEvent) error {
 	// 输出日志
 	printGroupDelRobot(data)
 
@@ -24,14 +24,14 @@ func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.WSGro
 
 	// 构建 channel
 	channel := &channel.Channel{
-		Id:   data.GroupOpenid,
+		Id:   data.GroupOpenID,
 		Type: channel.ChannelTypeText,
 	}
-	DelOpenId(data.GroupOpenid)
+	DelOpenId(data.GroupOpenID)
 
 	// 构建 guild
 	guild := &guild.Guild{
-		Id: data.GroupOpenid,
+		Id: data.GroupOpenID,
 	}
 
 	// 构建 member
@@ -39,7 +39,7 @@ func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.WSGro
 
 	// 构建 user
 	user := &user.User{
-		Id: data.OpMemberOpenid,
+		Id: data.OpMemberOpenID,
 	}
 
 	// 填充事件数据
@@ -59,6 +59,6 @@ func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.WSGro
 	return p.BroadcastEvent(event)
 }
 
-func printGroupDelRobot(data *dto.WSGroupDelRobotData) {
-	log.Infof("机器人被 %s 移出了群组 %s", data.OpMemberOpenid, data.GroupOpenid)
+func printGroupDelRobot(data *dto.GroupAddBotEvent) {
+	log.Infof("机器人被 %s 移出了群组 %s", data.OpMemberOpenID, data.GroupOpenID)
 }

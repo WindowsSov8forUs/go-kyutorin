@@ -681,14 +681,14 @@ func convertDtoMessageV2ToMessage(dtoMessage *dto.Message) (*satoriMessage.Messa
 	}
 
 	// 判断是否为单聊
-	if dtoMessage.GroupCode != "" {
+	if dtoMessage.GroupID != "" {
 		// 是群聊
 		channel := &channel.Channel{
-			Id:   dtoMessage.GroupCode,
+			Id:   dtoMessage.GroupID,
 			Type: channel.ChannelTypeText,
 		}
 		guild := &guild.Guild{
-			Id: dtoMessage.GroupCode,
+			Id: dtoMessage.GroupID,
 		}
 		var guildMember *guildmember.GuildMember
 		if dtoMessage.Member == nil {

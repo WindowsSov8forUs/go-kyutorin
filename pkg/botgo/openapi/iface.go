@@ -67,11 +67,15 @@ type MessageAPI interface {
 	Message(ctx context.Context, channelID string, messageID string) (*dto.Message, error)
 	Messages(ctx context.Context, channelID string, pager *dto.MessagesPager) ([]*dto.Message, error)
 	PostMessage(ctx context.Context, channelID string, msg *dto.MessageToCreate) (*dto.Message, error)
+	// 增加的新的接口,发频道帖子信息
+	PostFourm(ctx context.Context, channelID string, Fourm *dto.FourmToCreate) (*dto.Forum, error)
 	// 增加的新的接口,发频道multipart信息
 	PostMessageMultipart(ctx context.Context, channelID string, msg *dto.MessageToCreate, fileImageData []byte) (*dto.Message, error)
 	PatchMessage(ctx context.Context,
 		channelID string, messageID string, msg *dto.MessageToCreate) (*dto.Message, error)
 	RetractMessage(ctx context.Context, channelID, msgID string, options ...RetractMessageOption) error
+	RetractGroupMessage(ctx context.Context, groupID, msgID string, options ...RetractMessageOption) error
+	RetractC2CMessage(ctx context.Context, userID, msgID string, options ...RetractMessageOption) error
 	// PostSettingGuide 发送设置引导
 	PostSettingGuide(ctx context.Context, channelID string, atUserIDs []string) (*dto.Message, error)
 
@@ -79,6 +83,8 @@ type MessageAPI interface {
 	PostGroupMessage(ctx context.Context, groupID string, msg dto.APIMessage) (*dto.GroupMessageResponse, error)
 	// PostC2CMessage 发送C2C消息
 	PostC2CMessage(ctx context.Context, userID string, msg dto.APIMessage) (*dto.C2CMessageResponse, error)
+	// PostC2CMessage 发送C2CSSE消息
+	PostC2CMessageSSE(ctx context.Context, userID string, msg dto.APIMessage) (*dto.C2CMessageResponse, error)
 }
 
 // GuildAPI guild 相关接口

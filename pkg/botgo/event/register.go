@@ -35,10 +35,12 @@ var DefaultHandlers struct {
 
 	Interaction InteractionEventHandler
 
-	GroupATMessage GroupATMessageEventHandler
-	GroupAddRobot  GroupAddRobotEventHandler
-	GroupDelRobot  GroupDelRobotEventHandler
-	C2CMessage     C2CMessageEventHandler
+	GroupATMessage  GroupATMessageEventHandler
+	C2CMessage      C2CMessageEventHandler
+	GroupAddbot     GroupAddRobotEventHandler
+	GroupDelbot     GroupDelRobotEventHandler
+	GroupMsgReject  GroupMsgRejectHandler
+	GroupMsgReceive GroupMsgReceiveHandler
 }
 
 // ReadyHandler 可以处理 ws 的 ready 事件
@@ -113,14 +115,20 @@ type InteractionEventHandler func(event *dto.WSPayload, data *dto.WSInteractionD
 // GroupATMessageEventHandler 群中at机器人消息事件 handler
 type GroupATMessageEventHandler func(event *dto.WSPayload, data *dto.WSGroupATMessageData) error
 
-// GroupAddRobotEventHandler 群添加机器人事件 handler
-type GroupAddRobotEventHandler func(event *dto.WSPayload, data *dto.WSGroupAddRobotData) error
-
-// GroupDelRobotEventHandler 群删除机器人事件 handler
-type GroupDelRobotEventHandler func(event *dto.WSPayload, data *dto.WSGroupDelRobotData) error
-
 // C2CMessageEventHandler 机器人消息事件 handler
 type C2CMessageEventHandler func(event *dto.WSPayload, data *dto.WSC2CMessageData) error
+
+// GroupAddRobot 机器人新增事件 handler
+type GroupAddRobotEventHandler func(event *dto.WSPayload, data *dto.GroupAddBotEvent) error
+
+// GroupDelRobot 机器人删除事件 handler
+type GroupDelRobotEventHandler func(event *dto.WSPayload, data *dto.GroupAddBotEvent) error
+
+// GroupMsgRejectHandler 机器人推送关闭事件 handler
+type GroupMsgRejectHandler func(event *dto.WSPayload, data *dto.GroupMsgRejectEvent) error
+
+// GroupMsgReceiveHandler 机器人推送开启事件 handler
+type GroupMsgReceiveHandler func(event *dto.WSPayload, data *dto.GroupMsgReceiveEvent) error
 
 // ************************************************
 
@@ -135,6 +143,10 @@ func RegisterHandlers(handlers ...interface{}) dto.Intent {
 			DefaultHandlers.ErrorNotify = handle
 		case PlainEventHandler:
 			DefaultHandlers.Plain = handle
+		case HelloHandler:
+			DefaultHandlers.Hello = handle
+		case ReconnectHandler:
+			DefaultHandlers.Reconnect = handle
 		case AudioEventHandler:
 			DefaultHandlers.Audio = handle
 			i = i | dto.EventToIntent(
@@ -144,6 +156,14 @@ func RegisterHandlers(handlers ...interface{}) dto.Intent {
 		case InteractionEventHandler:
 			DefaultHandlers.Interaction = handle
 			i = i | dto.EventToIntent(dto.EventInteractionCreate)
+		case GroupAddRobotEventHandler:
+			DefaultHandlers.GroupAddbot = handle
+		case GroupDelRobotEventHandler:
+			DefaultHandlers.GroupDelbot = handle
+		case GroupMsgRejectHandler:
+			DefaultHandlers.GroupMsgReject = handle
+		case GroupMsgReceiveHandler:
+			DefaultHandlers.GroupMsgReceive = handle
 		default:
 		}
 	}
@@ -227,12 +247,6 @@ func registerMessageHandlers(i dto.Intent, handlers ...interface{}) dto.Intent {
 		case GroupATMessageEventHandler:
 			DefaultHandlers.GroupATMessage = handle
 			i = i | dto.EventToIntent(dto.EventGroupAtMessageCreate)
-		case GroupAddRobotEventHandler:
-			DefaultHandlers.GroupAddRobot = handle
-			i = i | dto.EventToIntent(dto.EventGroupAddRobot)
-		case GroupDelRobotEventHandler:
-			DefaultHandlers.GroupDelRobot = handle
-			i = i | dto.EventToIntent(dto.EventGroupDelRobot)
 		case C2CMessageEventHandler:
 			DefaultHandlers.C2CMessage = handle
 			i = i | dto.EventToIntent(dto.EventC2CMessageCreate)
