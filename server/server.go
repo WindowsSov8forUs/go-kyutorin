@@ -79,7 +79,7 @@ func NewEventQueue() *EventQueue {
 }
 
 type Server struct {
-	mutex      sync.Mutex
+	rwMutex    sync.RWMutex
 	websockets []*WebSocket
 	webhooks   []*WebHook
 	httpServer *httpapi.Server
@@ -139,7 +139,7 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 
 func NewServer(api, apiV2 openapi.OpenAPI, conf *config.Config) (*Server, error) {
 	server := &Server{
-		mutex:      sync.Mutex{},
+		rwMutex:    sync.RWMutex{},
 		websockets: make([]*WebSocket, 0),
 		webhooks:   make([]*WebHook, 0),
 		httpServer: nil,
@@ -175,14 +175,17 @@ func (server *Server) Run() error {
 }
 
 func (server *Server) Send(event *operation.Event) {
-	server.mutex.Lock()
-	defer server.mutex.Unlock()
+	server.rwMutex.RLock()
 
 	server.events.PushEvent(event)
 
+	var waitGroup sync.WaitGroup
+
 	wsResults := make(chan *WebSocket, len(server.websockets))
 	for _, ws := range server.websockets {
+		waitGroup.Add(1)
 		go func(ws *WebSocket) {
+			defer waitGroup.Done()
 			err := ws.PostEvent(event)
 			if err != nil {
 				log.Errorf("WebSocket 推送事件时出错: %v", err)
@@ -196,7 +199,9 @@ func (server *Server) Send(event *operation.Event) {
 
 	whResults := make(chan *WebHook, len(server.webhooks))
 	for _, wh := range server.webhooks {
+		waitGroup.Add(1)
 		go func(wh *WebHook) {
+			defer waitGroup.Done()
 			if wh == nil {
 				whResults <- nil
 				return
@@ -220,43 +225,60 @@ func (server *Server) Send(event *operation.Event) {
 	}
 
 	// 等待 goroutine 完成
+	log.Debugf("等待 %d 个 WebSocket 和 WebHook 客户端推送事件...", len(server.websockets)+len(server.webhooks))
+	waitGroup.Wait()
+	log.Debug("所有 WebSocket 和 WebHook 客户端已推送事件完成")
+	close(wsResults)
+	close(whResults)
+
+	server.rwMutex.RUnlock()
+
 	websockets := make([]*WebSocket, 0)
-	for range server.websockets {
-		ws := <-wsResults
+	for ws := range wsResults {
 		if ws != nil {
 			websockets = append(websockets, ws)
 		}
 	}
-	server.websockets = websockets
+	log.Debugf("WebSocket 存活：(%v/%v)", len(websockets), len(server.websockets))
 
 	webhooks := make([]*WebHook, 0)
-	for range server.webhooks {
-		wh := <-whResults
+	for wh := range whResults {
 		if wh != nil {
 			webhooks = append(webhooks, wh)
 		}
 	}
+
+	server.rwMutex.Lock()
+	defer server.rwMutex.Unlock()
+
+	server.websockets = websockets
 	server.webhooks = webhooks
 }
 
 func (server *Server) Close() {
-	log.Info(("正在关闭 Satori 服务端..."))
+	log.Info("正在关闭 Satori 服务端...")
 
-	for _, ws := range server.websockets {
+	totalWebSocket := len(server.websockets)
+	for index, ws := range server.websockets {
 		if ws != nil {
+			log.Debugf("正在关闭 WebSocket 连接 (%v/%v) ：%s", index+1, totalWebSocket, ws.IP)
 			ws.Close()
+			log.Debugf("WebSocket 连接 (%v/%v) 已关闭：%s", index+1, totalWebSocket, ws.IP)
 		}
 	}
+
+	server.rwMutex.Lock()
+	defer server.rwMutex.Unlock()
+
 	server.websockets = make([]*WebSocket, 0)
-
-	server.mutex.Lock()
-	defer server.mutex.Unlock()
-
 	server.webhooks = make([]*WebHook, 0)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	log.Debug("正在关闭 HTTP 服务器...")
 	if err := server.httpServer.Shutdown(ctx); err != nil {
 		log.Errorf("关闭 HTTP 服务器时出错: %v", err)
 	}
+
+	log.Info("Satori 服务端已关闭")
 }
