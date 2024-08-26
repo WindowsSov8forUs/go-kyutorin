@@ -56,6 +56,7 @@ func (q *EventQueue) ResumeEvents(Sequence int64) []*operation.Event {
 	for _, event := range q.Events {
 		if event.Id == Sequence {
 			isFound = true
+			continue
 		}
 		if isFound {
 			events = append(events, event)
