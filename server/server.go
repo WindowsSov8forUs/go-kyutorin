@@ -26,19 +26,19 @@ type EventQueue struct {
 func (q *EventQueue) PushEvent(event *operation.Event) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
+
 	for {
 		if len(q.Events) < 1000 {
 			break
 		}
 		q.PopEvent()
 	}
+
 	q.Events = append(q.Events, event)
 }
 
 // PopEvent 弹出事件
 func (q *EventQueue) PopEvent() *operation.Event {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
 	if len(q.Events) == 0 {
 		return nil
 	}
@@ -175,7 +175,9 @@ func (server *Server) Run() error {
 }
 
 func (server *Server) Send(event *operation.Event) {
+	log.Debugf("在推送事件时尝试获取读锁")
 	server.rwMutex.RLock()
+	log.Debugf("在推送事件时获取读锁成功")
 
 	server.events.PushEvent(event)
 
@@ -232,6 +234,7 @@ func (server *Server) Send(event *operation.Event) {
 	close(whResults)
 
 	server.rwMutex.RUnlock()
+	log.Debugf("在推送事件时释放读锁")
 
 	websockets := make([]*WebSocket, 0)
 	for ws := range wsResults {
@@ -248,8 +251,13 @@ func (server *Server) Send(event *operation.Event) {
 		}
 	}
 
+	log.Debug("在统计有效连接时尝试获取写锁")
 	server.rwMutex.Lock()
-	defer server.rwMutex.Unlock()
+	log.Debug("在统计有效连接时获取写锁成功")
+	defer func() {
+		log.Debug("在统计有效连接时释放写锁")
+		server.rwMutex.Unlock()
+	}()
 
 	server.websockets = websockets
 	server.webhooks = webhooks
@@ -267,8 +275,13 @@ func (server *Server) Close() {
 		}
 	}
 
+	log.Debug("在关闭服务端时尝试获取写锁")
 	server.rwMutex.Lock()
-	defer server.rwMutex.Unlock()
+	log.Debug("在关闭服务端时获取写锁成功")
+	defer func() {
+		log.Debug("在关闭服务端时释放写锁")
+		server.rwMutex.Unlock()
+	}()
 
 	server.websockets = make([]*WebSocket, 0)
 	server.webhooks = make([]*WebHook, 0)
