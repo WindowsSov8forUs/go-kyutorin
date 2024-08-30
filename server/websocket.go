@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -54,7 +55,7 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 		conn:      conn,
 		token:     token,
 		mutex:     &sync.Mutex{},
-		isClosed:  make(chan bool, 1),
+		isClosed:  make(chan bool),
 		hasClosed: make(chan bool, 1),
 	}
 
@@ -238,14 +239,15 @@ func (ws *WebSocket) listenHeartbeat() {
 	// 启动信令接收协程
 	opChan := make(chan operation.Operation)
 	errChan := make(chan error)
+	go ws.receive(opChan, errChan)
 	// 开始一个 11s 的计时器
 	timer := time.NewTimer(11 * time.Second)
-	go ws.receive(opChan, errChan)
 	log.Debugf("开始监听来自 WebSocket 客户端 (%s) 的心跳信令", ws.IP)
 	// 判断接收到的信令类型
 	for {
 		select {
 		case sgnl := <-opChan:
+			fmt.Printf("收到信令: %v\n", sgnl)
 			if sgnl.Op == operation.OpCodePing {
 				// 收到心跳信令，回复心跳信令
 				operationPong := operation.Operation{
