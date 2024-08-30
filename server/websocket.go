@@ -54,8 +54,8 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 		conn:      conn,
 		token:     token,
 		mutex:     &sync.Mutex{},
-		isClosed:  make(chan bool),
-		hasClosed: make(chan bool),
+		isClosed:  make(chan bool, 1),
+		hasClosed: make(chan bool, 1),
 	}
 
 	defer func() {
@@ -126,13 +126,18 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 	go ws.listenHeartbeat()
 
 	// 添加到 server 中
+	log.Debug("在添加 WebSocket 连接时尝试获取写锁")
 	server.rwMutex.Lock()
+	log.Debug("在添加 WebSocket 连接时获取写锁成功")
 	server.websockets = append(server.websockets, ws)
 	server.rwMutex.Unlock()
+	log.Debug("在添加 WebSocket 连接时释放写锁")
 
 	defer func() {
 		// 从 server 中移除
+		log.Debug("在移除 WebSocket 连接时尝试获取写锁")
 		server.rwMutex.Lock()
+		log.Debug("在移除 WebSocket 连接时获取写锁成功")
 		for i, v := range server.websockets {
 			if v == ws {
 				server.websockets = append(server.websockets[:i], server.websockets[i+1:]...)
@@ -140,9 +145,18 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 			}
 		}
 		server.rwMutex.Unlock()
+		log.Debug("在移除 WebSocket 连接时释放写锁")
+
+		// 显式发送关闭帧
+		if err := ws.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")); err != nil {
+			log.Debugf("向 %s 发送关闭帧时出错: %v", c.ClientIP(), err)
+		}
 
 		// 关闭连接
-		ws.conn.Close()
+		err := ws.conn.Close()
+		if err != nil {
+			log.Debugf("关闭与 %s 的 WebSocket 连接时出错: %v", c.ClientIP(), err)
+		}
 		log.Infof("已断开与 Satori 应用的 WebSocket 连接，IP: %s", c.ClientIP())
 	}()
 
@@ -188,6 +202,7 @@ func (ws *WebSocket) receive(operationChan chan operation.Operation, errChan cha
 			return
 		}
 		// 解析信令
+		log.Debugf("收到来自 WebSocket 客户端 (%s) 的信令: %s", ws.IP, message)
 		var op operation.Operation
 		if err := json.Unmarshal(message, &op); err != nil {
 			continue
