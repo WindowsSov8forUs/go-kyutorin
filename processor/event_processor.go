@@ -257,7 +257,6 @@ func MessageAuditEventHandler(p *Processor) event.MessageAuditEventHandler {
 // GroupATMessageEventHandler 实现处理 群 at 消息的回调
 func GroupATMessageEventHandler(p *Processor) event.GroupATMessageEventHandler {
 	return func(event *dto.WSPayload, data *dto.WSGroupATMessageData) error {
-		log.Debugf("收到并正在处理群消息：%v", data.Content)
 		return p.ProcessGroupMessage(event, data)
 	}
 }

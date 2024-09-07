@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -127,18 +126,13 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 	go ws.listenHeartbeat()
 
 	// 添加到 server 中
-	log.Debug("在添加 WebSocket 连接时尝试获取写锁")
 	server.rwMutex.Lock()
-	log.Debug("在添加 WebSocket 连接时获取写锁成功")
 	server.websockets = append(server.websockets, ws)
 	server.rwMutex.Unlock()
-	log.Debug("在添加 WebSocket 连接时释放写锁")
 
 	defer func() {
 		// 从 server 中移除
-		log.Debug("在移除 WebSocket 连接时尝试获取写锁")
 		server.rwMutex.Lock()
-		log.Debug("在移除 WebSocket 连接时获取写锁成功")
 		for i, v := range server.websockets {
 			if v == ws {
 				server.websockets = append(server.websockets[:i], server.websockets[i+1:]...)
@@ -146,7 +140,6 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 			}
 		}
 		server.rwMutex.Unlock()
-		log.Debug("在移除 WebSocket 连接时释放写锁")
 
 		// 显式发送关闭帧
 		if err := ws.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")); err != nil {
@@ -203,7 +196,7 @@ func (ws *WebSocket) receive(operationChan chan operation.Operation, errChan cha
 			return
 		}
 		// 解析信令
-		log.Debugf("收到来自 WebSocket 客户端 (%s) 的信令: %s", ws.IP, message)
+		log.Tracef("收到来自 WebSocket 客户端 (%s) 的信令: %s", ws.IP, message)
 		var op operation.Operation
 		if err := json.Unmarshal(message, &op); err != nil {
 			continue
@@ -215,39 +208,34 @@ func (ws *WebSocket) receive(operationChan chan operation.Operation, errChan cha
 
 // receiveAtOnce 接收一次信令
 func (ws *WebSocket) receiveAtOnce(operationChan chan operation.Operation) {
-	for {
-		// 读取信令
-		_, message, err := ws.conn.ReadMessage()
-		if err != nil {
-			log.Errorf("读取信令时出错: %v", err)
-			ws.Close()
-			return
-		}
-		// 解析信令
-		var op operation.Operation
-		if err := json.Unmarshal(message, &op); err != nil {
-			continue
-		}
-		// 发送信令
-		operationChan <- op
+	// 读取信令
+	_, message, err := ws.conn.ReadMessage()
+	if err != nil {
+		log.Errorf("读取信令时出错: %v", err)
+		ws.Close()
 		return
 	}
+	// 解析信令
+	var op operation.Operation
+	if err := json.Unmarshal(message, &op); err != nil {
+		return
+	}
+	// 发送信令
+	operationChan <- op
 }
 
 // listenHeartbeat 监听心跳
 func (ws *WebSocket) listenHeartbeat() {
 	// 启动信令接收协程
-	opChan := make(chan operation.Operation)
-	errChan := make(chan error)
+	opChan := make(chan operation.Operation, 1)
+	errChan := make(chan error, 1)
 	go ws.receive(opChan, errChan)
 	// 开始一个 11s 的计时器
-	timer := time.NewTimer(11 * time.Second)
-	log.Debugf("开始监听来自 WebSocket 客户端 (%s) 的心跳信令", ws.IP)
+	timer := time.NewTimer(110 * time.Second)
 	// 判断接收到的信令类型
 	for {
 		select {
 		case sgnl := <-opChan:
-			fmt.Printf("收到信令: %v\n", sgnl)
 			if sgnl.Op == operation.OpCodePing {
 				// 收到心跳信令，回复心跳信令
 				operationPong := operation.Operation{
@@ -280,7 +268,7 @@ func (ws *WebSocket) listenHeartbeat() {
 func (ws *WebSocket) SendMessage(message []byte) error {
 	ws.mutex.Lock()
 	defer ws.mutex.Unlock()
-	log.Debugf("正在向 WebSocket 客户端 (%s) 发送信令: %s", ws.IP, message)
+	log.Tracef("正在向 WebSocket 客户端 (%s) 发送信令: %s", ws.IP, message)
 	return ws.conn.WriteMessage(websocket.TextMessage, message)
 }
 

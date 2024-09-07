@@ -109,7 +109,7 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 	resourceGroup.POST(":method", func(c *gin.Context) {
 		method := c.Param("method")
 		// 将请求输出
-		log.Debugf(
+		log.Tracef(
 			"收到请求: %s %s，请求头：%v，请求体：%v",
 			c.Request.Method,
 			method,
@@ -125,7 +125,7 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 	adminGroup.POST(":method", func(c *gin.Context) {
 		method := c.Param("method")
 		// 将请求输出
-		log.Debugf(
+		log.Tracef(
 			"收到请求: /admin/%s %s，请求头：%v，请求体：%v",
 			c.Request.Method,
 			method,
@@ -176,9 +176,7 @@ func (server *Server) Run() error {
 }
 
 func (server *Server) Send(event *operation.Event) {
-	log.Debugf("在推送事件时尝试获取读锁")
 	server.rwMutex.RLock()
-	log.Debugf("在推送事件时获取读锁成功")
 
 	server.events.PushEvent(event)
 
@@ -228,14 +226,11 @@ func (server *Server) Send(event *operation.Event) {
 	}
 
 	// 等待 goroutine 完成
-	log.Debugf("等待 %d 个 WebSocket 和 WebHook 客户端推送事件...", len(server.websockets)+len(server.webhooks))
 	waitGroup.Wait()
-	log.Debug("所有 WebSocket 和 WebHook 客户端已推送事件完成")
 	close(wsResults)
 	close(whResults)
 
 	server.rwMutex.RUnlock()
-	log.Debugf("在推送事件时释放读锁")
 
 	websockets := make([]*WebSocket, 0)
 	for ws := range wsResults {
@@ -243,7 +238,6 @@ func (server *Server) Send(event *operation.Event) {
 			websockets = append(websockets, ws)
 		}
 	}
-	log.Debugf("WebSocket 存活：(%v/%v)", len(websockets), len(server.websockets))
 
 	webhooks := make([]*WebHook, 0)
 	for wh := range whResults {
@@ -252,11 +246,8 @@ func (server *Server) Send(event *operation.Event) {
 		}
 	}
 
-	log.Debug("在统计有效连接时尝试获取写锁")
 	server.rwMutex.Lock()
-	log.Debug("在统计有效连接时获取写锁成功")
 	defer func() {
-		log.Debug("在统计有效连接时释放写锁")
 		server.rwMutex.Unlock()
 	}()
 
@@ -270,17 +261,13 @@ func (server *Server) Close() {
 	totalWebSocket := len(server.websockets)
 	for index, ws := range server.websockets {
 		if ws != nil {
-			log.Debugf("正在关闭 WebSocket 连接 (%v/%v) ：%s", index+1, totalWebSocket, ws.IP)
 			ws.Close()
-			log.Debugf("WebSocket 连接 (%v/%v) 已关闭：%s", index+1, totalWebSocket, ws.IP)
+			log.Tracef("WebSocket 连接 (%v/%v) 已关闭：%s", index+1, totalWebSocket, ws.IP)
 		}
 	}
 
-	log.Debug("在关闭服务端时尝试获取写锁")
 	server.rwMutex.Lock()
-	log.Debug("在关闭服务端时获取写锁成功")
 	defer func() {
-		log.Debug("在关闭服务端时释放写锁")
 		server.rwMutex.Unlock()
 	}()
 
@@ -289,7 +276,7 @@ func (server *Server) Close() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	log.Debug("正在关闭 HTTP 服务器...")
+	log.Trace("正在关闭 HTTP 服务器...")
 	if err := server.httpServer.Shutdown(ctx); err != nil {
 		log.Errorf("关闭 HTTP 服务器时出错: %v", err)
 	}
