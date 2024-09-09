@@ -71,11 +71,6 @@ func (p *Processor) ProcessGuildNormalMessage(payload *dto.WSPayload, data *dto.
 		IsBot:  data.Author.Bot,
 	}
 
-	// 构建 role
-	role := &guildrole.GuildRole{
-		Id: data.Member.Roles[0],
-	}
-
 	// 填充事件数据
 	event = &operation.Event{
 		Id:        id,
@@ -87,8 +82,19 @@ func (p *Processor) ProcessGuildNormalMessage(payload *dto.WSPayload, data *dto.
 		Guild:     guild,
 		Member:    member,
 		Message:   message,
-		Role:      role,
 		User:      user,
+	}
+
+	// 需要处理可能的 Member.Roles 为空的情况
+	//
+	// 傻逼腾讯
+	//
+	// 构建 role
+	if len(data.Member.Roles) > 0 {
+		role := &guildrole.GuildRole{
+			Id: data.Member.Roles[0],
+		}
+		event.Role = role
 	}
 
 	// 上报消息到 Satori 应用
