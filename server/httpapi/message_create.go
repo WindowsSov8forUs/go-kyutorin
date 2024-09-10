@@ -176,7 +176,6 @@ func convertToMessageToCreate(content string) (*dto.MessageToCreate, error) {
 
 // parseElementsInMessageToCreate 将 Satori 消息元素转换为消息体结构
 func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dtoMessageToCreate *dto.MessageToCreate) error {
-	var hash string
 	// 处理 satoriMessage.MessageElement
 	for _, element := range elements {
 		// 根据元素类型进行处理
@@ -203,8 +202,9 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 				continue
 			}
 			// TODO: 仍待寻找使 cache 能够有作用的方法
-			dtoMessageToCreate.Image, hash = processor.SaveSrcToURL(e.Src)
-			defer fileserver.DeleteFile(hash)
+			//
+			// 去除了原本删除保存文件的代码，可能导致文件存储占用空间较高
+			dtoMessageToCreate.Image, _ = processor.SaveSrcToURL(e.Src)
 		case *satoriMessage.MessageElementAudio:
 			// 频道不支持音频消息
 			continue
