@@ -113,7 +113,7 @@ func HandleMessageCreate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (an
 			if err != nil {
 				return gin.H{}, &InternalServerError{err}
 			}
-			messageResponse, err := convertDtoMessageToMessage(dtoC2CMessageResponse.Message)
+			messageResponse, err := convertDtoMessageV2ToMessage(dtoC2CMessageResponse.Message)
 			if err != nil {
 				return gin.H{}, &InternalServerError{err}
 			}
@@ -678,69 +678,6 @@ func convertDtoMessageV2ToMessage(dtoMessage *dto.Message) (*satoriMessage.Messa
 	message.Id = dtoMessage.ID
 	if content := strings.TrimSpace(processor.ConvertToMessageContent(dtoMessage)); content != "" {
 		message.Content = content
-	}
-
-	// 判断是否为单聊
-	if dtoMessage.GroupID != "" {
-		// 是群聊
-		channel := &channel.Channel{
-			Id:   dtoMessage.GroupID,
-			Type: channel.ChannelTypeText,
-		}
-		guild := &guild.Guild{
-			Id: dtoMessage.GroupID,
-		}
-		var guildMember *guildmember.GuildMember
-		if dtoMessage.Member == nil {
-			guildMember = &guildmember.GuildMember{}
-			if dtoMessage.Member != nil {
-				guildMember.Nick = dtoMessage.Member.Nick
-			}
-			if dtoMessage.Author != nil {
-				guildMember.Avatar = dtoMessage.Author.Avatar
-			}
-		}
-		var u *user.User
-		if dtoMessage.Author != nil {
-			u = &user.User{
-				Id:     dtoMessage.Author.ID,
-				Name:   dtoMessage.Author.Username,
-				Avatar: dtoMessage.Author.Avatar,
-				IsBot:  dtoMessage.Author.Bot,
-			}
-		}
-
-		// 获取时间
-		if dtoMessage.Member != nil {
-			time, err := dtoMessage.Member.JoinedAt.Time()
-			if err != nil {
-				return nil, err
-			}
-			guildMember.JoinedAt = time.UnixMilli()
-		}
-
-		message.Channel = channel
-		message.Guild = guild
-		message.Member = guildMember
-		message.User = u
-	} else {
-		// 判断是否存在需要的数据
-		if dtoMessage.Author != nil {
-			// 是单聊
-			// TODO: 目前没有实际运用场景，很可能需要更改
-			channel := &channel.Channel{
-				Id:   dtoMessage.Author.ID,
-				Type: channel.ChannelTypeDirect,
-			}
-			user := &user.User{
-				Id:     dtoMessage.Author.ID,
-				Name:   dtoMessage.Author.Username,
-				Avatar: dtoMessage.Author.Avatar,
-				IsBot:  dtoMessage.Author.Bot,
-			}
-			message.Channel = channel
-			message.User = user
-		}
 	}
 
 	time, err := dtoMessage.Timestamp.Time()
