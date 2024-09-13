@@ -39,11 +39,11 @@ account: # QQ 机器人配置
     # 注释掉不需要的事件类型，将需要的事件类型前的注释删除
     # 对于某些事件需要特定的机器人权限，如果订阅了没有权限的事件，将会导致连接失败
     intents:
-      - "GUILDS"                       # 频道事件             # 该事件是默认订阅
-      - "GUILD_MEMBERS"                # 成员事件             # 该事件是默认订阅的
+      - "GUILDS"                        # 频道事件             # 该事件是默认订阅
+      - "GUILD_MEMBERS"                 # 成员事件             # 该事件是默认订阅的
       #- "GUILD_MESSAGES                # 私域频道消息事件      # 仅 私域 机器人可以设置
       #- "GUILD_MESSAGE_REACTION        # 频道消息表情表态事件
-      #- "DIRECT_MESSAGES               # 频道私信事件
+      #- "DIRECT_MESSAGES"              # 频道私信事件
       #- "OPEN_FORUMS_EVENT"            # 公域论坛事件          # 此为 公域 事件
       #- "AUDIO_OR_LIVE_CHANNEL_MEMBER" # 音频或直播频道成员事件
       #- "USER_MESSAGES"                # 单聊/群聊消息事件     # 仅拥有单聊/群聊权限的机器人可以设置
@@ -51,7 +51,7 @@ account: # QQ 机器人配置
       #- "MESSAGE_AUDIT"                # 消息审核事件
       #- "FORUMS_EVENT"                 # 私域论坛事件          # 仅 私域 机器人可以设置
       #- "AUDIO_ACTION"                 # 音频机器人事件
-      - "PUBLIC_GUILD_MESSAGES"        # 公域频道消息事件       # 该事件是默认订阅
+      - "PUBLIC_GUILD_MESSAGES"         # 公域频道消息事件      # 该事件是默认订阅
 
 # 本地文件服务器配置
 # 请确保配置正确，否则无法正常启动
