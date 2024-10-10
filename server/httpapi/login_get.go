@@ -29,6 +29,9 @@ func HandleLoginGet(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, AP
 		return gin.H{}, &InternalServerError{err}
 	}
 
+	// 更新 SelfID
+	processor.SelfId = me.ID
+
 	// 构建机器人对象
 	bot := &user.User{
 		Id:     processor.GetBot(message.Platform).Id,

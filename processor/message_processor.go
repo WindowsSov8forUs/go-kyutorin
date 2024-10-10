@@ -471,6 +471,13 @@ func ConvertToMessageContent(data interface{}) string {
 			id := strings.TrimPrefix(strings.TrimSuffix(r, ">"), "<@!")
 			for _, mention := range msg.Mentions {
 				if mention.ID == id {
+					// 如果是机器人自己则进行替换
+					//
+					// 这种时候一般来说都是频道
+					if id == SelfId {
+						id = GetBot("qqguild").Id
+					}
+
 					at := satoriMessage.MessageElementAt{
 						Id:   mention.ID,
 						Name: mention.Username,
