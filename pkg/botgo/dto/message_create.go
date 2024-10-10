@@ -43,6 +43,7 @@ func (msg RichMediaMessage) GetSendType() SendType {
 
 // MessageToCreate 发送消息结构体定义
 type MessageToCreate struct {
+	// Content string `json:"content,omitempty"`
 	Content string `json:"content,omitempty"`
 	MsgType int    `json:"msg_type,omitempty"` //消息类型: 0:文字消息, 2: md消息
 	Embed   *Embed `json:"embed,omitempty"`

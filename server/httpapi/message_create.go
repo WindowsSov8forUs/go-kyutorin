@@ -301,10 +301,10 @@ func convertToMessageToCreateV2(content string, OpenId string, messageType strin
 		return nil, err
 	}
 
-	// MsgType 为 7 时 Content 字段不能为空
-	if dtoMessageToCreate.Content == "" && dtoMessageToCreate.MsgType == 7 {
-		dtoMessageToCreate.Content = " "
-	}
+	// // MsgType 为 7 时 Content 字段不能为空
+	// if dtoMessageToCreate.Content == "" && dtoMessageToCreate.MsgType == 7 {
+	// 	dtoMessageToCreate.Content = "\u200B"
+	// }
 	fmt.Printf("[%s]\n", dtoMessageToCreate.Content)
 	return dtoMessageToCreate, nil
 }
