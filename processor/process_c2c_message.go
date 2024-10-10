@@ -56,7 +56,7 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 		Id:        id,
 		Type:      operation.EventTypeMessageCreated,
 		Platform:  "qq",
-		SelfId:    SelfId,
+		SelfId:    GetBot("qq").Id,
 		Timestamp: t.UnixMilli(),
 		Channel:   channel,
 		Message:   message,

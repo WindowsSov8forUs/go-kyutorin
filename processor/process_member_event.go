@@ -86,7 +86,7 @@ func (p *Processor) ProcessMemberEvent(payload *dto.WSPayload, data *dto.WSGuild
 		Id:        id,
 		Type:      eventType,
 		Platform:  "qqguild",
-		SelfId:    SelfId,
+		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t.UnixMilli(),
 		Guild:     guild,
 		Member:    member,

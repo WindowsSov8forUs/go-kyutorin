@@ -78,7 +78,7 @@ func (p *Processor) ProcessChannelDirectMessage(payload *dto.WSPayload, data *dt
 		Id:        id,
 		Type:      operation.EventTypeMessageCreated,
 		Platform:  "qqguild",
-		SelfId:    SelfId,
+		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t.UnixMilli(),
 		Channel:   channel,
 		Guild:     guild,

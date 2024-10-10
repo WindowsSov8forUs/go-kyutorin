@@ -84,7 +84,7 @@ func (p *Processor) ProcessMessageReaction(payload *dto.WSPayload, data *dto.WSM
 		Id:        id,
 		Type:      eventType,
 		Platform:  "qqguild",
-		SelfId:    SelfId,
+		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t,
 		Channel:   channel,
 		Guild:     guild,

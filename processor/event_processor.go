@@ -20,15 +20,16 @@ func ReadyHandler(p *Processor) event.ReadyHandler {
 		// 构建 qq 事件
 		id := SaveEventID(data.SessionID)
 
+		bot := GetBot("qq")
 		satoriEvent := &operation.Event{
 			Id:        id,
 			Type:      operation.EventTypeLoginUpdated,
 			Platform:  "qq",
-			SelfId:    SelfId,
+			SelfId:    bot.Id,
 			Timestamp: time.Now().UnixMilli(),
 			Login: &login.Login{
-				User:     GetBot("qq"),
-				SelfId:   SelfId,
+				User:     bot,
+				SelfId:   bot.Id,
 				Platform: "qq",
 				Status:   GetStatus("qq"),
 			},
@@ -39,15 +40,16 @@ func ReadyHandler(p *Processor) event.ReadyHandler {
 		// 构建 qqguild 事件
 		id = SaveEventID(data.SessionID)
 
+		bot = GetBot("qqguild")
 		satoriEvent = &operation.Event{
 			Id:        id,
 			Type:      operation.EventTypeLoginUpdated,
 			Platform:  "qqguild",
-			SelfId:    SelfId,
+			SelfId:    bot.Id,
 			Timestamp: time.Now().UnixMilli(),
 			Login: &login.Login{
-				User:     GetBot("qqguild"),
-				SelfId:   SelfId,
+				User:     bot,
+				SelfId:   bot.Id,
 				Platform: "qqguild",
 				Status:   GetStatus("qqguild"),
 			},
@@ -67,15 +69,16 @@ func ErrorNotifyHandler(p *Processor) event.ErrorNotifyHandler {
 		// 构建 qq 事件
 		id := SaveEventID(err.Error())
 
+		bot := GetBot("qq")
 		satoriEvent := &operation.Event{
 			Id:        id,
 			Type:      operation.EventTypeLoginUpdated,
 			Platform:  "qq",
-			SelfId:    SelfId,
+			SelfId:    bot.Id,
 			Timestamp: time.Now().UnixMilli(),
 			Login: &login.Login{
-				User:     GetBot("qq"),
-				SelfId:   SelfId,
+				User:     bot,
+				SelfId:   bot.Id,
 				Platform: "qq",
 				Status:   GetStatus("qq"),
 			},
@@ -86,15 +89,16 @@ func ErrorNotifyHandler(p *Processor) event.ErrorNotifyHandler {
 		// 构建 qqguild 事件
 		id = SaveEventID(err.Error())
 
+		bot = GetBot("qqguild")
 		satoriEvent = &operation.Event{
 			Id:        id,
 			Type:      operation.EventTypeLoginUpdated,
 			Platform:  "qqguild",
-			SelfId:    SelfId,
+			SelfId:    bot.Id,
 			Timestamp: time.Now().UnixMilli(),
 			Login: &login.Login{
-				User:     GetBot("qqguild"),
-				SelfId:   SelfId,
+				User:     bot,
+				SelfId:   bot.Id,
 				Platform: "qqguild",
 				Status:   GetStatus("qqguild"),
 			},

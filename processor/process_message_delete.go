@@ -82,7 +82,7 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 		Id:        id,
 		Type:      operation.EventTypeMessageDeleted,
 		Platform:  "qqguild",
-		SelfId:    SelfId,
+		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t,
 		Channel:   channel,
 		Guild:     guild,

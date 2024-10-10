@@ -31,7 +31,7 @@ func HandleLoginGet(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, AP
 
 	// 构建机器人对象
 	bot := &user.User{
-		Id:     me.ID,
+		Id:     processor.GetBot(message.Platform).Id,
 		Name:   me.Username,
 		Avatar: me.Avatar,
 		IsBot:  me.Bot,

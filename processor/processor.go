@@ -102,7 +102,7 @@ func GetReadyBody() *operation.ReadyBody {
 	for platform, bot := range GetBots() {
 		login := &login.Login{
 			User:      bot,
-			SelfId:    SelfId,
+			SelfId:    GetBot(platform).Id,
 			Platform:  platform,
 			Status:    GetStatus(platform),
 			Features:  Features(),

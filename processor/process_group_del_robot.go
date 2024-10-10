@@ -47,7 +47,7 @@ func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.Group
 		Id:        id,
 		Type:      operation.EventTypeGuildRemoved,
 		Platform:  "qq",
-		SelfId:    SelfId,
+		SelfId:    GetBot("qq").Id,
 		Timestamp: data.Timestamp,
 		Channel:   channel,
 		Guild:     guild,

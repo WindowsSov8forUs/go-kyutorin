@@ -283,7 +283,7 @@ func BotValidateMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		if xSelfID != processor.SelfId {
+		if xSelfID != bot.Id {
 			c.String(http.StatusBadRequest, `unknown self id "%s"`, xSelfID)
 			c.Abort()
 			return

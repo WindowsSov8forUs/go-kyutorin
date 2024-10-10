@@ -29,7 +29,7 @@ func (p *Processor) ProcessChannelEvent(payload *dto.WSPayload, data *dto.WSChan
 		Id:        id,
 		Type:      operation.EventTypeInternal,
 		Platform:  "qqguild",
-		SelfId:    SelfId,
+		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t,
 		Type_:     string(payload.Type),
 		Data_:     data,

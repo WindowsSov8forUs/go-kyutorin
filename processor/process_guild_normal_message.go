@@ -76,7 +76,7 @@ func (p *Processor) ProcessGuildNormalMessage(payload *dto.WSPayload, data *dto.
 		Id:        id,
 		Type:      operation.EventTypeMessageCreated,
 		Platform:  "qqguild",
-		SelfId:    SelfId,
+		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t.UnixMilli(),
 		Channel:   channel,
 		Guild:     guild,

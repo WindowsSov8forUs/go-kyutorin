@@ -71,17 +71,23 @@ func getBotMe(api openapi.OpenAPI, ctx context.Context, conf *config.Config) (*d
 	if err != nil {
 		return nil, err
 	}
-	bot := &user.User{
+	qqBot := &user.User{
 		Id:     strconv.Itoa(int(conf.Account.BotID)),
 		Name:   me.Username,
 		Avatar: me.Avatar,
 		IsBot:  me.Bot,
 	}
-	SetBot("qq", bot)
-	SetBot("qqguild", bot)
+	qqGuildBot := &user.User{
+		Id:     strconv.Itoa(int(conf.Account.AppID)),
+		Name:   me.Username,
+		Avatar: me.Avatar,
+		IsBot:  me.Bot,
+	}
+	SetBot("qq", qqBot)
+	SetBot("qqguild", qqGuildBot)
 	SetStatus("qq", login.StatusOnline)
 	SetStatus("qqguild", login.StatusOnline)
-	SelfId = strconv.Itoa(int(conf.Account.BotID))
+	SelfId = me.ID
 	return me, nil
 }
 

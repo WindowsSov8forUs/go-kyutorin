@@ -37,7 +37,7 @@ func HandlerLoginList(message *AdminActionMessage) (any, APIError) {
 	for platform, bot := range bots {
 		login := login.Login{
 			User:     bot,
-			SelfId:   processor.SelfId,
+			SelfId:   bot.Id,
 			Platform: platform,
 			Status:   processor.GetStatus(platform),
 		}
