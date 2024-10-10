@@ -479,7 +479,7 @@ func ConvertToMessageContent(data interface{}) string {
 					}
 
 					at := satoriMessage.MessageElementAt{
-						Id:   mention.ID,
+						Id:   id,
 						Name: mention.Username,
 					}
 					messageSegments = append(messageSegments, &at)
