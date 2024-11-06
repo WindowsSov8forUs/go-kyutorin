@@ -54,7 +54,7 @@ func HandleMessageCreate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (an
 			log.Infof("发送消息到频道 %s : %s", request.ChannelId, logContent(request.Content))
 
 			var dtoMessageToCreate = &dto.MessageToCreate{}
-			dtoMessageToCreate, err = convertToMessageToCreate(request.Content)
+			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, true)
 			if err != nil {
 				return gin.H{}, &InternalServerError{err}
 			}
@@ -74,7 +74,7 @@ func HandleMessageCreate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (an
 
 			var dtoMessageToCreate = &dto.MessageToCreate{}
 			var dtoDirectMessage = &dto.DirectMessage{}
-			dtoMessageToCreate, err = convertToMessageToCreate(request.Content)
+			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, false)
 			if err != nil {
 				return gin.H{}, &InternalServerError{err}
 			}
@@ -158,7 +158,7 @@ func logContent(content string) string {
 }
 
 // convertToMessageToCreate 转换为消息体结构
-func convertToMessageToCreate(content string) (*dto.MessageToCreate, error) {
+func convertToMessageToCreate(content string, isGuild bool) (*dto.MessageToCreate, error) {
 	// 将文本消息内容转换为 satoriMessage.MessageElement
 	elements, err := satoriMessage.Parse(content)
 	if err != nil {
@@ -167,7 +167,7 @@ func convertToMessageToCreate(content string) (*dto.MessageToCreate, error) {
 
 	// 处理 satoriMessage.MessageElement
 	var dtoMessageToCreate = &dto.MessageToCreate{}
-	err = parseElementsInMessageToCreate(elements, dtoMessageToCreate)
+	err = parseElementsInMessageToCreate(elements, dtoMessageToCreate, isGuild)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func convertToMessageToCreate(content string) (*dto.MessageToCreate, error) {
 }
 
 // parseElementsInMessageToCreate 将 Satori 消息元素转换为消息体结构
-func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dtoMessageToCreate *dto.MessageToCreate) error {
+func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dtoMessageToCreate *dto.MessageToCreate, isGuild bool) error {
 	// 处理 satoriMessage.MessageElement
 	for _, element := range elements {
 		// 根据元素类型进行处理
@@ -183,13 +183,15 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 		case *satoriMessage.MessageElementText:
 			dtoMessageToCreate.Content += e.Content
 		case *satoriMessage.MessageElementAt:
-			if e.Type == "all" {
-				dtoMessageToCreate.Content += "@everyone"
-			} else {
-				if e.Id != "" {
-					dtoMessageToCreate.Content += fmt.Sprintf("<@%s>", e.Id)
+			if isGuild {
+				if e.Type == "all" {
+					dtoMessageToCreate.Content += "<qqbot-at-everyone />"
 				} else {
-					continue
+					if e.Id != "" {
+						dtoMessageToCreate.Content += fmt.Sprintf("<@%s>", e.Id)
+					} else {
+						continue
+					}
 				}
 			}
 		case *satoriMessage.MessageElementSharp:
@@ -217,38 +219,38 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 		// TODO: 修饰元素全部视为子元素集合，或许可以变成 dto.markdown ？
 		case *satoriMessage.MessageElementStrong:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
 		case *satoriMessage.MessageElementEm:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
 		case *satoriMessage.MessageElementIns:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
 		case *satoriMessage.MessageElementDel:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
 		case *satoriMessage.MessageElementSpl:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
 		case *satoriMessage.MessageElementCode:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
 		case *satoriMessage.MessageElementSup:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
 		case *satoriMessage.MessageElementSub:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
 		case *satoriMessage.MessageElmentBr:
 			dtoMessageToCreate.Content += "\n"
 		case *satoriMessage.MessageElmentP:
 			dtoMessageToCreate.Content += "\n"
 			// 视为子元素集合
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
 			dtoMessageToCreate.Content += "\n"
 		case *satoriMessage.MessageElementMessage:
 			// 视为子元素集合，目前不支持视为转发消息
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
 		case *satoriMessage.MessageElementQuote:
 			// 遍历子元素，只会处理第一个 satoriMessage.MessageElementMessage 元素
 			for _, child := range e.GetChildren() {
@@ -318,10 +320,21 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 		case *satoriMessage.MessageElementText:
 			dtoMessageToCreate.Content += e.Content
 		case *satoriMessage.MessageElementAt:
-			// 群聊/单聊目前似乎是不支持的
-			continue
+			// 单聊并不支持
+			if messageType == "group" {
+				if e.Type == "all" {
+					// 只在文字子频道中可用
+					continue
+				} else {
+					if e.Id != "" {
+						dtoMessageToCreate.Content += fmt.Sprintf("<@%s>", e.Id)
+					} else {
+						continue
+					}
+				}
+			}
 		case *satoriMessage.MessageElementSharp:
-			// 群聊/单聊目前似乎是不支持的
+			// 群聊/单聊并不支持
 			continue
 		case *satoriMessage.MessageElementA:
 			dtoMessageToCreate.Content += e.Href

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 	"github.com/gin-gonic/gin"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/openapi"
@@ -30,7 +31,12 @@ func HandleMessageUpdate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (an
 
 	if message.Platform == "qqguild" {
 		var dtoMessageToCreate = &dto.MessageToCreate{}
-		dtoMessageToCreate, err = convertToMessageToCreate(request.Content)
+		guildId := processor.GetDirectChannelGuild(request.ChannelId)
+		if guildId == "" {
+			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, true)
+		} else {
+			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, false)
+		}
 		if err != nil {
 			return gin.H{}, &InternalServerError{err}
 		}
