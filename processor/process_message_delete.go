@@ -69,14 +69,6 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 		IsBot:  messageDelete.OpUser.Bot,
 	}
 
-	// 构建 user
-	user := &user.User{
-		Id:     messageDelete.Message.Author.ID,
-		Name:   messageDelete.Message.Author.Username,
-		Avatar: messageDelete.Message.Author.Avatar,
-		IsBot:  messageDelete.Message.Author.Bot,
-	}
-
 	// 填充事件数据
 	event = &operation.Event{
 		Id:        id,
@@ -88,7 +80,16 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 		Guild:     guild,
 		Message:   message,
 		Operator:  operator,
-		User:      user,
+	}
+
+	// 构建 user
+	if messageDelete.Message.Author != nil {
+		event.User = &user.User{
+			Id:     messageDelete.Message.Author.ID,
+			Name:   messageDelete.Message.Author.Username,
+			Avatar: messageDelete.Message.Author.Avatar,
+			IsBot:  messageDelete.Message.Author.Bot,
+		}
 	}
 
 	// 上报消息到 Satori 应用
