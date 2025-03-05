@@ -108,23 +108,27 @@ func printMessageDeleteEvent(payload *dto.WSPayload, data *dto.MessageDelete) {
 	var memberName string
 	if data.Message.Member != nil && data.Message.Member.Nick != "" {
 		memberName = fmt.Sprintf("%s(%s)", data.Message.Member.Nick, data.Message.Author.ID)
-	} else if data.Message.Author.Username != "" {
-		memberName = fmt.Sprintf("%s(%s)", data.Message.Author.Username, data.Message.Author.ID)
+	} else if data.Message.Author != nil {
+		if data.Message.Author.Username != "" {
+			memberName = fmt.Sprintf("%s(%s)", data.Message.Author.Username, data.Message.Author.ID)
+		} else {
+			memberName = data.Message.Author.ID
+		}
 	} else {
-		memberName = data.Message.Author.ID
+		memberName = ""
 	}
 
 	// 构建日志内容
 	var logContent string
 	switch payload.Type {
 	case dto.EventMessageDelete:
-		if data.OpUser.ID == data.Message.Author.ID {
+		if memberName == "" || data.OpUser.ID == data.Message.Author.ID {
 			logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 撤回了一条消息。", data.Message.GuildID, data.Message.ChannelID, userName)
 		} else {
 			logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 撤回了用户 %s 的一条消息。", data.Message.GuildID, data.Message.ChannelID, userName, memberName)
 		}
 	case dto.EventPublicMessageDelete:
-		if data.OpUser.ID == data.Message.Author.ID {
+		if memberName == "" || data.OpUser.ID == data.Message.Author.ID {
 			logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 撤回了一条消息。", data.Message.GuildID, data.Message.ChannelID, userName)
 		} else {
 			logContent = fmt.Sprintf("频道 %s 的子频道 %s 的用户 %s 撤回了用户 %s 的一条消息。", data.Message.GuildID, data.Message.ChannelID, userName, memberName)
@@ -132,7 +136,7 @@ func printMessageDeleteEvent(payload *dto.WSPayload, data *dto.MessageDelete) {
 	case dto.EventDirectMessageDelete:
 		logContent = fmt.Sprintf("用户 %s 撤回了一条私聊频道消息。", userName)
 	default:
-		if data.OpUser.ID == data.Message.Author.ID {
+		if memberName == "" || data.OpUser.ID == data.Message.Author.ID {
 			logContent = fmt.Sprintf("用户 %s 撤回了一条消息。", userName)
 		} else {
 			logContent = fmt.Sprintf("用户 %s 撤回了用户 %s 的一条消息。", userName, memberName)
