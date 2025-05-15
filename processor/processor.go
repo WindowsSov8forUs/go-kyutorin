@@ -101,17 +101,18 @@ func GetReadyBody() *operation.ReadyBody {
 	var logins []*login.Login
 	for platform, bot := range GetBots() {
 		login := &login.Login{
-			User:      bot,
-			SelfId:    GetBot(platform).Id,
-			Platform:  platform,
-			Status:    GetStatus(platform),
-			Features:  Features(),
-			ProxyUrls: ProxyUrls(),
+			Sn:       generateLoginSn(),
+			Platform: platform,
+			User:     bot,
+			Status:   GetStatus(platform),
+			Adapter:  "kyutorin",
+			Features: Features(),
 		}
 		logins = append(logins, login)
 	}
 	return &operation.ReadyBody{
-		Logins: logins,
+		Logins:    logins,
+		ProxyUrls: ProxyUrls(),
 	}
 }
 

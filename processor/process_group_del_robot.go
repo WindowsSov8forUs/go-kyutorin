@@ -44,11 +44,10 @@ func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.Group
 
 	// 填充事件数据
 	event = &operation.Event{
-		Id:        id,
+		Sn:        id,
 		Type:      operation.EventTypeGuildRemoved,
-		Platform:  "qq",
-		SelfId:    GetBot("qq").Id,
 		Timestamp: data.Timestamp,
+		Login:     buildNonLoginEventLogin("qq"),
 		Channel:   channel,
 		Guild:     guild,
 		Member:    member,

@@ -81,11 +81,10 @@ func (p *Processor) ProcessMessageReaction(payload *dto.WSPayload, data *dto.WSM
 
 	// 填充事件数据
 	event = &operation.Event{
-		Id:        id,
+		Sn:        id,
 		Type:      eventType,
-		Platform:  "qqguild",
-		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t,
+		Login:     buildNonLoginEventLogin("qqguild"),
 		Channel:   channel,
 		Guild:     guild,
 		Message:   m,

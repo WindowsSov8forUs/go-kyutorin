@@ -53,11 +53,10 @@ func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMes
 
 	// 填充事件数据
 	event = &operation.Event{
-		Id:        id,
+		Sn:        id,
 		Type:      operation.EventTypeMessageCreated,
-		Platform:  "qq",
-		SelfId:    GetBot("qq").Id,
 		Timestamp: t.UnixMilli(),
+		Login:     buildNonLoginEventLogin("qq"),
 		Channel:   channel,
 		Message:   message,
 		User:      user,

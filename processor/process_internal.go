@@ -30,11 +30,10 @@ func (p *Processor) ProcessQQInternal(payload *dto.WSPayload, data interface{}) 
 
 	// 填充事件数据
 	event = &operation.Event{
-		Id:        id,
+		Sn:        id,
 		Type:      operation.EventTypeInternal,
-		Platform:  "qq",
-		SelfId:    GetBot("qq").Id,
 		Timestamp: t,
+		Login:     buildNonLoginEventLogin("qq"),
 		Type_:     string(payload.Type),
 		Data_:     data_,
 	}
@@ -65,11 +64,10 @@ func (p *Processor) ProcessQQGuildInternal(payload *dto.WSPayload, data interfac
 
 	// 填充事件数据
 	event = &operation.Event{
-		Id:        id,
+		Sn:        id,
 		Type:      operation.EventTypeInternal,
-		Platform:  "qqguild",
-		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t,
+		Login:     buildNonLoginEventLogin("qqguild"),
 		Type_:     string(payload.Type),
 		Data_:     data_,
 	}
@@ -100,11 +98,10 @@ func (p *Processor) ProcessInteractionEvent(data *dto.WSInteractionData) error {
 	}
 
 	event = &operation.Event{
-		Id:        id,
+		Sn:        id,
 		Type:      operation.EventTypeInternal,
-		Platform:  platform,
-		SelfId:    GetBot(platform).Id,
 		Timestamp: t,
+		Login:     buildNonLoginEventLogin(platform),
 		Type_:     string(dto.EventInteractionCreate),
 		Data_:     data,
 	}

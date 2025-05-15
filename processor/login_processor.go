@@ -3,6 +3,7 @@ package processor
 import (
 	"context"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
@@ -15,6 +16,34 @@ import (
 	"github.com/tencent-connect/botgo/token"
 	"github.com/tencent-connect/botgo/websocket"
 )
+
+var loginSnCounter int64 = 0
+
+func generateLoginSn() int64 {
+	return atomic.AddInt64(&loginSnCounter, 1)
+}
+
+// 构建登录事件 Login 资源
+func buildLoginEventLogin(platform string) *login.Login {
+	bot := GetBot(platform)
+	return &login.Login{
+		Sn:       generateLoginSn(),
+		Platform: platform,
+		User:     bot,
+		Status:   GetStatus(platform),
+		Adapter:  "kyutorin",
+	}
+}
+
+// 构建非登录事件 Login 资源
+func buildNonLoginEventLogin(platform string) *login.Login {
+	bot := GetBot(platform)
+	return &login.Login{
+		Sn:       generateLoginSn(),
+		Platform: platform,
+		User:     bot,
+	}
+}
 
 // getToken 获取 token
 func getToken(conf *config.Config, ctx context.Context) (*token.Token, error) {

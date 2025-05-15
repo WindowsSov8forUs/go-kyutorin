@@ -20,42 +20,25 @@ func ReadyHandler(p *Processor) event.ReadyHandler {
 		// 构建 qq 事件
 		id := SaveEventID(data.SessionID)
 
-		bot := GetBot("qq")
 		satoriEvent := &operation.Event{
-			Id:        id,
+			Sn:        id,
 			Type:      operation.EventTypeLoginUpdated,
-			Platform:  "qq",
-			SelfId:    bot.Id,
 			Timestamp: time.Now().UnixMilli(),
-			Login: &login.Login{
-				User:     bot,
-				SelfId:   bot.Id,
-				Platform: "qq",
-				Status:   GetStatus("qq"),
-			},
+			Login:     buildLoginEventLogin("qq"),
 		}
-
-		p.BroadcastEvent(satoriEvent)
 
 		// 构建 qqguild 事件
 		id = SaveEventID(data.SessionID)
 
-		bot = GetBot("qqguild")
-		satoriEvent = &operation.Event{
-			Id:        id,
+		satoriEventGuild := &operation.Event{
+			Sn:        id,
 			Type:      operation.EventTypeLoginUpdated,
-			Platform:  "qqguild",
-			SelfId:    bot.Id,
 			Timestamp: time.Now().UnixMilli(),
-			Login: &login.Login{
-				User:     bot,
-				SelfId:   bot.Id,
-				Platform: "qqguild",
-				Status:   GetStatus("qqguild"),
-			},
+			Login:     buildLoginEventLogin("qqguild"),
 		}
 
 		p.BroadcastEvent(satoriEvent)
+		p.BroadcastEvent(satoriEventGuild)
 	}
 }
 
@@ -69,42 +52,25 @@ func ErrorNotifyHandler(p *Processor) event.ErrorNotifyHandler {
 		// 构建 qq 事件
 		id := SaveEventID(err.Error())
 
-		bot := GetBot("qq")
 		satoriEvent := &operation.Event{
-			Id:        id,
+			Sn:        id,
 			Type:      operation.EventTypeLoginUpdated,
-			Platform:  "qq",
-			SelfId:    bot.Id,
 			Timestamp: time.Now().UnixMilli(),
-			Login: &login.Login{
-				User:     bot,
-				SelfId:   bot.Id,
-				Platform: "qq",
-				Status:   GetStatus("qq"),
-			},
+			Login:     buildLoginEventLogin("qq"),
 		}
-
-		p.BroadcastEvent(satoriEvent)
 
 		// 构建 qqguild 事件
 		id = SaveEventID(err.Error())
 
-		bot = GetBot("qqguild")
-		satoriEvent = &operation.Event{
-			Id:        id,
+		satoriEventGuild := &operation.Event{
+			Sn:        id,
 			Type:      operation.EventTypeLoginUpdated,
-			Platform:  "qqguild",
-			SelfId:    bot.Id,
 			Timestamp: time.Now().UnixMilli(),
-			Login: &login.Login{
-				User:     bot,
-				SelfId:   bot.Id,
-				Platform: "qqguild",
-				Status:   GetStatus("qqguild"),
-			},
+			Login:     buildLoginEventLogin("qqguild"),
 		}
 
 		p.BroadcastEvent(satoriEvent)
+		p.BroadcastEvent(satoriEventGuild)
 	}
 }
 

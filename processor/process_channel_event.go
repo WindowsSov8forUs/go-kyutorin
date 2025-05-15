@@ -26,11 +26,10 @@ func (p *Processor) ProcessChannelEvent(payload *dto.WSPayload, data *dto.WSChan
 
 	// 填充事件数据
 	event = &operation.Event{
-		Id:        id,
+		Sn:        id,
 		Type:      operation.EventTypeInternal,
-		Platform:  "qqguild",
-		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t,
+		Login:     buildNonLoginEventLogin("qqguild"),
 		Type_:     string(payload.Type),
 		Data_:     data,
 	}

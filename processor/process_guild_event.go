@@ -65,11 +65,10 @@ func (p *Processor) ProcessGuildEvent(payload *dto.WSPayload, data *dto.WSGuildD
 
 	// 填充事件数据
 	event = &operation.Event{
-		Id:        id,
+		Sn:        id,
 		Type:      eventType,
-		Platform:  "qqguild",
-		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t.UnixMilli(),
+		Login:     buildNonLoginEventLogin("qqguild"),
 		Guild:     guild,
 		Operator:  operator,
 	}

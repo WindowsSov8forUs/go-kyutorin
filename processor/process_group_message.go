@@ -63,11 +63,10 @@ func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGrou
 
 	// 填充事件数据
 	event = &operation.Event{
-		Id:        id,
+		Sn:        id,
 		Type:      operation.EventTypeMessageCreated,
-		Platform:  "qq",
-		SelfId:    GetBot("qq").Id,
 		Timestamp: t.UnixMilli(),
+		Login:     buildNonLoginEventLogin("qq"),
 		Channel:   channel,
 		Guild:     guild,
 		Member:    member,

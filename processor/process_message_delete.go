@@ -71,11 +71,10 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 
 	// 填充事件数据
 	event = &operation.Event{
-		Id:        id,
+		Sn:        id,
 		Type:      operation.EventTypeMessageDeleted,
-		Platform:  "qqguild",
-		SelfId:    GetBot("qqguild").Id,
 		Timestamp: t,
+		Login:     buildNonLoginEventLogin("qqguild"),
 		Channel:   channel,
 		Guild:     guild,
 		Message:   message,
