@@ -15,7 +15,7 @@ import (
 )
 
 // ProcessC2CMessage 处理私聊消息
-func (p *Processor) ProcessC2CMessage(payload *dto.WSPayload, data *dto.WSC2CMessageData) error {
+func (p *Processor) ProcessC2CMessage(payload *dto.Payload, data *dto.WSC2CMessageData) error {
 	// 打印消息日志
 	printC2CMessage(data)
 

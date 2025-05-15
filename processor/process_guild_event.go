@@ -13,7 +13,7 @@ import (
 )
 
 // ProcessGuildEvent 处理群组事件
-func (p *Processor) ProcessGuildEvent(payload *dto.WSPayload, data *dto.WSGuildData) error {
+func (p *Processor) ProcessGuildEvent(payload *dto.Payload, data *dto.WSGuildData) error {
 	// TODO: 有修改的可能
 	var err error
 
@@ -77,7 +77,7 @@ func (p *Processor) ProcessGuildEvent(payload *dto.WSPayload, data *dto.WSGuildD
 	return p.BroadcastEvent(event)
 }
 
-func printGuildEvent(payload *dto.WSPayload, data *dto.WSGuildData) {
+func printGuildEvent(payload *dto.Payload, data *dto.WSGuildData) {
 	// 构建频道名称
 	var guildName string
 	if data.Name != "" {

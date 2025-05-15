@@ -9,7 +9,7 @@ import (
 )
 
 // ProcessInternal 将 qq 事件转换为 Satori 的 Internal 事件
-func (p *Processor) ProcessQQInternal(payload *dto.WSPayload, data interface{}) error {
+func (p *Processor) ProcessQQInternal(payload *dto.Payload, data interface{}) error {
 	// 构建事件数据
 	var event *operation.Event
 
@@ -43,7 +43,7 @@ func (p *Processor) ProcessQQInternal(payload *dto.WSPayload, data interface{}) 
 }
 
 // ProcessInternal 将 qqguild 事件转换为 Satori 的 Internal 事件
-func (p *Processor) ProcessQQGuildInternal(payload *dto.WSPayload, data interface{}) error {
+func (p *Processor) ProcessQQGuildInternal(payload *dto.Payload, data interface{}) error {
 	// 构建事件数据
 	var event *operation.Event
 

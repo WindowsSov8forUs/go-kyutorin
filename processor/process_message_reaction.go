@@ -16,7 +16,7 @@ import (
 )
 
 // ProcessMessageReaction 处理消息回应
-func (p *Processor) ProcessMessageReaction(payload *dto.WSPayload, data *dto.WSMessageReactionData) error {
+func (p *Processor) ProcessMessageReaction(payload *dto.Payload, data *dto.WSMessageReactionData) error {
 	// TODO: 更好的处理方式
 
 	// 打印消息日志
@@ -95,7 +95,7 @@ func (p *Processor) ProcessMessageReaction(payload *dto.WSPayload, data *dto.WSM
 	return p.BroadcastEvent(event)
 }
 
-func printMessageReaction(payload *dto.WSPayload, data *dto.WSMessageReactionData) {
+func printMessageReaction(payload *dto.Payload, data *dto.WSMessageReactionData) {
 	// 构建目标名称
 	targetName := fmt.Sprintf("%s(%s)", targetTypeToString(data.Target.Type), data.Target.ID)
 

@@ -15,7 +15,7 @@ import (
 )
 
 // ProcessMessageDelete 将消息撤回事件转换为 Satori 的 MessageDeleted 事件
-func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{}) error {
+func (p *Processor) ProcessMessageDelete(payload *dto.Payload, data interface{}) error {
 	// 强制类型转换获取 MessageDelete 结构
 	var messageDelete *dto.MessageDelete
 	var channelType channel.ChannelType // 获取平台名称
@@ -95,7 +95,7 @@ func (p *Processor) ProcessMessageDelete(payload *dto.WSPayload, data interface{
 	return p.BroadcastEvent(event)
 }
 
-func printMessageDeleteEvent(payload *dto.WSPayload, data *dto.MessageDelete) {
+func printMessageDeleteEvent(payload *dto.Payload, data *dto.MessageDelete) {
 	// 构建用户名称
 	var userName string
 	if data.OpUser.Username != "" {

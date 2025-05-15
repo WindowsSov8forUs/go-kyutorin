@@ -17,7 +17,7 @@ import (
 )
 
 // ProcessChannelDirectMessage 处理频道私聊消息
-func (p *Processor) ProcessChannelDirectMessage(payload *dto.WSPayload, data *dto.WSDirectMessageData) error {
+func (p *Processor) ProcessChannelDirectMessage(payload *dto.Payload, data *dto.WSDirectMessageData) error {
 	// 打印消息日志
 	printChannelDirectMessage(data)
 

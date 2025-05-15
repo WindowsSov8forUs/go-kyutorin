@@ -12,7 +12,7 @@ import (
 )
 
 // ProcessGroupDelRobot 处理群组删除机器人
-func (p *Processor) ProcessGroupDelRobot(payload *dto.WSPayload, data *dto.GroupAddBotEvent) error {
+func (p *Processor) ProcessGroupDelRobot(payload *dto.Payload, data *dto.GroupAddBotEvent) error {
 	// 输出日志
 	printGroupDelRobot(data)
 

@@ -17,7 +17,7 @@ import (
 )
 
 // ProcessGuildATMessage 处理群组 AT 消息
-func (p *Processor) ProcessGuildATMessage(payload *dto.WSPayload, data *dto.WSATMessageData) error {
+func (p *Processor) ProcessGuildATMessage(payload *dto.Payload, data *dto.WSATMessageData) error {
 	// 打印消息日志
 	printGuildATMessage(data)
 

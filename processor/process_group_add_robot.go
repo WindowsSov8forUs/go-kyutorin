@@ -12,7 +12,7 @@ import (
 )
 
 // ProcessGroupAddRobot 处理群组添加机器人
-func (p *Processor) ProcessGroupAddRobot(payload *dto.WSPayload, data *dto.GroupAddBotEvent) error {
+func (p *Processor) ProcessGroupAddRobot(payload *dto.Payload, data *dto.GroupAddBotEvent) error {
 	// 输出日志
 	printGroupAddRobot(data)
 

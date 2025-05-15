@@ -17,7 +17,7 @@ import (
 )
 
 // ProcessGuildNormalMessage 处理群组私域消息
-func (p *Processor) ProcessGuildNormalMessage(payload *dto.WSPayload, data *dto.WSMessageData) error {
+func (p *Processor) ProcessGuildNormalMessage(payload *dto.Payload, data *dto.WSMessageData) error {
 	// 打印消息日志
 	printGuildMessage(data)
 

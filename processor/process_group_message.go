@@ -17,7 +17,7 @@ import (
 )
 
 // ProcessGroupMessage 处理群组消息
-func (p *Processor) ProcessGroupMessage(payload *dto.WSPayload, data *dto.WSGroupATMessageData) error {
+func (p *Processor) ProcessGroupMessage(payload *dto.Payload, data *dto.WSGroupATMessageData) error {
 	// 打印消息日志
 	printGroupMessage(data)
 
