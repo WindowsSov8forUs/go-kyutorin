@@ -92,7 +92,7 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 	engine := gin.New()
 	engine.Use(
 		gin.Recovery(),
-		httpapi.HeadersSetMiddleware("1.1"),
+		httpapi.HeadersSetMiddleware("1.2"),
 	)
 
 	webSocketGroup := engine.Group(fmt.Sprintf("%s/v1/events", server.conf.Satori.Path))
@@ -110,7 +110,7 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 		method := c.Param("method")
 		// 将请求输出
 		log.Tracef(
-			"收到请求: %s %s，请求头：%v，请求体：%v",
+			"收到请求: %s /%s ，请求头：%v ，请求体：%v",
 			c.Request.Method,
 			method,
 			c.Request.Header,
@@ -132,7 +132,27 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 			c.Request.Header,
 			c.Request.Body,
 		)
-		httpapi.AdminMiddleware()(c)
+		httpapi.MetaMiddleware()(c)
+	})
+
+	metaGroup := engine.Group(fmt.Sprintf("%s/v1/meta", server.conf.Satori.Path))
+	// 元信息接口处理函数
+	metaGroup.Use(httpapi.HeadersValidateMiddleware())
+	metaGroup.POST("/*method", func(c *gin.Context) {
+		method := c.Param("method")
+		if method == "/" {
+			method = ""
+		}
+		// 将请求输出
+		log.Tracef(
+			"收到请求: %s /meta%s ，请求头：%v ，请求体：%v",
+			c.Request.Method,
+			method,
+			c.Request.Header,
+			c.Request.Body,
+		)
+		c.Set("method", method)
+		httpapi.MetaMiddleware()(c)
 	})
 
 	return engine

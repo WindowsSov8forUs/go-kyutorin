@@ -4,7 +4,7 @@ go 1.21.5
 
 require github.com/tencent-connect/botgo v0.1.6
 
-require github.com/satori-protocol-go/satori-model-go v0.1.0
+require github.com/satori-protocol-go/satori-model-go v0.2.1
 
 require (
 	github.com/bytedance/sonic/loader v0.1.1 // indirect

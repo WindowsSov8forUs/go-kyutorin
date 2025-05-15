@@ -7,16 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/login"
+	"github.com/satori-protocol-go/satori-model-go/pkg/meta"
 )
 
 func init() {
-	RegisterAdminHandler("login.list", HandlerLoginList)
-	RegisterAdminHandler("webhook.create", HandlerWebHookCreate)
-	RegisterAdminHandler("webhook.delete", HandlerWebHookDelete)
+	RegisterMetaHandler("", HandlerMeta)
+	RegisterMetaHandler("webhook.create", HandlerWebHookCreate)
+	RegisterMetaHandler("webhook.delete", HandlerWebHookDelete)
 }
 
-// LoginListResponse 获取登录信息列表响应
-type LoginListResponse []login.Login
+// MetaResponse 获取元信息响应
+type MetaResponse meta.Meta
 
 // WebHookCreateRequest 创建 WebHook 请求
 type WebHookCreateRequest struct {
@@ -29,9 +30,9 @@ type WebHookDeleteRequest struct {
 	URL string `json:"url"` // WebHook 地址
 }
 
-// HandlerLoginList 处理获取登录信息列表请求
-func HandlerLoginList(message *AdminActionMessage) (any, APIError) {
-	var response LoginListResponse
+// HandlerMeta 处理获取元信息请求
+func HandlerMeta(message *MetaActionMessage) (any, APIError) {
+	var response MetaResponse
 
 	bots := processor.GetBots()
 	for platform, bot := range bots {
@@ -43,14 +44,15 @@ func HandlerLoginList(message *AdminActionMessage) (any, APIError) {
 			Adapter:  "kyutorin",
 			Features: processor.Features(),
 		}
-		response = append(response, login)
+		response.Logins = append(response.Logins, &login)
 	}
+	response.ProxyUrls = processor.ProxyUrls()
 
 	return response, nil
 }
 
 // HandlerWebHookCreate 处理创建 WebHook 请求
-func HandlerWebHookCreate(message *AdminActionMessage) (any, APIError) {
+func HandlerWebHookCreate(message *MetaActionMessage) (any, APIError) {
 	var request WebHookCreateRequest
 	err := json.Unmarshal([]byte(message.Data), &request)
 	if err != nil {
@@ -66,7 +68,7 @@ func HandlerWebHookCreate(message *AdminActionMessage) (any, APIError) {
 }
 
 // HandlerWebHookDelete 处理移除 WebHook 请求
-func HandlerWebHookDelete(message *AdminActionMessage) (any, APIError) {
+func HandlerWebHookDelete(message *MetaActionMessage) (any, APIError) {
 	var request WebHookDeleteRequest
 	err := json.Unmarshal([]byte(message.Data), &request)
 	if err != nil {

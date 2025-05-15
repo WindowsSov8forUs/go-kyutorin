@@ -150,8 +150,8 @@ type ActionMessage struct {
 	Data     []byte     // 应用发送的数据
 }
 
-// AdminActionMessage Satori 应用发送的管理接口调用信息
-type AdminActionMessage struct {
+// MetaActionMessage Satori 应用发送的元信息接口调用信息
+type MetaActionMessage struct {
 	API  string // 接口
 	Data []byte // 应用发送的数据
 }
@@ -166,10 +166,10 @@ func NewActionMessage(api string, bot *user.User, platform string, data []byte) 
 	}
 }
 
-// NewAdminActionMessage 创建一个新的 AdminActionMessage
-func NewAdminActionMessage(api string, data []byte) *AdminActionMessage {
-	return &AdminActionMessage{
-		API:  api,
+// NewMetaActionMessage 创建一个新的 MetaActionMessage
+func NewMetaActionMessage(api string, data []byte) *MetaActionMessage {
+	return &MetaActionMessage{
+		API:  "meta" + api,
 		Data: data,
 	}
 }
@@ -177,11 +177,11 @@ func NewAdminActionMessage(api string, data []byte) *AdminActionMessage {
 // HTTP API 处理函数
 type HandlerFunc func(api, apiV2 openapi.OpenAPI, action *ActionMessage) (any, APIError)
 
-// 管理接口的处理函数
-type AdminHandlerFunc func(action *AdminActionMessage) (any, APIError)
+// 元信息接口的处理函数
+type MetaHandlerFunc func(action *MetaActionMessage) (any, APIError)
 
 var handlers = make(map[string]HandlerFunc)
-var adminHandlers = make(map[string]AdminHandlerFunc)
+var metaHandlers = make(map[string]MetaHandlerFunc)
 
 // defaultResource 资源默认处理函数
 func defaultResource(action *ActionMessage) (any, APIError) {
@@ -193,9 +193,12 @@ func RegisterHandler(api string, handler HandlerFunc) {
 	handlers[api] = handler
 }
 
-// RegisterAdminHandler 注册管理接口的处理函数
-func RegisterAdminHandler(api string, handler AdminHandlerFunc) {
-	adminHandlers[api] = handler
+// RegisterMetaHandler 注册元信息接口的处理函数
+func RegisterMetaHandler(api string, handler MetaHandlerFunc) {
+	if api != "" {
+		api = "/" + api
+	}
+	metaHandlers["meta"+api] = handler
 }
 
 // CallAPI 调用 Satori API
@@ -206,12 +209,12 @@ func CallAPI(api, apiV2 openapi.OpenAPI, action *ActionMessage) (any, APIError) 
 	return handlers[action.API](api, apiV2, action)
 }
 
-// CallAdminAPI 调用 Satori 管理 API
-func CallAdminAPI(action *AdminActionMessage) (any, APIError) {
-	if _, ok := adminHandlers[action.API]; !ok {
+// CallMetaAPI 调用 Satori 元信息 API
+func CallMetaAPI(action *MetaActionMessage) (any, APIError) {
+	if _, ok := metaHandlers[action.API]; !ok {
 		return gin.H{}, &NotFoundError{api: action.API}
 	}
-	return adminHandlers[action.API](action)
+	return metaHandlers[action.API](action)
 }
 
 // HeadersSetMiddleware 设置响应头中间件
@@ -230,12 +233,24 @@ func HeadersValidateMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 提取请求头
 		contentType := c.GetHeader("Content-Type")
+		// 提取请求 API ，用以进行特例判断
+		method := c.Param("method")
 
 		// 判断请求头错误
-		if contentType != "application/json" {
-			c.String(http.StatusBadRequest, "content type must be application/json")
-			c.Abort()
-			return
+		if method == "upload.create" {
+			// 对于文件上传 API ， Content-Type 必须为 multipart/form-data
+			if contentType != "multipart/form-data" {
+				c.String(http.StatusBadRequest, "content type must be multipart/form-data")
+				c.Abort()
+				return
+			}
+		} else {
+			// 对于其他 API ， Content-Type 必须为 application/json
+			if contentType != "application/json" {
+				c.String(http.StatusBadRequest, "content type must be application/json")
+				c.Abort()
+				return
+			}
 		}
 
 		c.Next()
@@ -346,15 +361,15 @@ func resourceAPIHandler(c *gin.Context, api, apiV2 openapi.OpenAPI) {
 }
 
 // AdminMiddleware 管理接口中间件
-func AdminMiddleware() gin.HandlerFunc {
+func MetaMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// 在内部进行判断处理
-		adminAPIHandler(ctx)
+		metaAPIHandler(ctx)
 	}
 }
 
-// adminAPIHandler 处理管理 API
-func adminAPIHandler(c *gin.Context) {
+// metaAPIHandler 处理元信息 API
+func metaAPIHandler(c *gin.Context) {
 	// 提取路径中参数
 	method := c.Param("method")
 
@@ -366,10 +381,10 @@ func adminAPIHandler(c *gin.Context) {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
-	adminActionMessage := NewAdminActionMessage(method, bodyBytes)
+	metaActionMessage := NewMetaActionMessage(method, bodyBytes)
 
 	// 调用 API
-	response, err := CallAdminAPI(adminActionMessage)
+	response, err := CallMetaAPI(metaActionMessage)
 	if err != nil {
 		switch err.(type) {
 		case *BadRequestError:
