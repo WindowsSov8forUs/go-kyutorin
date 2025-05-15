@@ -25,21 +25,20 @@ const (
 	OpCodePing                   // 心跳
 	OpCodePong                   // 心跳回复
 	OpCodeIdentify               // 鉴权
-	OpCodeReady                  // 鉴权回复
+	OpCodeReady                  // 鉴权成功
+	OpCodeMeta                   // 元信息更新
 )
 
 // 事件类型定义
 type Event struct {
-	Id        int64                    `json:"id"`                 // 事件 ID
+	Sn        int64                    `json:"sn"`                 // 序列号
 	Type      EventType                `json:"type"`               // 事件类型
-	Platform  string                   `json:"platform"`           // 接收者的平台名称
-	SelfId    string                   `json:"self_id"`            // 接收者的平台账号
 	Timestamp int64                    `json:"timestamp"`          // 事件的时间戳
+	Login     *login.Login             `json:"login"`              // 登录信息
 	Argv      *interaction.Argv        `json:"argv,omitempty"`     // 交互指令
 	Button    *interaction.Button      `json:"button,omitempty"`   // 交互按钮
 	Channel   *channel.Channel         `json:"channel,omitempty"`  // 事件所属的频道
 	Guild     *guild.Guild             `json:"guild,omitempty"`    // 事件所属的群组
-	Login     *login.Login             `json:"login,omitempty"`    // 事件的登录信息
 	Member    *guildmember.GuildMember `json:"member,omitempty"`   // 事件的目标成员
 	Message   *message.Message         `json:"message,omitempty"`  // 事件的消息
 	Operator  *user.User               `json:"operator,omitempty"` // 事件的操作者
@@ -109,11 +108,17 @@ type EventBody Event
 
 // IDENTIFY 信令的信令数据
 type IdentifyBody struct {
-	Token    string `json:"token,omitempty"`    // 鉴权令牌
-	Sequence int64  `json:"sequence,omitempty"` // 序列号
+	Token string `json:"token,omitempty"` // 鉴权令牌
+	Sn    int64  `json:"sn,omitempty"`    // 序列号
 }
 
 // READY 信令的信令数据
 type ReadyBody struct {
-	Logins []*login.Login `json:"logins"` // 登录信息
+	Logins    []*login.Login `json:"logins"`     // 登录信息
+	ProxyUrls []string       `json:"proxy_urls"` // 代理路由 列表
+}
+
+// META 信令的信令数据
+type MetaBody struct {
+	ProxyUrls []string `json:"proxy_urls"` // 代理路由 列表
 }
