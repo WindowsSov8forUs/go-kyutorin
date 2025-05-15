@@ -119,22 +119,6 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 		httpapi.ResourceMiddleware(api, apiV2)(c)
 	})
 
-	adminGroup := engine.Group(fmt.Sprintf("%s/v1/admin/", server.conf.Satori.Path))
-	// 管理接口处理函数
-	adminGroup.Use(httpapi.HeadersValidateMiddleware())
-	adminGroup.POST(":method", func(c *gin.Context) {
-		method := c.Param("method")
-		// 将请求输出
-		log.Tracef(
-			"收到请求: /admin/%s %s，请求头：%v，请求体：%v",
-			c.Request.Method,
-			method,
-			c.Request.Header,
-			c.Request.Body,
-		)
-		httpapi.MetaMiddleware()(c)
-	})
-
 	metaGroup := engine.Group(fmt.Sprintf("%s/v1/meta", server.conf.Satori.Path))
 	// 元信息接口处理函数
 	metaGroup.Use(httpapi.HeadersValidateMiddleware())
