@@ -27,9 +27,9 @@ const DefaultQueueSize = 10000
 // 定义全局变量
 var global_s int64
 
-// PayloadWithTimestamp 存储带时间戳的 WSPayload
+// PayloadWithTimestamp 存储带时间戳的 Payload
 type PayloadWithTimestamp struct {
-	Payload   *dto.WSPayload
+	Payload   *dto.Payload
 	Timestamp time.Time
 }
 
@@ -65,7 +65,7 @@ type Client struct {
 	heartBeatTicker *time.Ticker // 用于维持定时心跳
 }
 
-type messageChan chan *dto.WSPayload
+type messageChan chan *dto.Payload
 type closeErrorChan chan error
 
 // Connect 连接到 websocket
@@ -129,8 +129,8 @@ func (c *Client) Listening() error {
 			return err
 		case <-c.heartBeatTicker.C:
 			log.Debugf("%s listened heartBeat", c.session)
-			heartBeatEvent := &dto.WSPayload{
-				WSPayloadBase: dto.WSPayloadBase{
+			heartBeatEvent := &dto.Payload{
+				PayloadBase: dto.PayloadBase{
 					OPCode: dto.WSHeartbeat,
 				},
 				Data: c.session.LastSeq,
@@ -142,7 +142,7 @@ func (c *Client) Listening() error {
 }
 
 // Write 往 ws 写入数据
-func (c *Client) Write(message *dto.WSPayload) error {
+func (c *Client) Write(message *dto.Payload) error {
 	m, _ := json.Marshal(message)
 	log.Infof("%s write %s message, %v", c.session, dto.OPMeans(message.OPCode), string(m))
 
@@ -156,7 +156,7 @@ func (c *Client) Write(message *dto.WSPayload) error {
 
 // Resume 重连
 func (c *Client) Resume() error {
-	payload := &dto.WSPayload{
+	payload := &dto.Payload{
 		Data: &dto.WSResumeData{
 			Token:     c.session.Token.GetString(),
 			SessionID: c.session.ID,
@@ -173,7 +173,7 @@ func (c *Client) Identify() error {
 	if c.session.Intent == 0 {
 		c.session.Intent = dto.IntentGuilds
 	}
-	payload := &dto.WSPayload{
+	payload := &dto.Payload{
 		Data: &dto.WSIdentityData{
 			Token:   c.session.Token.GetString(),
 			Intents: c.session.Intent,
@@ -209,7 +209,7 @@ func (c *Client) Session() *dto.Session {
 // 			c.closeChan <- err
 // 			return
 // 		}
-// 		payload := &dto.WSPayload{}
+// 		payload := &dto.Payload{}
 // 		if err := json.Unmarshal(message, payload); err != nil {
 // 			log.Errorf("%s json failed, %v", c.session, err)
 // 			continue
@@ -236,7 +236,7 @@ func (c *Client) readMessageToQueue() {
 			c.closeChan <- err
 			return
 		}
-		payload := &dto.WSPayload{}
+		payload := &dto.Payload{}
 		if err := json.Unmarshal(message, payload); err != nil {
 			log.Errorf("%s json failed, %v", c.session, err)
 			continue
@@ -271,7 +271,7 @@ func (c *Client) readMessageToQueue() {
 	}
 }
 
-func getDataFromSyncMap(dataHash string) (*dto.WSPayload, bool) {
+func getDataFromSyncMap(dataHash string) (*dto.Payload, bool) {
 	value, ok := dataMap.Load(dataHash)
 	if !ok {
 		return nil, false
@@ -283,7 +283,7 @@ func getDataFromSyncMap(dataHash string) (*dto.WSPayload, bool) {
 	return payloadWithTimestamp.Payload, true
 }
 
-func storeDataToSyncMap(dataHash string, payload *dto.WSPayload) {
+func storeDataToSyncMap(dataHash string, payload *dto.Payload) {
 	payloadWithTimestamp := &PayloadWithTimestamp{
 		Payload:   payload,
 		Timestamp: time.Now(),
@@ -337,7 +337,7 @@ func (c *Client) saveSeq(seq uint32) {
 
 // isHandleBuildIn 内置的事件处理，处理那些不需要业务方处理的事件
 // return true 的时候说明事件已经被处理了
-func (c *Client) isHandleBuildIn(payload *dto.WSPayload) bool {
+func (c *Client) isHandleBuildIn(payload *dto.Payload) bool {
 	switch payload.OPCode {
 	case dto.WSHello: // 接收到 hello 后需要开始发心跳
 		c.startHeartBeatTicker(payload.RawMessage)
@@ -363,7 +363,7 @@ func (c *Client) startHeartBeatTicker(message []byte) {
 }
 
 // readyHandler 针对ready返回的处理，需要记录 sessionID 等相关信息
-func (c *Client) readyHandler(payload *dto.WSPayload) {
+func (c *Client) readyHandler(payload *dto.Payload) {
 	readyData := &dto.WSReadyData{}
 	if err := event.ParseData(payload.RawMessage, readyData); err != nil {
 		log.Errorf("%s parseReadyData failed, %v, message %v", c.session, err, payload.RawMessage)

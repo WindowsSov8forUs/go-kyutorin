@@ -9,13 +9,13 @@ import (
 )
 
 func TestRegisterHandlers(t *testing.T) {
-	var guild GuildEventHandler = func(event *dto.WSPayload, data *dto.WSGuildData) error {
+	var guild GuildEventHandler = func(event *dto.Payload, data *dto.WSGuildData) error {
 		return nil
 	}
-	var message MessageEventHandler = func(event *dto.WSPayload, data *dto.WSMessageData) error {
+	var message MessageEventHandler = func(event *dto.Payload, data *dto.WSMessageData) error {
 		return nil
 	}
-	var audio AudioEventHandler = func(event *dto.WSPayload, data *dto.WSAudioData) error {
+	var audio AudioEventHandler = func(event *dto.Payload, data *dto.WSAudioData) error {
 		return nil
 	}
 
@@ -25,7 +25,7 @@ func TestRegisterHandlers(t *testing.T) {
 			log.Println(i)
 			assert.Equal(t, dto.IntentGuildMessages, i&dto.IntentGuildMessages)
 			assert.Equal(t, dto.IntentGuilds, i&dto.IntentGuilds)
-			assert.Equal(t, dto.IntentAudio, i&dto.IntentAudio)
+			assert.Equal(t, dto.IntentAudioAction, i&dto.IntentAudioAction)
 		},
 	)
 }

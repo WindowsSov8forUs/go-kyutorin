@@ -60,7 +60,7 @@ func HTTPHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 解析 payload
-	payload := &dto.WSPayload{}
+	payload := &dto.Payload{}
 	if err := json.Unmarshal(body, payload); err != nil {
 		log.Errorf("unmarshal http callback body error: %s, traceID: %s", err, r.Header.Get(openapi.TraceIDKey))
 		return
@@ -77,14 +77,14 @@ func HTTPHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func parsePayload(payload *dto.WSPayload, traceID string) string {
+func parsePayload(payload *dto.Payload, traceID string) string {
 	// 处理心跳包
 	if payload.OPCode == dto.WSHeartbeat {
 		return GenHeartbeatACK(uint32(payload.Data.(float64)))
 	}
 
 	// 处理事件
-	if payload.OPCode == dto.WSDispatchEvent {
+	if payload.OPCode == dto.DispatchEvent {
 		// 解析具体事件，并投递给业务注册的 handler
 		if err := event.ParseAndHandle(payload); err != nil {
 			log.Errorf(

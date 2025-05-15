@@ -19,7 +19,7 @@ type WebSocket interface {
 	// Listening 监听websocket事件
 	Listening() error
 	// Write 发送数据
-	Write(message *dto.WSPayload) error
+	Write(message *dto.Payload) error
 	// Close 关闭连接
 	Close()
 }
