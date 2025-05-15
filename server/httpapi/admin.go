@@ -36,10 +36,12 @@ func HandlerLoginList(message *AdminActionMessage) (any, APIError) {
 	bots := processor.GetBots()
 	for platform, bot := range bots {
 		login := login.Login{
-			User:     bot,
-			SelfId:   bot.Id,
+			Sn:       processor.GenerateLoginSn(),
 			Platform: platform,
+			User:     bot,
 			Status:   processor.GetStatus(platform),
+			Adapter:  "kyutorin",
+			Features: processor.Features(),
 		}
 		response = append(response, login)
 	}

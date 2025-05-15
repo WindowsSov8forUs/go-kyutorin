@@ -48,13 +48,13 @@ func (q *EventQueue) PopEvent() *operation.Event {
 }
 
 // ResumeEvents 恢复事件
-func (q *EventQueue) ResumeEvents(Sequence int64) []*operation.Event {
+func (q *EventQueue) ResumeEvents(Sn int64) []*operation.Event {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 	var events []*operation.Event
 	var isFound bool = false
 	for _, event := range q.Events {
-		if event.Id == Sequence {
+		if event.Sn == Sn {
 			isFound = true
 			continue
 		}

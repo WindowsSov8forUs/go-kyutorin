@@ -19,7 +19,7 @@ import (
 
 var loginSnCounter int64 = 0
 
-func generateLoginSn() int64 {
+func GenerateLoginSn() int64 {
 	return atomic.AddInt64(&loginSnCounter, 1)
 }
 
@@ -27,7 +27,7 @@ func generateLoginSn() int64 {
 func buildLoginEventLogin(platform string) *login.Login {
 	bot := GetBot(platform)
 	return &login.Login{
-		Sn:       generateLoginSn(),
+		Sn:       GenerateLoginSn(),
 		Platform: platform,
 		User:     bot,
 		Status:   GetStatus(platform),
@@ -39,7 +39,7 @@ func buildLoginEventLogin(platform string) *login.Login {
 func buildNonLoginEventLogin(platform string) *login.Login {
 	bot := GetBot(platform)
 	return &login.Login{
-		Sn:       generateLoginSn(),
+		Sn:       GenerateLoginSn(),
 		Platform: platform,
 		User:     bot,
 	}

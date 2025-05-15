@@ -44,10 +44,12 @@ func HandleLoginGet(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, AP
 	// 获取机器人状态
 	status := processor.GetStatus(message.Platform)
 
-	response.User = bot
-	response.SelfId = processor.SelfId
+	response.Sn = processor.GenerateLoginSn()
 	response.Platform = message.Platform
+	response.User = bot
 	response.Status = status
+	response.Adapter = "kyutorin"
+	response.Features = processor.Features()
 
 	return response, nil
 }

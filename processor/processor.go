@@ -101,7 +101,7 @@ func GetReadyBody() *operation.ReadyBody {
 	var logins []*login.Login
 	for platform, bot := range GetBots() {
 		login := &login.Login{
-			Sn:       generateLoginSn(),
+			Sn:       GenerateLoginSn(),
 			Platform: platform,
 			User:     bot,
 			Status:   GetStatus(platform),

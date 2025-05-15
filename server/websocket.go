@@ -63,7 +63,7 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 	}()
 
 	// 开始鉴权流程
-	var sequence int64
+	var sn int64
 	operationChan := make(chan operation.Operation)
 	// 开始一个 10s 的计时器
 	timer := time.NewTimer(10 * time.Second)
@@ -91,7 +91,7 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 				}
 				// 鉴权成功
 				log.Info("鉴权成功，开始进行事件推送")
-				sequence = identify.Sequence
+				sn = identify.Sn
 				// 发送 READY 信令
 				readyBody := processor.GetReadyBody()
 				readyOperation := operation.Operation{
@@ -155,12 +155,12 @@ func webSocketHandler(token string, server *Server, c *gin.Context) {
 	}()
 
 	// 进行事件补发
-	if sequence > 0 {
+	if sn > 0 {
 		// 处理事件队列
-		events := server.events.ResumeEvents(sequence)
+		events := server.events.ResumeEvents(sn)
 
 		if len(events) > 0 {
-			log.Infof("开始进行事件补发，起始序列号: %d", sequence)
+			log.Infof("开始进行事件补发，起始序列号: %d", sn)
 
 			// 循环补发事件直到队列清空
 			for _, event := range events {
