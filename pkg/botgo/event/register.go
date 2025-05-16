@@ -60,63 +60,63 @@ type HelloHandler func(event *dto.Payload)
 type ReconnectHandler func(event *dto.Payload)
 
 // GuildEventHandler 频道事件handler
-type GuildEventHandler func(event *dto.Payload, data *dto.WSGuildData) error
+type GuildEventHandler func(event *dto.Payload, data *dto.GuildData) error
 
 // GuildMemberEventHandler 频道成员事件 handler
-type GuildMemberEventHandler func(event *dto.Payload, data *dto.WSGuildMemberData) error
+type GuildMemberEventHandler func(event *dto.Payload, data *dto.GuildMemberData) error
 
 // ChannelEventHandler 子频道事件 handler
-type ChannelEventHandler func(event *dto.Payload, data *dto.WSChannelData) error
+type ChannelEventHandler func(event *dto.Payload, data *dto.ChannelData) error
 
 // MessageEventHandler 消息事件 handler
-type MessageEventHandler func(event *dto.Payload, data *dto.WSMessageData) error
+type MessageEventHandler func(event *dto.Payload, data *dto.MessageData) error
 
 // MessageDeleteEventHandler 消息事件 handler
-type MessageDeleteEventHandler func(event *dto.Payload, data *dto.WSMessageDeleteData) error
+type MessageDeleteEventHandler func(event *dto.Payload, data *dto.MessageDeleteData) error
 
 // PublicMessageDeleteEventHandler 消息事件 handler
-type PublicMessageDeleteEventHandler func(event *dto.Payload, data *dto.WSPublicMessageDeleteData) error
+type PublicMessageDeleteEventHandler func(event *dto.Payload, data *dto.PublicMessageDeleteData) error
 
 // DirectMessageDeleteEventHandler 消息事件 handler
-type DirectMessageDeleteEventHandler func(event *dto.Payload, data *dto.WSDirectMessageDeleteData) error
+type DirectMessageDeleteEventHandler func(event *dto.Payload, data *dto.DirectMessageDeleteData) error
 
 // MessageReactionEventHandler 表情表态事件 handler
-type MessageReactionEventHandler func(event *dto.Payload, data *dto.WSMessageReactionData) error
+type MessageReactionEventHandler func(event *dto.Payload, data *dto.MessageReactionData) error
 
 // ATMessageEventHandler at 机器人消息事件 handler
-type ATMessageEventHandler func(event *dto.Payload, data *dto.WSATMessageData) error
+type ATMessageEventHandler func(event *dto.Payload, data *dto.ATMessageData) error
 
 // DirectMessageEventHandler 私信消息事件 handler
-type DirectMessageEventHandler func(event *dto.Payload, data *dto.WSDirectMessageData) error
+type DirectMessageEventHandler func(event *dto.Payload, data *dto.DirectMessageData) error
 
 // AudioEventHandler 音频机器人事件 handler
-type AudioEventHandler func(event *dto.Payload, data *dto.WSAudioData) error
+type AudioEventHandler func(event *dto.Payload, data *dto.AudioData) error
 
 // MessageAuditEventHandler 消息审核事件 handler
-type MessageAuditEventHandler func(event *dto.Payload, data *dto.WSMessageAuditData) error
+type MessageAuditEventHandler func(event *dto.Payload, data *dto.MessageAuditData) error
 
 // ThreadEventHandler 论坛主题事件 handler
-type ThreadEventHandler func(event *dto.Payload, data *dto.WSThreadData) error
+type ThreadEventHandler func(event *dto.Payload, data *dto.ThreadData) error
 
 // PostEventHandler 论坛回帖事件 handler
-type PostEventHandler func(event *dto.Payload, data *dto.WSPostData) error
+type PostEventHandler func(event *dto.Payload, data *dto.PostData) error
 
 // ReplyEventHandler 论坛帖子回复事件 handler
-type ReplyEventHandler func(event *dto.Payload, data *dto.WSReplyData) error
+type ReplyEventHandler func(event *dto.Payload, data *dto.ReplyData) error
 
 // ForumAuditEventHandler 论坛帖子审核事件 handler
-type ForumAuditEventHandler func(event *dto.Payload, data *dto.WSForumAuditData) error
+type ForumAuditEventHandler func(event *dto.Payload, data *dto.ForumAuditData) error
 
 // InteractionEventHandler 互动事件 handler
-type InteractionEventHandler func(event *dto.Payload, data *dto.WSInteractionData) error
+type InteractionEventHandler func(event *dto.Payload, data *dto.InteractionEventData) error
 
 // ***************** 群消息/C2C消息  *****************
 
 // GroupATMessageEventHandler 群中at机器人消息事件 handler
-type GroupATMessageEventHandler func(event *dto.Payload, data *dto.WSGroupATMessageData) error
+type GroupATMessageEventHandler func(event *dto.Payload, data *dto.GroupATMessageData) error
 
 // C2CMessageEventHandler 机器人消息事件 handler
-type C2CMessageEventHandler func(event *dto.Payload, data *dto.WSC2CMessageData) error
+type C2CMessageEventHandler func(event *dto.Payload, data *dto.C2CMessageData) error
 
 // GroupAddRobot 机器人新增事件 handler
 type GroupAddRobotEventHandler func(event *dto.Payload, data *dto.GroupAddBotEvent) error

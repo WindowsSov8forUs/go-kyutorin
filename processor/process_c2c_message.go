@@ -15,7 +15,7 @@ import (
 )
 
 // ProcessC2CMessage 处理私聊消息
-func (p *Processor) ProcessC2CMessage(payload *dto.Payload, data *dto.WSC2CMessageData) error {
+func (p *Processor) ProcessC2CMessage(payload *dto.Payload, data *dto.C2CMessageData) error {
 	// 打印消息日志
 	printC2CMessage(data)
 
@@ -72,7 +72,7 @@ func (p *Processor) ProcessC2CMessage(payload *dto.Payload, data *dto.WSC2CMessa
 	return p.BroadcastEvent(event)
 }
 
-func printC2CMessage(data *dto.WSC2CMessageData) {
+func printC2CMessage(data *dto.C2CMessageData) {
 	// 构建消息日志
 	msgContent := getMessageLog(data)
 

@@ -11,7 +11,7 @@ import (
 )
 
 // ProcessChannelEvent 处理频道事件
-func (p *Processor) ProcessChannelEvent(payload *dto.Payload, data *dto.WSChannelData) error {
+func (p *Processor) ProcessChannelEvent(payload *dto.Payload, data *dto.ChannelData) error {
 	// 打印消息日志
 	printChannelEvent(payload, data)
 
@@ -38,7 +38,7 @@ func (p *Processor) ProcessChannelEvent(payload *dto.Payload, data *dto.WSChanne
 	return p.BroadcastEvent(event)
 }
 
-func printChannelEvent(payload *dto.Payload, data *dto.WSChannelData) {
+func printChannelEvent(payload *dto.Payload, data *dto.ChannelData) {
 	// 构建子频道名称
 	var channelName string
 	channelName = fmt.Sprintf("%s ", channelTypeToString(data.Type))

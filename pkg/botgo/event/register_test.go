@@ -9,13 +9,13 @@ import (
 )
 
 func TestRegisterHandlers(t *testing.T) {
-	var guild GuildEventHandler = func(event *dto.Payload, data *dto.WSGuildData) error {
+	var guild GuildEventHandler = func(event *dto.Payload, data *dto.GuildData) error {
 		return nil
 	}
-	var message MessageEventHandler = func(event *dto.Payload, data *dto.WSMessageData) error {
+	var message MessageEventHandler = func(event *dto.Payload, data *dto.MessageData) error {
 		return nil
 	}
-	var audio AudioEventHandler = func(event *dto.Payload, data *dto.WSAudioData) error {
+	var audio AudioEventHandler = func(event *dto.Payload, data *dto.AudioData) error {
 		return nil
 	}
 

@@ -17,7 +17,7 @@ import (
 )
 
 // ProcessChannelDirectMessage 处理频道私聊消息
-func (p *Processor) ProcessChannelDirectMessage(payload *dto.Payload, data *dto.WSDirectMessageData) error {
+func (p *Processor) ProcessChannelDirectMessage(payload *dto.Payload, data *dto.DirectMessageData) error {
 	// 打印消息日志
 	printChannelDirectMessage(data)
 
@@ -102,7 +102,7 @@ func (p *Processor) ProcessChannelDirectMessage(payload *dto.Payload, data *dto.
 	return p.BroadcastEvent(event)
 }
 
-func printChannelDirectMessage(data *dto.WSDirectMessageData) {
+func printChannelDirectMessage(data *dto.DirectMessageData) {
 	// 构建用户名称
 	var userName string
 	if data.Member.Nick != "" {

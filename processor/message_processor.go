@@ -252,16 +252,16 @@ func getMessageLog(data interface{}) string {
 	var msg *dto.Message
 	var isAt bool = false // 是否为 at 消息
 	switch v := data.(type) {
-	case *dto.WSGroupATMessageData:
+	case *dto.GroupATMessageData:
 		msg = (*dto.Message)(v)
 		isAt = true
-	case *dto.WSATMessageData:
+	case *dto.ATMessageData:
 		msg = (*dto.Message)(v)
-	case *dto.WSMessageData:
+	case *dto.MessageData:
 		msg = (*dto.Message)(v)
-	case *dto.WSDirectMessageData:
+	case *dto.DirectMessageData:
 		msg = (*dto.Message)(v)
-	case *dto.WSC2CMessageData:
+	case *dto.C2CMessageData:
 		msg = (*dto.Message)(v)
 	case *dto.Message:
 		msg = v
@@ -415,16 +415,16 @@ func ConvertToMessageContent(data interface{}) string {
 	var msg *dto.Message
 	var isAt bool = false // 是否为 at 消息
 	switch v := data.(type) {
-	case *dto.WSGroupATMessageData:
+	case *dto.GroupATMessageData:
 		msg = (*dto.Message)(v)
 		isAt = true
-	case *dto.WSATMessageData:
+	case *dto.ATMessageData:
 		msg = (*dto.Message)(v)
-	case *dto.WSMessageData:
+	case *dto.MessageData:
 		msg = (*dto.Message)(v)
-	case *dto.WSDirectMessageData:
+	case *dto.DirectMessageData:
 		msg = (*dto.Message)(v)
-	case *dto.WSC2CMessageData:
+	case *dto.C2CMessageData:
 		msg = (*dto.Message)(v)
 	case *dto.Message:
 		msg = v

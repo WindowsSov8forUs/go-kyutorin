@@ -107,8 +107,8 @@ func ParseData(message []byte, target interface{}) error {
 
 	// 使用switch语句处理不同类型
 	switch v := target.(type) {
-	case *dto.WSThreadData:
-		// 特殊处理dto.WSThreadData
+	case *dto.ThreadData:
+		// 特殊处理dto.ThreadData
 		if err := json.Unmarshal([]byte(data.String()), v); err != nil {
 			return err
 		}
@@ -125,8 +125,8 @@ func ParseData(message []byte, target interface{}) error {
 		v.EventID = eventid
 		return nil
 
-	case *dto.WSInteractionData:
-		// 特殊处理dto.WSInteractionData
+	case *dto.InteractionEventData:
+		// 特殊处理dto.InteractionEventData
 		if err := json.Unmarshal([]byte(data.String()), v); err != nil {
 			return err
 		}
@@ -159,7 +159,7 @@ func ParseData(message []byte, target interface{}) error {
 }
 
 func guildHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSGuildData{}
+	data := &dto.GuildData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func guildHandler(payload *dto.Payload, message []byte) error {
 }
 
 func channelHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSChannelData{}
+	data := &dto.ChannelData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func channelHandler(payload *dto.Payload, message []byte) error {
 }
 
 func guildMemberHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSGuildMemberData{}
+	data := &dto.GuildMemberData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func guildMemberHandler(payload *dto.Payload, message []byte) error {
 }
 
 func messageHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSMessageData{}
+	data := &dto.MessageData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func messageHandler(payload *dto.Payload, message []byte) error {
 }
 
 func messageDeleteHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSMessageDeleteData{}
+	data := &dto.MessageDeleteData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -214,7 +214,7 @@ func messageDeleteHandler(payload *dto.Payload, message []byte) error {
 }
 
 func messageReactionHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSMessageReactionData{}
+	data := &dto.MessageReactionData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -225,7 +225,7 @@ func messageReactionHandler(payload *dto.Payload, message []byte) error {
 }
 
 func atMessageHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSATMessageData{}
+	data := &dto.ATMessageData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func atMessageHandler(payload *dto.Payload, message []byte) error {
 }
 
 func groupAtMessageHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSGroupATMessageData{}
+	data := &dto.GroupATMessageData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func groupAtMessageHandler(payload *dto.Payload, message []byte) error {
 }
 
 func c2cMessageHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSC2CMessageData{}
+	data := &dto.C2CMessageData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -283,7 +283,7 @@ func groupdelbothandler(payload *dto.Payload, message []byte) error {
 }
 
 func publicMessageDeleteHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSPublicMessageDeleteData{}
+	data := &dto.PublicMessageDeleteData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func publicMessageDeleteHandler(payload *dto.Payload, message []byte) error {
 }
 
 func directMessageHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSDirectMessageData{}
+	data := &dto.DirectMessageData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func directMessageHandler(payload *dto.Payload, message []byte) error {
 }
 
 func directMessageDeleteHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSDirectMessageDeleteData{}
+	data := &dto.DirectMessageDeleteData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -316,7 +316,7 @@ func directMessageDeleteHandler(payload *dto.Payload, message []byte) error {
 }
 
 func audioHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSAudioData{}
+	data := &dto.AudioData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -327,7 +327,7 @@ func audioHandler(payload *dto.Payload, message []byte) error {
 }
 
 func threadHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSThreadData{}
+	data := &dto.ThreadData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -338,7 +338,7 @@ func threadHandler(payload *dto.Payload, message []byte) error {
 }
 
 func postHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSPostData{}
+	data := &dto.PostData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -349,7 +349,7 @@ func postHandler(payload *dto.Payload, message []byte) error {
 }
 
 func replyHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSReplyData{}
+	data := &dto.ReplyData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -360,7 +360,7 @@ func replyHandler(payload *dto.Payload, message []byte) error {
 }
 
 func forumAuditHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSForumAuditData{}
+	data := &dto.ForumAuditData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -371,7 +371,7 @@ func forumAuditHandler(payload *dto.Payload, message []byte) error {
 }
 
 func messageAuditHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSMessageAuditData{}
+	data := &dto.MessageAuditData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}
@@ -382,7 +382,7 @@ func messageAuditHandler(payload *dto.Payload, message []byte) error {
 }
 
 func interactionHandler(payload *dto.Payload, message []byte) error {
-	data := &dto.WSInteractionData{}
+	data := &dto.InteractionEventData{}
 	if err := ParseData(message, data); err != nil {
 		return err
 	}

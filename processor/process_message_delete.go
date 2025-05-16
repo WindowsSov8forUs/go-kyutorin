@@ -20,13 +20,13 @@ func (p *Processor) ProcessMessageDelete(payload *dto.Payload, data interface{})
 	var messageDelete *dto.MessageDelete
 	var channelType channel.ChannelType // 获取平台名称
 	switch v := data.(type) {
-	case *dto.WSMessageDeleteData:
+	case *dto.MessageDeleteData:
 		messageDelete = (*dto.MessageDelete)(v)
 		channelType = channel.ChannelTypeText
-	case *dto.WSPublicMessageDeleteData:
+	case *dto.PublicMessageDeleteData:
 		messageDelete = (*dto.MessageDelete)(v)
 		channelType = channel.ChannelTypeText
-	case *dto.WSDirectMessageDeleteData:
+	case *dto.DirectMessageDeleteData:
 		messageDelete = (*dto.MessageDelete)(v)
 		channelType = channel.ChannelTypeDirect
 	default:

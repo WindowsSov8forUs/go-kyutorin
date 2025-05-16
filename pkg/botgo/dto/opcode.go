@@ -18,7 +18,7 @@ const (
 	WSHello
 	WSHeartbeatAck
 	HTTPCallbackAck
-	HTTPCallbackAddrVerify
+	HTTPCallbackValidation
 )
 
 // opMeans op 对应的含义字符串标识
@@ -32,7 +32,7 @@ var opMeans = map[OPCode]string{
 	WSHello:                "Hello",
 	WSHeartbeatAck:         "HeartbeatAck",
 	HTTPCallbackAck:        "HTTPCallbackAck",
-	HTTPCallbackAddrVerify: "回调地址验证",
+	HTTPCallbackValidation: "回调地址验证",
 }
 
 // OPMeans 返回 op 含义

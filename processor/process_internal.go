@@ -77,7 +77,7 @@ func (p *Processor) ProcessQQGuildInternal(payload *dto.Payload, data interface{
 }
 
 // ProcessInteractionEvent 处理交互事件
-func (p *Processor) ProcessInteractionEvent(data *dto.WSInteractionData) error {
+func (p *Processor) ProcessInteractionEvent(data *dto.InteractionEventData) error {
 	// TODO: 目前无法将这个事件与 interaction/button 事件适配
 
 	// 构建事件数据

@@ -17,7 +17,7 @@ import (
 )
 
 // ProcessGuildATMessage 处理群组 AT 消息
-func (p *Processor) ProcessGuildATMessage(payload *dto.Payload, data *dto.WSATMessageData) error {
+func (p *Processor) ProcessGuildATMessage(payload *dto.Payload, data *dto.ATMessageData) error {
 	// 打印消息日志
 	printGuildATMessage(data)
 
@@ -100,7 +100,7 @@ func (p *Processor) ProcessGuildATMessage(payload *dto.Payload, data *dto.WSATMe
 	return p.BroadcastEvent(event)
 }
 
-func printGuildATMessage(data *dto.WSATMessageData) {
+func printGuildATMessage(data *dto.ATMessageData) {
 	// 构建用户名称
 	var userName string
 	if data.Member.Nick != "" {

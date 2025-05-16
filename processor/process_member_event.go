@@ -14,7 +14,7 @@ import (
 )
 
 // ProcessMemberEvent 处理群组成员事件
-func (p *Processor) ProcessMemberEvent(payload *dto.Payload, data *dto.WSGuildMemberData) error {
+func (p *Processor) ProcessMemberEvent(payload *dto.Payload, data *dto.GuildMemberData) error {
 	// TODO: 有修改的可能
 	var err error
 
@@ -97,7 +97,7 @@ func (p *Processor) ProcessMemberEvent(payload *dto.Payload, data *dto.WSGuildMe
 	return p.BroadcastEvent(event)
 }
 
-func printMemberEvent(payload *dto.Payload, data *dto.WSGuildMemberData) {
+func printMemberEvent(payload *dto.Payload, data *dto.GuildMemberData) {
 	// 构建成员名称
 	var memberName string
 	if data.Nick != "" {
