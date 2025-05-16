@@ -36,12 +36,22 @@ type Account struct {
 	AppSecret string    `yaml:"app_secret"` // 机器人密钥
 	Sandbox   bool      `yaml:"sandbox"`    // 是否使用沙箱环境
 	WebSocket WebSocket `yaml:"websocket"`  // WebSocket 配置
+	WebHook   QQWebHook `yaml:"webhook"`    // WebHook 配置
 }
 
 // WebSocket QQ 机器人 WebSocket 配置
 type WebSocket struct {
+	Enable  bool     `yaml:"enable"`  // 是否启用 WebSocket
 	Shards  uint32   `yaml:"shards"`  // 分片数
 	Intents []string `yaml:"intents"` // 事件订阅
+}
+
+// QQWebHook QQ 机器人 WebHook 回调配置
+type QQWebHook struct {
+	Enable bool   `yaml:"enable"` // 是否启用 WebHook
+	Host   string `yaml:"host"`   // WebHook 地址
+	Port   uint16 `yaml:"port"`   // WebHook 端口
+	Path   string `yaml:"path"`   // WebHook 路径
 }
 
 // FileServer 本地文件服务器配置

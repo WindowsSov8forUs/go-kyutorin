@@ -247,9 +247,18 @@ func NewProcessor(conf *config.Config) (*Processor, context.Context, error) {
 func (p *Processor) Run(ctx context.Context, server Server) error {
 	p.Server = server
 
-	err := establishWebSocket(p, p.ApiV2, p.Token, ctx, p.conf)
-	if err != nil {
-		return err
+	if p.conf.Account.WebHook.Enable {
+		err := establishWebHook(p, p.conf)
+		if err != nil {
+			return err
+		}
+	} else if p.conf.Account.WebSocket.Enable {
+		err := establishWebSocket(p, p.ApiV2, p.Token, ctx, p.conf)
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("WebHook 和 WebSocket 都没有启用，请检查配置")
 	}
 
 	log.Info("已成功连接 QQ 开放平台")

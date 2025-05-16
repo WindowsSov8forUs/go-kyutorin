@@ -22,6 +22,11 @@ func NewSessionManager() SessionManager {
 	return defaultSessionManager
 }
 
+// NewWebhookManager 获得 webhook manager 实例
+func NewWebhookManager() WebhookManager {
+	return defaultWebhookManager
+}
+
 // SelectOpenAPIVersion 指定使用哪个版本的 api 实现，如果不指定，sdk将默认使用第一个 setup 的 api 实现
 func SelectOpenAPIVersion(version openapi.APIVersion) error {
 	if _, ok := openapi.VersionMapping[version]; !ok {

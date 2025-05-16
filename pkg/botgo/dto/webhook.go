@@ -7,8 +7,8 @@ import (
 type Config struct {
 	Host      string // WebHook 服务器监听地址
 	Path      string // WebHook 服务器监听路径
-	Port      int    // WebHook 服务器监听端口
-	AppId     int    // QQ 机器人 Id
+	Port      uint16 // WebHook 服务器监听端口
+	AppId     uint64 // QQ 机器人 Id
 	BotSecret string // 机器人密钥
 }
 

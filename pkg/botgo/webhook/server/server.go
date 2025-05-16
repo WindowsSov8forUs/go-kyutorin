@@ -78,7 +78,7 @@ type Server struct {
 	group        *gin.RouterGroup
 	server       *http.Server
 	messageQueue messageChan
-	appId        int
+	appId        uint64
 	botSecret    string
 	config       *dto.Config
 }
@@ -287,7 +287,7 @@ func (s *Server) isHandleBuildIn(c *gin.Context, payload *dto.Payload) bool {
 func (s *Server) handleValidation(c *gin.Context, message []byte) {
 	appid := c.GetHeader("X-Bot-Appid")
 	appidInt, err := strconv.Atoi(appid)
-	if err != nil || appidInt != s.appId {
+	if err != nil || uint64(appidInt) != s.appId {
 		log.Errorf("%s callback address verify appid not match, %s", s.config, appid)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "appid不匹配"})
 		return

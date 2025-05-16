@@ -14,6 +14,7 @@ import (
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/openapi"
 	"github.com/tencent-connect/botgo/token"
+	"github.com/tencent-connect/botgo/webhook"
 	"github.com/tencent-connect/botgo/websocket"
 )
 
@@ -152,6 +153,34 @@ func establishWebSocket(p *Processor, apiV2 openapi.OpenAPI, token *token.Token,
 		wsInfo.Shards = conf.Account.WebSocket.Shards
 		if err = botgo.NewSessionManager().Start(wsInfo, token, &intent); err != nil {
 			log.Fatalf("启动 WebSocket 失败: %s", err)
+		}
+	}()
+	return nil
+}
+
+func establishWebHook(p *Processor, conf *config.Config) error {
+	webhookConfig := &dto.Config{
+		Host:      conf.Account.WebHook.Host,
+		Port:      conf.Account.WebHook.Port,
+		Path:      conf.Account.WebHook.Path,
+		AppId:     conf.Account.AppID,
+		BotSecret: conf.Account.AppSecret,
+	}
+
+	// 注册事件处理器
+	handlers, ok := p.getWebHookAvailableHandlers()
+	if !ok {
+		log.Warnf("获取可用事件处理器失败。")
+		return nil
+	}
+	for _, handler := range handlers {
+		webhook.RegisterHandlers(handler)
+	}
+
+	go func() {
+		// 启动 WebHook 服务器
+		if err := botgo.NewWebhookManager().Start(webhookConfig); err != nil {
+			log.Fatalf("启动 WebHook 失败: %s", err)
 		}
 	}()
 	return nil

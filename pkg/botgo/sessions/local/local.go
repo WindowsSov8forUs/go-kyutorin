@@ -9,6 +9,7 @@ import (
 	"github.com/tencent-connect/botgo/log"
 	"github.com/tencent-connect/botgo/sessions/manager"
 	"github.com/tencent-connect/botgo/token"
+	"github.com/tencent-connect/botgo/webhook"
 	"github.com/tencent-connect/botgo/websocket"
 )
 
@@ -138,6 +139,39 @@ func (l *ChanManager) newConnect(session dto.Session) {
 		}
 		// 将 session 放到 session chan 中，用于启动新的连接，当前连接退出
 		l.sessionChan <- *currentSession
+		return
+	}
+}
+
+func NewWebhook() *WebhookManager {
+	return &WebhookManager{
+		config: make(chan dto.Config, 1),
+	}
+}
+
+type WebhookManager struct {
+	config chan dto.Config
+}
+
+func (w *WebhookManager) Start(config *dto.Config) error {
+	for config := range w.config {
+		time.Sleep(5 * time.Second)
+		go w.listenAndServe(config)
+	}
+	return nil
+}
+
+func (w *WebhookManager) listenAndServe(config dto.Config) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("webhook server panic: %v", err)
+			w.config <- config
+		}
+	}()
+	whServer := webhook.ServerImpl.New(config)
+	if err := whServer.Listen(); err != nil {
+		log.Error(err)
+		w.config <- config
 		return
 	}
 }

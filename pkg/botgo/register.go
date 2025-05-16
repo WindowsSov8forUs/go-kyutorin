@@ -3,6 +3,7 @@ package botgo
 import (
 	"github.com/tencent-connect/botgo/log"
 	"github.com/tencent-connect/botgo/openapi"
+	"github.com/tencent-connect/botgo/webhook"
 	"github.com/tencent-connect/botgo/websocket"
 )
 
@@ -19,6 +20,11 @@ func SetSessionManager(m SessionManager) {
 // SetWebsocketClient 替换 websocket 实现
 func SetWebsocketClient(c websocket.WebSocket) {
 	websocket.Register(c)
+}
+
+// SetWebhookServer 替换 webhook 实现
+func SetWebhookServer(s webhook.WebHook) {
+	webhook.Register(s)
 }
 
 // SetOpenAPIClient 注册 openapi 的不同实现，需要设置版本

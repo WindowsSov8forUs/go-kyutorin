@@ -325,3 +325,29 @@ func (p *Processor) getHandlersByName(intentName string) ([]interface{}, bool) {
 		return nil, false
 	}
 }
+
+func (p *Processor) getWebHookAvailableHandlers() ([]interface{}, bool) {
+	handlers := []interface{}{
+		ErrorNotifyHandler(p),
+		PlainEventHandler(p),
+		GuildEventHandler(p),
+		ChannelEventHandler(p),
+		MemberEventHandler(p),
+		DirectMessageHandler(p),
+		DirectMessageDeleteEventHandler(p),
+		GroupATMessageEventHandler(p),
+		GroupAddRobotEventHandler(p),
+		GroupDelRobotEventHandler(p),
+		C2CMessageEventHandler(p),
+		InteractionHandler(p),
+		MessageAuditEventHandler(p),
+		ThreadEventHandler(p),
+		PostEventHandler(p),
+		ReplyEventHandler(p),
+		ForumAuditEventHandler(p),
+		AudioEventHandler(p),
+		ATMessageEventHandler(p),
+		PublicMessageDeleteEventHandler(p),
+	}
+	return handlers, true
+}
