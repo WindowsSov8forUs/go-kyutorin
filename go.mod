@@ -2,7 +2,7 @@ module github.com/WindowsSov8forUs/go-kyutorin
 
 go 1.21.5
 
-require github.com/tencent-connect/botgo v0.1.6
+require github.com/tencent-connect/botgo v0.2.1
 
 require github.com/satori-protocol-go/satori-model-go v0.2.1
 
@@ -11,6 +11,7 @@ require (
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/hoshinonyaruko/gensokyo v0.0.0-20250422135138-3723b1ce79b4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	golang.org/x/image v0.16.0 // indirect
 )

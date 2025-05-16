@@ -195,7 +195,7 @@ type queryTokenRsp struct {
 func queryAccessToken(ctx context.Context, tokenURL, appID, clientSecret string) (AccessTokenInfo, error) {
 	// 是否使用自定义ac地址
 	if tokenURL == "" {
-		tokenURL = getAccessTokenURL // 默认值
+		tokenURL = getAccessTokenURL
 	}
 
 	var req *http.Request

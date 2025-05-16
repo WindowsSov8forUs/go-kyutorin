@@ -31,6 +31,7 @@ account: # QQ 机器人配置
   
   # 配置与 QQ 机器人开放平台的连接
   websocket:
+    enable: true # 是否启用 WebSocket 连接
     shards: 1 # 分片数，建议保持默认的 1 ，多了不知道会发生什么
 
     # 事件订阅，请参考注释进行选择
@@ -50,6 +51,12 @@ account: # QQ 机器人配置
       #- "FORUMS_EVENT"                 # 私域论坛事件          # 仅 私域 机器人可以设置
       #- "AUDIO_ACTION"                 # 音频机器人事件
       - "PUBLIC_GUILD_MESSAGES"         # 公域频道消息事件      # 该事件是默认订阅
+  
+  webhook:
+    enable: false # 是否启用 WebHook 回调
+    host: "" # WebHook 地址
+    port: 8080 # WebHook 端口
+    path: "" # WebHook 路径
 
 # 本地文件服务器配置
 # 请确保配置正确，否则无法正常启动

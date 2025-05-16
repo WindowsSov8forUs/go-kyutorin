@@ -4,7 +4,7 @@ package token
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v3"
 
@@ -113,7 +113,7 @@ func (t *Token) LoadFromConfig(file string) error {
 		AppID uint64 `yaml:"appid"`
 		Token string `yaml:"token"`
 	}
-	content, err := ioutil.ReadFile(file)
+	content, err := os.ReadFile(file)
 	if err != nil {
 		log.Errorf("read token from file failed, err: %v", err)
 		return err
