@@ -28,7 +28,7 @@ type ReactionListResponse user.UserList
 // HandleReactionList 处理获取表态列表请求
 func HandleReactionList(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestReactionList
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

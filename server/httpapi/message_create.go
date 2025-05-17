@@ -39,7 +39,7 @@ type ResponseMessageCreate []satoriMessage.Message
 // HandleMessageCreate 处理发送消息请求
 func HandleMessageCreate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestMessageCreate
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

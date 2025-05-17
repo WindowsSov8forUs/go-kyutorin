@@ -26,7 +26,7 @@ type ResponseGuildRoleCreate guildrole.GuildRole
 // HandleGuildRoleCreate 处理创建群组角色请求
 func HandleGuildRoleCreate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildRoleCreate
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

@@ -28,7 +28,7 @@ type ResponseChannelList channel.ChannelList
 // HandleChannelList 处理获取群组频道列表请求
 func HandleChannelList(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestChannelList
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

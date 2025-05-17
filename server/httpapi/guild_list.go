@@ -27,7 +27,7 @@ type ResponseGuildList guild.GuildList
 // HandleGuildList 处理获取群组列表请求
 func HandleGuildList(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildList
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

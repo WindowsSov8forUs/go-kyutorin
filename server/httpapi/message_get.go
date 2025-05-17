@@ -33,7 +33,7 @@ type ResponseMessageGet message.Message
 // HandleMessageGet 处理获取消息请求
 func HandleMessageGet(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestMessageGet
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

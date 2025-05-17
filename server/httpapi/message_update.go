@@ -24,7 +24,7 @@ type RequestMessageUpdate struct {
 // HandleMessageUpdate 处理编辑消息请求
 func HandleMessageUpdate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestMessageUpdate
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

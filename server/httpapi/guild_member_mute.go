@@ -24,7 +24,7 @@ type RequestGuildMemberMute struct {
 // HandleGuildMemberMute 处理禁言群组成员请求
 func HandleGuildMemberMute(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildMemberMute
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

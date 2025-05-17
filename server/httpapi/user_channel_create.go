@@ -28,7 +28,7 @@ type ResponseUserChannelCreate channel.Channel
 // HandleUserChannelCreate 处理创建私聊频道请求
 func HandleUserChannelCreate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestUserChannelCreate
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

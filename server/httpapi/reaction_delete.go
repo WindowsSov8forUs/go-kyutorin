@@ -25,7 +25,7 @@ type RequestReactionDelete struct {
 // HandleReactionDelete 处理删除表态请求
 func HandleReactionDelete(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestReactionDelete
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

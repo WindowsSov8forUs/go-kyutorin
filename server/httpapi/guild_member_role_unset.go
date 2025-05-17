@@ -23,7 +23,7 @@ type RequestGuildMemberRoleUnset struct {
 // HandleGuildMemberRoleUnset 处理取消群组成员角色请求
 func HandleGuildMemberRoleUnset(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildMemberRoleUnset
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

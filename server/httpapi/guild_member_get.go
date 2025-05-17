@@ -28,7 +28,7 @@ type ResponseGuildMemberGet guildmember.GuildMember
 // HandleGuildMemberGet 处理获取群组成员请求
 func HandleGuildMemberGet(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildMemberGet
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

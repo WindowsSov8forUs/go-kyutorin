@@ -22,7 +22,7 @@ type RequestChannelUpdate struct {
 // HandleChannelUpdate 处理修改群组频道请求
 func HandleChannelUpdate(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestChannelUpdate
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

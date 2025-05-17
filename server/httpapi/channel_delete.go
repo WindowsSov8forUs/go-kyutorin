@@ -20,7 +20,7 @@ type RequestChannelDelete struct {
 // HandleChannelDelete 处理删除群组频道请求
 func HandleChannelDelete(api openapi.OpenAPI, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestChannelDelete
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

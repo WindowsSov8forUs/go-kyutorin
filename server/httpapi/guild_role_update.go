@@ -25,7 +25,7 @@ type RequestGuildRoleUpdate struct {
 // HandleGuildRoleUpdate 处理修改群组角色请求
 func HandleGuildRoleUpdate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildRoleUpdate
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

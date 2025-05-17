@@ -26,7 +26,7 @@ type ResponseGuildMemberList guildmember.GuildMemberList
 // HandleGuildMemberList 处理获取群组成员列表请求
 func HandleGuildMemberList(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildMemberList
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

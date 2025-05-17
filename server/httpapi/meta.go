@@ -54,7 +54,7 @@ func HandlerMeta(message *MetaActionMessage) (any, APIError) {
 // HandlerWebHookCreate 处理创建 WebHook 请求
 func HandlerWebHookCreate(message *MetaActionMessage) (any, APIError) {
 	var request WebHookCreateRequest
-	err := json.Unmarshal([]byte(message.Data), &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}
@@ -70,7 +70,7 @@ func HandlerWebHookCreate(message *MetaActionMessage) (any, APIError) {
 // HandlerWebHookDelete 处理移除 WebHook 请求
 func HandlerWebHookDelete(message *MetaActionMessage) (any, APIError) {
 	var request WebHookDeleteRequest
-	err := json.Unmarshal([]byte(message.Data), &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

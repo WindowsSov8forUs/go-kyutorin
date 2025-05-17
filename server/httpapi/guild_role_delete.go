@@ -22,7 +22,7 @@ type RequestGuildRoleDelete struct {
 // HandleGuildRoleDelete 处理删除群组角色请求
 func HandleGuildRoleDelete(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildRoleDelete
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

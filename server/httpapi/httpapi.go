@@ -144,33 +144,57 @@ func (e *InternalServerError) Code() int {
 
 // ActionMessage Satori 应用发送的 HTTP API 调用信息
 type ActionMessage struct {
-	API      string     // 接口
-	Bot      *user.User // 机器人信息
-	Platform string     // 平台
-	Data     []byte     // 应用发送的数据
+	API      string       // 接口
+	Bot      *user.User   // 机器人信息
+	Platform string       // 平台
+	Ctx      *gin.Context // 上下文
+}
+
+// Data 获取数据
+func (message *ActionMessage) Data() []byte {
+	body := message.Ctx.Request.Body
+	defer body.Close()
+	bodyBytes, err := io.ReadAll(body)
+	if err != nil {
+		message.Ctx.String(http.StatusBadRequest, err.Error())
+		return nil
+	}
+	return bodyBytes
 }
 
 // MetaActionMessage Satori 应用发送的元信息接口调用信息
 type MetaActionMessage struct {
-	API  string // 接口
-	Data []byte // 应用发送的数据
+	API string       // 接口
+	Ctx *gin.Context // 上下文
+}
+
+// Data 获取数据
+func (message *MetaActionMessage) Data() []byte {
+	body := message.Ctx.Request.Body
+	defer body.Close()
+	bodyBytes, err := io.ReadAll(body)
+	if err != nil {
+		message.Ctx.String(http.StatusBadRequest, err.Error())
+		return nil
+	}
+	return bodyBytes
 }
 
 // NewActionMessage 创建一个新的 ActionMessage
-func NewActionMessage(api string, bot *user.User, platform string, data []byte) *ActionMessage {
+func NewActionMessage(api string, bot *user.User, platform string, ctx *gin.Context) *ActionMessage {
 	return &ActionMessage{
 		API:      api,
 		Bot:      bot,
 		Platform: platform,
-		Data:     data,
+		Ctx:      ctx,
 	}
 }
 
 // NewMetaActionMessage 创建一个新的 MetaActionMessage
-func NewMetaActionMessage(api string, data []byte) *MetaActionMessage {
+func NewMetaActionMessage(api string, ctx *gin.Context) *MetaActionMessage {
 	return &MetaActionMessage{
-		API:  "meta" + api,
-		Data: data,
+		API: "meta" + api,
+		Ctx: ctx,
 	}
 }
 
@@ -288,18 +312,18 @@ func AuthenticateMiddleware(realm string) gin.HandlerFunc {
 func BotValidateMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 提取请求头
-		xPlatform := c.GetHeader("X-Platform")
-		xSelfID := c.GetHeader("X-Self-ID")
+		satoriPlatform := c.GetHeader("Satori-Platform")
+		satoriUserID := c.GetHeader("Satori-User-ID")
 
-		// 判断平台与 SelfID 是否正确
-		bot := processor.GetBot(xPlatform)
+		// 判断平台与 UserID 是否正确
+		bot := processor.GetBot(satoriPlatform)
 		if bot == nil {
-			c.String(http.StatusBadRequest, `unknown platform "%s"`, xPlatform)
+			c.String(http.StatusBadRequest, `unknown platform "%s"`, satoriPlatform)
 			c.Abort()
 			return
 		}
-		if xSelfID != bot.Id {
-			c.String(http.StatusBadRequest, `unknown self id "%s"`, xSelfID)
+		if satoriUserID != bot.Id {
+			c.String(http.StatusBadRequest, `unknown user id "%s"`, satoriUserID)
 			c.Abort()
 			return
 		}
@@ -322,18 +346,11 @@ func resourceAPIHandler(c *gin.Context, api, apiV2 openapi.OpenAPI) {
 	method := c.Param("method")
 
 	// 获取 bot 对象
-	xPlatform := c.GetHeader("X-Platform")
-	bot := processor.GetBot(xPlatform)
+	satoriPlatform := c.GetHeader("Satori-Platform")
+	bot := processor.GetBot(satoriPlatform)
 
 	// 构建 Action
-	body := c.Request.Body
-	defer body.Close()
-	bodyBytes, err := io.ReadAll(body)
-	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-	actionMessage := NewActionMessage(method, bot, xPlatform, bodyBytes)
+	actionMessage := NewActionMessage(method, bot, satoriPlatform, c)
 
 	// 调用 API
 	response, err := CallAPI(api, apiV2, actionMessage)
@@ -374,14 +391,7 @@ func metaAPIHandler(c *gin.Context) {
 	method := c.Param("method")
 
 	// 构建 Action
-	body := c.Request.Body
-	defer body.Close()
-	bodyBytes, err := io.ReadAll(body)
-	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-	metaActionMessage := NewMetaActionMessage(method, bodyBytes)
+	metaActionMessage := NewMetaActionMessage(method, c)
 
 	// 调用 API
 	response, err := CallMetaAPI(metaActionMessage)

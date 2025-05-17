@@ -23,7 +23,7 @@ type RequestGuildMemberKick struct {
 // HandleGuildMemberKick 处理踢出群组成员请求
 func HandleGuildMemberKick(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildMemberKick
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

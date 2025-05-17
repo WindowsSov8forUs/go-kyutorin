@@ -26,7 +26,7 @@ type ResponseGuildRoleList guildrole.GuildRoleList
 // HandleGuildRoleList 处理获取群组角色列表请求
 func HandleGuildRoleList(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildRoleList
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

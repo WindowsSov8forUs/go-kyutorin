@@ -23,7 +23,7 @@ type RequestGuildMemberRoleSet struct {
 // HandleGuildMemberRoleSet 处理设置群组成员角色请求
 func HandleGuildMemberRoleSet(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestGuildMemberRoleSet
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

@@ -28,7 +28,7 @@ type ResponseChannelGet channel.Channel
 // HandleChannelGet 处理获取群组频道请求
 func HandleChannelGet(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestChannelGet
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

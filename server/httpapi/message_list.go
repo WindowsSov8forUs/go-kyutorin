@@ -61,7 +61,7 @@ type ResponseMessageList satoriMessage.MessageBidiList
 // HandleMessageList 处理获取消息列表请求
 func HandleMessageList(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request RequestMessageList
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}

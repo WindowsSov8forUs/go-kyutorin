@@ -22,7 +22,7 @@ type MessageDeleteRequest struct {
 // HandleMessageDelete 处理撤回消息请求
 func HandleMessageDelete(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, APIError) {
 	var request MessageDeleteRequest
-	err := json.Unmarshal(message.Data, &request)
+	err := json.Unmarshal(message.Data(), &request)
 	if err != nil {
 		return gin.H{}, &BadRequestError{err}
 	}
