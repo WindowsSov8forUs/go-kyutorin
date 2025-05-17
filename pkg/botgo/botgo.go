@@ -8,6 +8,7 @@ import (
 	v1 "github.com/tencent-connect/botgo/openapi/v1"
 	v2 "github.com/tencent-connect/botgo/openapi/v2"
 	"github.com/tencent-connect/botgo/token"
+	"github.com/tencent-connect/botgo/webhook/server"
 	"github.com/tencent-connect/botgo/websocket/client"
 )
 
@@ -15,6 +16,7 @@ func init() {
 	v1.Setup()     // 注册 v1 接口
 	v2.Setup()     // 注册 v2 接口
 	client.Setup() // 注册 websocket client 实现
+	server.Setup() // 注册 webhook server 实现
 }
 
 // NewSessionManager 获得 session manager 实例

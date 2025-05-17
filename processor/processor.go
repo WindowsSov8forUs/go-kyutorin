@@ -252,11 +252,13 @@ func (p *Processor) Run(ctx context.Context, server Server) error {
 		if err != nil {
 			return err
 		}
+		log.Info("WebHook 监听建立成功")
 	} else if p.conf.Account.WebSocket.Enable {
 		err := establishWebSocket(p, p.ApiV2, p.Token, ctx, p.conf)
 		if err != nil {
 			return err
 		}
+		log.Info("WebSocket 连接成功")
 	} else {
 		return fmt.Errorf("WebHook 和 WebSocket 都没有启用，请检查配置")
 	}

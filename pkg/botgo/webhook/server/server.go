@@ -53,16 +53,13 @@ type WebhookHandler interface {
 
 func (s *Server) New(config dto.Config) webhook.WebHook {
 	engine := gin.New()
-	engine.Use(gin.Recovery(), gin.Logger())
-
-	webhookGroup := engine.Group(s.config.Path)
-	webhookGroup.Use(s.signatureVelidateMiddleware())
+	gin.SetMode(gin.DebugMode)
+	engine.Use(gin.Recovery())
 
 	return &Server{
 		engine: engine,
-		group:  webhookGroup,
 		server: &http.Server{
-			Addr:    fmt.Sprintf("%s:%d%s", config.Host, config.Port, config.Path),
+			Addr:    fmt.Sprintf("%s:%d", config.Host, config.Port),
 			Handler: engine,
 		},
 		messageQueue: make(messageChan, DefaultQueueSize),
@@ -75,7 +72,6 @@ func (s *Server) New(config dto.Config) webhook.WebHook {
 // Server 是 webhook 服务器的实现
 type Server struct {
 	engine       *gin.Engine
-	group        *gin.RouterGroup
 	server       *http.Server
 	messageQueue messageChan
 	appId        uint64
@@ -87,32 +83,22 @@ type messageChan chan *dto.Payload
 
 // Listen 启动 webhook 服务器
 func (s *Server) Listen() error {
+	// 一个 get 方法以验证服务器是否运行
+	checkGroup := s.engine.Group("/check")
+	checkGroup.GET("", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
 	// 注册 webhook 路由
-	s.group.POST("", s.webhookHandler())
+	webhookGroup := s.engine.Group(s.config.Path)
+	webhookGroup.Use(s.signatureValidateMiddleware())
+	webhookGroup.POST("", s.webhookHandler())
 	go s.listenMessageAndHandle()
 
 	// 启动 HTTP 服务器
+	log.Warnf("由于 Go 已不再支持 SSLv3 证书文件，请务必通过其他方式进行反代，否则无法配置给 QQ 开放平台。")
+	log.Infof("启动 HTTP 服务器，地址: %s:%d", s.config.Host, s.config.Port)
 	return s.server.ListenAndServe()
-}
-
-// Write 发送数据到 webhook 回调
-func (s *Server) Write(message *dto.Payload) error {
-	// 将消息转换为 JSON 格式
-	payload, err := json.Marshal(message)
-	// 如果转换失败，返回错误
-	if err != nil {
-		return fmt.Errorf("无法转换消息为 JSON: %w", err)
-	}
-	log.Infof("%s write %s message, %v", s.config, dto.OPMeans(message.OPCode), string(payload))
-	// 发送 HTTP POST 请求到 webhook URL
-	resp, err := http.Post(s.config.Host+s.config.Path, "application/json", bytes.NewReader(payload))
-	if err != nil {
-		log.Errorf("%s WriteMessage failed, %v", s.config, err)
-		return err
-	}
-	defer resp.Body.Close()
-
-	return nil
 }
 
 // Close 停止 webhook 服务器
@@ -125,15 +111,31 @@ func (s *Server) Close() error {
 // webhookHandler 返回处理 webhook 请求的 gin 处理函数
 func (s *Server) webhookHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		go s.readMessageToQueue(c)
+		// 读取请求体
+		body, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			log.Errorf("读取请求体失败: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "无法读取请求体"})
+			return
+		}
+		fmt.Printf("webhookHandler 收到请求体: %s\n", string(body))
+
+		go s.readMessageToQueue(c, body)
 
 		// 总是返回成功
 		c.JSON(http.StatusOK, gin.H{"success": true})
 	}
 }
 
-func (s *Server) signatureVelidateMiddleware() gin.HandlerFunc {
+func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		body, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			log.Errorf("读取请求体失败: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "无法读取请求体"})
+			return
+		}
+		fmt.Printf("signatureValidateMiddleware 收到请求体: %s\n", string(body))
 		// 根据botSecret进行repeat操作后得到seed值计算出公钥
 		seed := s.botSecret
 		for len(seed) < ed25519.SeedSize {
@@ -193,13 +195,7 @@ func (s *Server) signatureVelidateMiddleware() gin.HandlerFunc {
 	}
 }
 
-func (s *Server) readMessageToQueue(c *gin.Context) {
-	// 读取请求体
-	message, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		log.Errorf("%s read message failed, %v, message %s", s.config, err, string(message))
-		return
-	}
+func (s *Server) readMessageToQueue(c *gin.Context, message []byte) {
 	payload := &dto.Payload{}
 	if err := json.Unmarshal(message, payload); err != nil {
 		log.Errorf("%s json failed, %v", s.config, err)
@@ -285,6 +281,13 @@ func (s *Server) isHandleBuildIn(c *gin.Context, payload *dto.Payload) bool {
 	return true
 }
 func (s *Server) handleValidation(c *gin.Context, message []byte) {
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		log.Errorf("%s read request body failed, %v", s.config, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无法读取请求体"})
+		return
+	}
+	fmt.Printf("handleValidation 收到请求体: %s\n", string(body))
 	appid := c.GetHeader("X-Bot-Appid")
 	appidInt, err := strconv.Atoi(appid)
 	if err != nil || uint64(appidInt) != s.appId {

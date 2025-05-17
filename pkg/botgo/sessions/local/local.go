@@ -154,14 +154,19 @@ type WebhookManager struct {
 }
 
 func (w *WebhookManager) Start(config *dto.Config) error {
+	w.config <- *config
+
 	for config := range w.config {
+		fmt.Printf("webhook server listen and serve: %v\n", config)
+		if err := w.listenAndServe(config); err != nil {
+			log.Errorf("webhook server listen and serve failed: %v", err)
+		}
 		time.Sleep(5 * time.Second)
-		go w.listenAndServe(config)
 	}
 	return nil
 }
 
-func (w *WebhookManager) listenAndServe(config dto.Config) {
+func (w *WebhookManager) listenAndServe(config dto.Config) error {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("webhook server panic: %v", err)
@@ -169,9 +174,11 @@ func (w *WebhookManager) listenAndServe(config dto.Config) {
 		}
 	}()
 	whServer := webhook.ServerImpl.New(config)
+
 	if err := whServer.Listen(); err != nil {
 		log.Error(err)
 		w.config <- config
-		return
+		return err
 	}
+	return nil
 }
