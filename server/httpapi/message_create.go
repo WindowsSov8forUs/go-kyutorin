@@ -307,7 +307,6 @@ func convertToMessageToCreateV2(content string, OpenId string, messageType strin
 	// if dtoMessageToCreate.Content == "" && dtoMessageToCreate.MsgType == 7 {
 	// 	dtoMessageToCreate.Content = "\u200B"
 	// }
-	fmt.Printf("[%s]\n", dtoMessageToCreate.Content)
 	return dtoMessageToCreate, nil
 }
 

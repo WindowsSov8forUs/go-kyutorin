@@ -166,8 +166,6 @@ func establishWebHook(p *Processor, conf *config.Config) error {
 		AppId:     conf.Account.AppID,
 		BotSecret: conf.Account.AppSecret,
 	}
-	certFile, keyFile := conf.Account.WebHook.CertFile, conf.Account.WebHook.KeyFile
-
 	// 注册事件处理器
 	handlers, ok := p.getWebHookAvailableHandlers()
 	if !ok {
@@ -180,7 +178,7 @@ func establishWebHook(p *Processor, conf *config.Config) error {
 
 	go func() {
 		// 启动 WebHook 服务器
-		if err := botgo.NewWebhookManager().Start(webhookConfig, certFile, keyFile); err != nil {
+		if err := botgo.NewWebhookManager().Start(webhookConfig); err != nil {
 			log.Infof("WebHook 服务器关闭: %s", err)
 		}
 	}()

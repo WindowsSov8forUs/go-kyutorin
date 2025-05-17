@@ -83,17 +83,16 @@ type messageChan chan *dto.Payload
 
 // Listen 启动 webhook 服务器
 func (s *Server) Listen() error {
-	// 一个 get 方法以验证服务器是否运行
-	checkGroup := s.engine.Group("/check")
-	checkGroup.GET("", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-
 	// 注册 webhook 路由
 	webhookGroup := s.engine.Group(s.config.Path)
 	webhookGroup.Use(s.signatureValidateMiddleware())
 	webhookGroup.POST("", s.webhookHandler())
 	go s.listenMessageAndHandle()
+
+	// 一个 get 方法以验证服务器是否运行
+	webhookGroup.GET("/check", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	// 启动 HTTP 服务器
 	log.Warnf("由于 Go 已不再支持 SSLv3 证书文件，请务必通过其他方式进行反代，否则无法配置给 QQ 开放平台。")
@@ -115,12 +114,31 @@ func (s *Server) webhookHandler() gin.HandlerFunc {
 		body, err := io.ReadAll(c.Request.Body)
 		if err != nil {
 			log.Errorf("读取请求体失败: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "无法读取请求体"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot read request body"})
 			return
 		}
-		fmt.Printf("webhookHandler 收到请求体: %s\n", string(body))
 
-		go s.readMessageToQueue(c, body)
+		// 预处理请求
+		payload, err := s.parseMessageToPayload(body)
+		if err != nil {
+			log.Errorf("解析请求体失败: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload data"})
+			return
+		}
+
+		if payload.OPCode == dto.HTTPCallbackValidation {
+			// 处理验证请求
+			rspBytes, err := s.handleValidation(c, payload)
+			if err != nil {
+				log.Errorf("处理验证请求失败: %v", err)
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid validation request"})
+				return
+			}
+			c.Data(http.StatusOK, "application/json", rspBytes)
+			return
+		}
+
+		go s.readMessageToQueue(payload)
 
 		// 总是返回成功
 		c.JSON(http.StatusOK, gin.H{"success": true})
@@ -129,13 +147,6 @@ func (s *Server) webhookHandler() gin.HandlerFunc {
 
 func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		body, err := io.ReadAll(c.Request.Body)
-		if err != nil {
-			log.Errorf("读取请求体失败: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "无法读取请求体"})
-			return
-		}
-		fmt.Printf("signatureValidateMiddleware 收到请求体: %s\n", string(body))
 		// 根据botSecret进行repeat操作后得到seed值计算出公钥
 		seed := s.botSecret
 		for len(seed) < ed25519.SeedSize {
@@ -145,25 +156,25 @@ func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 		publicKey, _, err := ed25519.GenerateKey(rand)
 		if err != nil {
 			log.Errorf("%s ed25519 generate key failed:", s.config, err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "生成密钥失败"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate key"})
 			return
 		}
 
 		// 取HTTP header中X-Signature-Ed25519(进行hex解码)并校验
 		signature := c.GetHeader("X-Signature-Ed25519")
 		if signature == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "缺少签名"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "lack of signature"})
 			return
 		}
 		sig, err := hex.DecodeString(signature)
 		if err != nil {
 			log.Errorf("%s hex decode signature failed:", s.config, err)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "签名无效"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
 			return
 		}
 		if len(sig) != ed25519.SignatureSize || sig[63]&224 != 0 {
 			log.Errorf("%s signature length is not valid:", s.config, err)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "签名长度无效"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
 			return
 		}
 
@@ -171,15 +182,17 @@ func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 		timestamp := c.GetHeader("X-Signature-Timestamp")
 		if timestamp == "" {
 			log.Errorf("%s X-Signature-Timestamp is empty:", s.config)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "缺少时间戳"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "lack of timestamp"})
 			return
 		}
 		httpBody, err := io.ReadAll(c.Request.Body)
 		if err != nil {
 			log.Errorf("%s read http body failed:", s.config, err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "读取请求体失败"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read body"})
 			return
 		}
+		// 重新设置请求体，以便后续处理
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(httpBody))
 		// 按照timestamp+Body顺序组成签名体
 		var msg bytes.Buffer
 		msg.WriteString(timestamp)
@@ -189,23 +202,26 @@ func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 			c.Next()
 		} else {
 			log.Errorf("%s ed25519 verify failed:", s.config)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "签名验证失败"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
 			return
 		}
 	}
 }
 
-func (s *Server) readMessageToQueue(c *gin.Context, message []byte) {
+func (s *Server) parseMessageToPayload(message []byte) (*dto.Payload, error) {
 	payload := &dto.Payload{}
 	if err := json.Unmarshal(message, payload); err != nil {
 		log.Errorf("%s json failed, %v", s.config, err)
-		return
+		return nil, err
 	}
 	atomic.StoreInt64(&global_s, payload.S)
 
 	payload.RawMessage = message
 	log.Infof("%s receive %s message, %s", s.config, dto.OPMeans(payload.OPCode), string(message))
+	return payload, nil
+}
 
+func (s *Server) readMessageToQueue(payload *dto.Payload) {
 	// 计算数据的哈希值
 	dataHash := calculateDataHash(payload.Data)
 
@@ -218,10 +234,6 @@ func (s *Server) readMessageToQueue(c *gin.Context, message []byte) {
 
 	// 将新的 payload 存入 sync.Map
 	storeDataToSyncMap(dataHash, payload)
-
-	if s.isHandleBuildIn(c, payload) {
-		return
-	}
 
 	s.messageQueue <- payload
 }
@@ -269,49 +281,31 @@ func (s *Server) listenMessageAndHandle() {
 	log.Infof("%s message queue is closed", s.config)
 }
 
-// isHandleBuildIn 内置的事件处理，处理那些不需要业务方处理的事件
-// return true 的时候说明事件已经被处理了
-func (s *Server) isHandleBuildIn(c *gin.Context, payload *dto.Payload) bool {
-	switch payload.OPCode {
-	case dto.HTTPCallbackValidation: // 平台要求进行回调地址验证
-		s.handleValidation(c, payload.RawMessage)
-	default:
-		return false
-	}
-	return true
-}
-func (s *Server) handleValidation(c *gin.Context, message []byte) {
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		log.Errorf("%s read request body failed, %v", s.config, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无法读取请求体"})
-		return
-	}
-	fmt.Printf("handleValidation 收到请求体: %s\n", string(body))
+func (s *Server) handleValidation(c *gin.Context, payload *dto.Payload) ([]byte, error) {
 	appid := c.GetHeader("X-Bot-Appid")
 	appidInt, err := strconv.Atoi(appid)
 	if err != nil || uint64(appidInt) != s.appId {
 		log.Errorf("%s callback address verify appid not match, %s", s.config, appid)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "appid不匹配"})
-		return
+		return nil, fmt.Errorf("appid不匹配")
 	}
 
 	userAgent := c.GetHeader("User-Agent")
 	if userAgent != "QQBot-Callback" {
 		log.Errorf("%s callback address verify userAgent not match, %s", s.config, userAgent)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "userAgent不匹配"})
-		return
+		return nil, fmt.Errorf("userAgent不匹配")
 	}
 
 	validationPayload := &dto.WHValidationRequest{}
-	if err := event.ParseData(message, validationPayload); err != nil {
-		log.Errorf("%s callback address verify data parse failed, %v, message %v", s.config, err, message)
-		return
+	if err := event.ParseData(payload.RawMessage, validationPayload); err != nil {
+		log.Errorf("%s callback address verify data parse failed, %v, message %v", s.config, err, payload.RawMessage)
+		return nil, fmt.Errorf("data parse failed")
 	}
 	signature, err := s.calculateSignature(validationPayload)
 	if err != nil {
 		log.Errorf("%s calculateSignature failed, %v", s.config, err)
-		return
+		return nil, fmt.Errorf("calculateSignature failed")
 	}
 	rspBytes, err := json.Marshal(
 		&dto.WHValidationResponse{
@@ -321,9 +315,9 @@ func (s *Server) handleValidation(c *gin.Context, message []byte) {
 	)
 	if err != nil {
 		log.Errorf("handle validation failed:", err)
-		return
+		return nil, fmt.Errorf("handle validation failed")
 	}
-	c.Data(http.StatusOK, "application/json", rspBytes)
+	return rspBytes, nil
 }
 
 // 计算回调地址验证需要的签名

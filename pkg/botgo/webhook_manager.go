@@ -12,5 +12,5 @@ var defaultWebhookManager WebhookManager = local.NewWebhook()
 // WebhookManager 接口，管理 webhook
 type WebhookManager interface {
 	// Start 启动 webhook
-	Start(config *dto.Config, certFile string, keyFile string) error
+	Start(config *dto.Config) error
 }
