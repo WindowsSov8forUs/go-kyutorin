@@ -33,9 +33,9 @@ func HandleMessageUpdate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (an
 		var dtoMessageToCreate = &dto.MessageToCreate{}
 		guildId := processor.GetDirectChannelGuild(request.ChannelId)
 		if guildId == "" {
-			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, true)
+			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, message.Bot.Id, true)
 		} else {
-			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, false)
+			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, message.Bot.Id, false)
 		}
 		if err != nil {
 			return gin.H{}, &InternalServerError{err}

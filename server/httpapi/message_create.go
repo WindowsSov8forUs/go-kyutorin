@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/database"
 	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
 	"github.com/WindowsSov8forUs/go-kyutorin/log"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
@@ -54,7 +53,7 @@ func HandleMessageCreate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (an
 			log.Infof("发送消息到频道 %s : %s", request.ChannelId, logContent(request.Content))
 
 			var dtoMessageToCreate = &dto.MessageToCreate{}
-			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, true)
+			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, message.Bot.Id, true)
 			if err != nil {
 				return gin.H{}, &InternalServerError{err}
 			}
@@ -74,7 +73,7 @@ func HandleMessageCreate(api, apiv2 openapi.OpenAPI, message *ActionMessage) (an
 
 			var dtoMessageToCreate = &dto.MessageToCreate{}
 			var dtoDirectMessage = &dto.DirectMessage{}
-			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, false)
+			dtoMessageToCreate, err = convertToMessageToCreate(request.Content, message.Bot.Id, false)
 			if err != nil {
 				return gin.H{}, &InternalServerError{err}
 			}
@@ -158,7 +157,7 @@ func logContent(content string) string {
 }
 
 // convertToMessageToCreate 转换为消息体结构
-func convertToMessageToCreate(content string, isGuild bool) (*dto.MessageToCreate, error) {
+func convertToMessageToCreate(content, userId string, isGuild bool) (*dto.MessageToCreate, error) {
 	// 将文本消息内容转换为 satoriMessage.MessageElement
 	elements, err := satoriMessage.Parse(content)
 	if err != nil {
@@ -167,7 +166,7 @@ func convertToMessageToCreate(content string, isGuild bool) (*dto.MessageToCreat
 
 	// 处理 satoriMessage.MessageElement
 	var dtoMessageToCreate = &dto.MessageToCreate{}
-	err = parseElementsInMessageToCreate(elements, dtoMessageToCreate, isGuild)
+	err = parseElementsInMessageToCreate(elements, dtoMessageToCreate, isGuild, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +174,7 @@ func convertToMessageToCreate(content string, isGuild bool) (*dto.MessageToCreat
 }
 
 // parseElementsInMessageToCreate 将 Satori 消息元素转换为消息体结构
-func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dtoMessageToCreate *dto.MessageToCreate, isGuild bool) error {
+func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dtoMessageToCreate *dto.MessageToCreate, isGuild bool, userId string) error {
 	// 处理 satoriMessage.MessageElement
 	for _, element := range elements {
 		// 根据元素类型进行处理
@@ -185,7 +184,7 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 		case *satoriMessage.MessageElementAt:
 			if isGuild {
 				if e.Type == "all" {
-					dtoMessageToCreate.Content += "<qqbot-at-everyone />"
+					dtoMessageToCreate.Content += "@everyone"
 				} else {
 					if e.Id != "" {
 						dtoMessageToCreate.Content += fmt.Sprintf("<@%s>", e.Id)
@@ -201,12 +200,53 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 		case *satoriMessage.MessageElementImg:
 			if dtoMessageToCreate.Image != "" {
 				// 只支持发一张图片
+				// TODO: 多图片时分割发送
 				continue
 			}
-			// TODO: 仍待寻找使 cache 能够有作用的方法
-			//
-			// 去除了原本删除保存文件的代码，可能导致文件存储占用空间较高
-			dtoMessageToCreate.Image, _ = processor.SaveSrcToURL(e.Src)
+
+			url, file, err := processor.ParseSrc(e.Src)
+			if err != nil {
+				log.Warnf("解析图片 src 失败: %s", err)
+				continue
+			}
+
+			// 如果是 URL 则直接放入
+			if url != "" {
+				dtoMessageToCreate.Image = url
+			} else if file != nil {
+				// 保存至文件服务器并放入资源链接
+				fileReader, err := file.GetReader()
+				if err != nil {
+					log.Warnf("获取文件读取器失败: %s", err)
+					continue
+				}
+
+				// 生成资源标识
+				ident, err := fileserver.CalculateFileIdent("qqguild", userId, fileReader)
+				if err != nil {
+					log.Warnf("计算文件标识失败: %s", err)
+					continue
+				}
+
+				// 尝试获取文件
+				if e.Cache {
+					meta, err := fileserver.GetFile(ident)
+					if err == nil {
+						dtoMessageToCreate.Image = fileserver.InternalURL(meta)
+						continue
+					}
+				}
+
+				// 保存至本地文件服务器
+				meta, err := fileserver.SaveFile(fileReader, "qqguild", userId, e.Title, file.MimeType)
+				if err != nil {
+					log.Warnf("保存图片文件失败: %s", err)
+					continue
+				}
+				dtoMessageToCreate.Image = fileserver.InternalURL(meta)
+			} else {
+				log.Warnf("图片元素没有有效的 src 或文件")
+			}
 		case *satoriMessage.MessageElementAudio:
 			// 频道不支持音频消息
 			continue
@@ -219,38 +259,38 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 		// TODO: 修饰元素全部视为子元素集合，或许可以变成 dto.markdown ？
 		case *satoriMessage.MessageElementStrong:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild, userId)
 		case *satoriMessage.MessageElementEm:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild, userId)
 		case *satoriMessage.MessageElementIns:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild, userId)
 		case *satoriMessage.MessageElementDel:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild, userId)
 		case *satoriMessage.MessageElementSpl:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild, userId)
 		case *satoriMessage.MessageElementCode:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild, userId)
 		case *satoriMessage.MessageElementSup:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild, userId)
 		case *satoriMessage.MessageElementSub:
 			// 递归调用
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild, userId)
 		case *satoriMessage.MessageElmentBr:
 			dtoMessageToCreate.Content += "\n"
 		case *satoriMessage.MessageElmentP:
 			dtoMessageToCreate.Content += "\n"
 			// 视为子元素集合
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild, userId)
 			dtoMessageToCreate.Content += "\n"
 		case *satoriMessage.MessageElementMessage:
 			// 视为子元素集合，目前不支持视为转发消息
-			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild)
+			parseElementsInMessageToCreate(e.GetChildren(), dtoMessageToCreate, isGuild, userId)
 		case *satoriMessage.MessageElementQuote:
 			// 遍历子元素，只会处理第一个 satoriMessage.MessageElementMessage 元素
 			for _, child := range e.GetChildren() {
@@ -289,7 +329,7 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 }
 
 // convertToMessageToCreateV2 转换为 V2 消息体结构
-func convertToMessageToCreateV2(content string, OpenId string, messageType string, apiv2 openapi.OpenAPI) (*dto.MessageToCreate, error) {
+func convertToMessageToCreateV2(content string, openId string, messageType string, apiv2 openapi.OpenAPI) (*dto.MessageToCreate, error) {
 	// 将文本消息内容转换为 satoriMessage.MessageElement
 	elements, err := satoriMessage.Parse(content)
 	if err != nil {
@@ -298,20 +338,16 @@ func convertToMessageToCreateV2(content string, OpenId string, messageType strin
 
 	// 处理 satoriMessage.MessageElement
 	var dtoMessageToCreate = &dto.MessageToCreate{}
-	err = parseElementsInMessageToCreateV2(elements, dtoMessageToCreate, OpenId, messageType, apiv2)
+	err = parseElementsInMessageToCreateV2(elements, dtoMessageToCreate, openId, messageType, apiv2)
 	if err != nil {
 		return nil, err
 	}
 
-	// // MsgType 为 7 时 Content 字段不能为空
-	// if dtoMessageToCreate.Content == "" && dtoMessageToCreate.MsgType == 7 {
-	// 	dtoMessageToCreate.Content = "\u200B"
-	// }
 	return dtoMessageToCreate, nil
 }
 
 // parseElementsInMessageToCreateV2 将 Satori 消息元素转换为 V2 消息体结构
-func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, dtoMessageToCreate *dto.MessageToCreate, OpenId string, messageType string, apiv2 openapi.OpenAPI) error {
+func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, dtoMessageToCreate *dto.MessageToCreate, openId, messageType string, apiv2 openapi.OpenAPI) error {
 	// 处理 satoriMessage.MessageElement
 	for _, element := range elements {
 		// 根据元素类型进行处理
@@ -342,187 +378,73 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 				// 富媒体信息只支持一个
 				continue
 			}
-			if e.Cache {
-				// 获取 key
-				key := processor.GetSrcKey(e.Src, messageType)
-				// 尝试获取缓存
-				fileInfo, ok := database.GetImageCache(key)
-				if ok {
-					dtoMessageToCreate.Media.FileInfo = fileInfo
-					dtoMessageToCreate.MsgType = 7
-					continue
-				}
+
+			if err := parseResourceElementInMTCV2(e, dtoMessageToCreate, openId, messageType, apiv2); err != nil {
+				return err
 			}
-			dtoRichMediaMessage, hash := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
-			if !e.Cache {
-				// 删除保存的文件
-				if hash != "" {
-					defer fileserver.DeleteFile(hash)
-				}
-			}
-			if dtoRichMediaMessage == nil {
-				continue
-			}
-			key := processor.GetSrcKey(e.Src, messageType)
-			if messageType == "private" {
-				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
-				if err != nil {
-					return err
-				}
-				dtoMessageToCreate.Media.FileInfo = fileInfo
-			} else {
-				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
-				if err != nil {
-					return err
-				}
-				dtoMessageToCreate.Media.FileInfo = fileInfo
-			}
-			dtoMessageToCreate.MsgType = 7
 		case *satoriMessage.MessageElementAudio:
 			if dtoMessageToCreate.Media.FileInfo != "" {
 				// 富媒体信息只支持一个
 				continue
 			}
-			if e.Cache {
-				// 获取 key
-				key := processor.GetSrcKey(e.Src, messageType)
-				// 尝试获取缓存
-				fileInfo, ok := database.GetAudioCache(key)
-				if ok {
-					dtoMessageToCreate.Media.FileInfo = fileInfo
-					dtoMessageToCreate.MsgType = 7
-					continue
-				}
+
+			if err := parseResourceElementInMTCV2(e, dtoMessageToCreate, openId, messageType, apiv2); err != nil {
+				return err
 			}
-			dtoRichMediaMessage, hash := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
-			if !e.Cache {
-				// 删除保存的文件
-				if hash != "" {
-					defer fileserver.DeleteFile(hash)
-				}
-			}
-			if dtoRichMediaMessage == nil {
-				continue
-			}
-			key := processor.GetSrcKey(e.Src, messageType)
-			if messageType == "private" {
-				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
-				if err != nil {
-					return err
-				}
-				dtoMessageToCreate.Media.FileInfo = fileInfo
-			} else {
-				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
-				if err != nil {
-					return err
-				}
-				dtoMessageToCreate.Media.FileInfo = fileInfo
-			}
-			dtoMessageToCreate.MsgType = 7
 		case *satoriMessage.MessageElementVideo:
 			if dtoMessageToCreate.Media.FileInfo != "" {
 				// 富媒体信息只支持一个
 				continue
 			}
-			if e.Cache {
-				// 获取 key
-				key := processor.GetSrcKey(e.Src, messageType)
-				// 尝试获取缓存
-				fileInfo, ok := database.GetVideoCache(key)
-				if ok {
-					dtoMessageToCreate.Media.FileInfo = fileInfo
-					dtoMessageToCreate.MsgType = 7
-					continue
-				}
+
+			if err := parseResourceElementInMTCV2(e, dtoMessageToCreate, openId, messageType, apiv2); err != nil {
+				return err
 			}
-			dtoRichMediaMessage, hash := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
-			if !e.Cache {
-				// 删除保存的文件
-				if hash != "" {
-					defer fileserver.DeleteFile(hash)
-				}
-			}
-			if dtoRichMediaMessage == nil {
-				continue
-			}
-			key := processor.GetSrcKey(e.Src, messageType)
-			if messageType == "private" {
-				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
-				if err != nil {
-					return err
-				}
-				dtoMessageToCreate.Media.FileInfo = fileInfo
-			} else {
-				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
-				if err != nil {
-					return err
-				}
-				dtoMessageToCreate.Media.FileInfo = fileInfo
-			}
-			dtoMessageToCreate.MsgType = 7
 		case *satoriMessage.MessageElementFile:
 			// TODO: 本地缓冲
 			if dtoMessageToCreate.Media.FileInfo != "" {
 				// 富媒体信息只支持一个
 				continue
 			}
-			dtoRichMediaMessage, hash := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, e)
-			if hash != "" {
-				defer fileserver.DeleteFile(hash)
+
+			if err := parseResourceElementInMTCV2(e, dtoMessageToCreate, openId, messageType, apiv2); err != nil {
+				return err
 			}
-			if dtoRichMediaMessage == nil {
-				continue
-			}
-			key := processor.GetSrcKey(e.Src, messageType)
-			if messageType == "private" {
-				fileInfo, err := uploadMediaPrivate(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
-				if err != nil {
-					return err
-				}
-				dtoMessageToCreate.Media.FileInfo = fileInfo
-			} else {
-				fileInfo, err := uploadMedia(context.TODO(), OpenId, dtoRichMediaMessage, apiv2, key, e.Cache)
-				if err != nil {
-					return err
-				}
-				dtoMessageToCreate.Media.FileInfo = fileInfo
-			}
-			dtoMessageToCreate.MsgType = 7
 		// 修饰元素全部视为子元素集合，Markdown 是别想了
 		case *satoriMessage.MessageElementStrong:
 			// 递归调用
-			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, OpenId, messageType, apiv2)
+			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, openId, messageType, apiv2)
 		case *satoriMessage.MessageElementEm:
 			// 递归调用
-			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, OpenId, messageType, apiv2)
+			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, openId, messageType, apiv2)
 		case *satoriMessage.MessageElementIns:
 			// 递归调用
-			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, OpenId, messageType, apiv2)
+			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, openId, messageType, apiv2)
 		case *satoriMessage.MessageElementDel:
 			// 递归调用
-			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, OpenId, messageType, apiv2)
+			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, openId, messageType, apiv2)
 		case *satoriMessage.MessageElementSpl:
 			// 递归调用
-			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, OpenId, messageType, apiv2)
+			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, openId, messageType, apiv2)
 		case *satoriMessage.MessageElementCode:
 			// 递归调用
-			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, OpenId, messageType, apiv2)
+			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, openId, messageType, apiv2)
 		case *satoriMessage.MessageElementSup:
 			// 递归调用
-			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, OpenId, messageType, apiv2)
+			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, openId, messageType, apiv2)
 		case *satoriMessage.MessageElementSub:
 			// 递归调用
-			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, OpenId, messageType, apiv2)
+			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, openId, messageType, apiv2)
 		case *satoriMessage.MessageElmentBr:
 			dtoMessageToCreate.Content += "\n"
 		case *satoriMessage.MessageElmentP:
 			dtoMessageToCreate.Content += "\n"
 			// 视为子元素集合
-			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, OpenId, messageType, apiv2)
+			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, openId, messageType, apiv2)
 			dtoMessageToCreate.Content += "\n"
 		case *satoriMessage.MessageElementMessage:
 			// 视为子元素集合，目前不支持视为转发消息
-			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, OpenId, messageType, apiv2)
+			parseElementsInMessageToCreateV2(e.GetChildren(), dtoMessageToCreate, openId, messageType, apiv2)
 		case *satoriMessage.MessageElementQuote:
 			// 遍历子元素，只会处理第一个 satoriMessage.MessageElementMessage 元素
 			for _, child := range e.GetChildren() {
@@ -557,6 +479,92 @@ func parseElementsInMessageToCreateV2(elements []satoriMessage.MessageElement, d
 			continue
 		}
 	}
+	return nil
+}
+
+// parseResourceElementInMTCV2 将 Satori 资源消息元素解析到 V2 消息体结构中
+func parseResourceElementInMTCV2(element satoriMessage.MessageElement, dtoMessageToCreate *dto.MessageToCreate, openId, messageType string, apiv2 openapi.OpenAPI) error {
+	// TODO: 这里似乎应该将所有资源元素统一到一个子类型中，然后再细分
+	// TODO: 再说吧，需要改 satori-model-go 了
+
+	var cache bool
+	var src string
+
+	targetId := fmt.Sprintf("%s:%s", messageType, openId)
+
+	switch e := element.(type) {
+	case *satoriMessage.MessageElementImg:
+		cache = e.Cache
+		src = e.Src
+	case *satoriMessage.MessageElementAudio:
+		cache = e.Cache
+		src = e.Src
+	case *satoriMessage.MessageElementVideo:
+		cache = e.Cache
+		src = e.Src
+	case *satoriMessage.MessageElementFile:
+		cache = e.Cache
+		src = e.Src
+	default:
+		log.Warnf("消息元素类型不匹配: %T", element)
+		return nil
+	}
+
+	// 生成资源标识
+	srcId, err := processor.ParseSrcToString(src)
+	if err != nil {
+		log.Warnf("解析图片 src 失败: %s", err)
+		return nil
+	}
+	ident, err := fileserver.CalculateFileInfoIdent(targetId, srcId)
+	if err != nil {
+		log.Warnf("计算文件信息标识失败: %s", err)
+		return nil
+	}
+
+	if cache {
+		info, err := fileserver.GetFileInfo(ident)
+		if err == nil {
+			dtoMessageToCreate.Media.FileInfo = info.FileInfo
+			dtoMessageToCreate.MsgType = 7
+			return nil
+		}
+	}
+
+	// 生成上传用富媒体结构
+	dtoRichMediaMessage, err := generateDtoRichMediaMessage(dtoMessageToCreate.MsgID, element)
+	if err != nil {
+		log.Warnf("生成富媒体消息失败: %s", err)
+		return nil
+	}
+
+	// 上传富媒体
+	var mediaResponse *dto.MediaResponse
+	if messageType == "private" {
+		mediaResponse, err = uploadMediaPrivate(context.TODO(), openId, dtoRichMediaMessage, apiv2)
+		if err != nil {
+			return err
+		}
+	} else {
+		mediaResponse, err = uploadMedia(context.TODO(), openId, dtoRichMediaMessage, apiv2)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 保存富媒体
+	if cache {
+		// mediaResponse 的 TTL 以秒为单位，转换为 uint64 TTL
+		ttl := uint64(mediaResponse.TTL) * 1000 // 转换为毫秒
+		_, err := fileserver.SaveFileInfo(targetId, srcId, mediaResponse.FileInfo, ttl)
+		if err != nil {
+			log.Warnf("保存文件信息失败: %s", err)
+		}
+	}
+
+	dtoMessageToCreate.Media.FileInfo = mediaResponse.FileInfo
+	dtoMessageToCreate.MsgType = 7
+
 	return nil
 }
 
@@ -713,113 +721,86 @@ func convertButtonToKeyboard(button *satoriMessage.MessageElementButton) *keyboa
 }
 
 // uploadMedia 上传媒体并返回FileInfo
-func uploadMedia(ctx context.Context, groupID string, richMediaMessage *dto.RichMediaMessage, apiv2 openapi.OpenAPI, key string, cache bool) (string, error) {
+func uploadMedia(ctx context.Context, groupID string, richMediaMessage *dto.RichMediaMessage, apiv2 openapi.OpenAPI) (*dto.MediaResponse, error) {
 	// 调用API来上传媒体
 	messageReturn, err := apiv2.PostGroupMessage(ctx, groupID, richMediaMessage)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	// 将获取到的信息保存到数据库
-	if cache {
-		switch richMediaMessage.FileType {
-		case 1:
-			// 图片
-			err = database.SaveImageCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-			if err != nil {
-				log.Warnf("保存图片缓存失败: %s", err.Error())
-			}
-		case 2:
-			// 视频
-			err = database.SaveVideoCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-			if err != nil {
-				log.Warnf("保存视频缓存失败: %s", err.Error())
-			}
-		case 3:
-			// 音频
-			err = database.SaveAudioCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-			if err != nil {
-				log.Warnf("保存音频缓存失败: %s", err.Error())
-			}
-		}
-	}
+
 	// 返回上传后的FileInfo
-	return messageReturn.MediaResponse.FileInfo, nil
+	return messageReturn.MediaResponse, nil
 }
 
 // uploadMedia 上传媒体并返回FileInfo
-func uploadMediaPrivate(ctx context.Context, userID string, richMediaMessage *dto.RichMediaMessage, apiv2 openapi.OpenAPI, key string, cache bool) (string, error) {
+func uploadMediaPrivate(ctx context.Context, userID string, richMediaMessage *dto.RichMediaMessage, apiv2 openapi.OpenAPI) (*dto.MediaResponse, error) {
 	// 调用API来上传媒体
 	messageReturn, err := apiv2.PostC2CMessage(ctx, userID, richMediaMessage)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	// 将获取到的信息保存到数据库
-	if cache {
-		switch richMediaMessage.FileType {
-		case 1:
-			// 图片
-			err = database.SaveImageCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-			if err != nil {
-				log.Warnf("保存图片缓存失败: %s", err.Error())
-			}
-		case 2:
-			// 视频
-			err = database.SaveVideoCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-			if err != nil {
-				log.Warnf("保存视频缓存失败: %s", err.Error())
-			}
-		case 3:
-			// 音频
-			err = database.SaveAudioCache(key, messageReturn.MediaResponse.FileInfo, int64(messageReturn.MediaResponse.TTL))
-			if err != nil {
-				log.Warnf("保存音频缓存失败: %s", err.Error())
-			}
-		}
-	}
+
 	// 返回上传后的FileInfo
-	return messageReturn.MediaResponse.FileInfo, nil
+	return messageReturn.MediaResponse, nil
 }
 
 // generateDtoRichMediaMessage 创建 dto.RichMediaMessage
-func generateDtoRichMediaMessage(id string, element satoriMessage.MessageElement) (*dto.RichMediaMessage, string) {
+func generateDtoRichMediaMessage(id string, element satoriMessage.MessageElement) (*dto.RichMediaMessage, error) {
 	var dtoRichMediaMessage *dto.RichMediaMessage
-	var hash string
 
 	// 根据 element 的类型来创建 dto.RichMediaMessage
 	switch e := element.(type) {
 	case *satoriMessage.MessageElementImg:
-		url, _hash := processor.SaveSrcToURL(e.Src)
+		url, fileData, err := processor.ParseSrcToAvailavle(e.Src)
+		if err != nil {
+			return nil, err
+		}
 		dtoRichMediaMessage = &dto.RichMediaMessage{
 			EventID:    id,
 			FileType:   1,
 			URL:        url,
+			FileData:   fileData,
 			SrvSendMsg: false,
 		}
-		hash = _hash
 	case *satoriMessage.MessageElementVideo:
-		url, _hash := processor.SaveSrcToURL(e.Src)
+		url, fileData, err := processor.ParseSrcToAvailavle(e.Src)
+		if err != nil {
+			return nil, err
+		}
 		dtoRichMediaMessage = &dto.RichMediaMessage{
 			EventID:    id,
 			FileType:   2,
 			URL:        url,
+			FileData:   fileData,
 			SrvSendMsg: false,
 		}
-		hash = _hash
 	case *satoriMessage.MessageElementAudio:
-		url, _hash := processor.SaveSrcToURL(e.Src)
+		url, fileData, err := processor.ParseSrcToAvailavle(e.Src)
+		if err != nil {
+			return nil, err
+		}
 		dtoRichMediaMessage = &dto.RichMediaMessage{
 			EventID:    id,
 			FileType:   3,
 			URL:        url,
+			FileData:   fileData,
 			SrvSendMsg: false,
 		}
-		hash = _hash
 	case *satoriMessage.MessageElementFile:
-		// TODO: 暂不开放
-		return nil, ""
+		url, fileData, err := processor.ParseSrcToAvailavle(e.Src)
+		if err != nil {
+			return nil, err
+		}
+		dtoRichMediaMessage = &dto.RichMediaMessage{
+			EventID:    id,
+			FileType:   4,
+			URL:        url,
+			FileData:   fileData,
+			SrvSendMsg: false,
+		}
 	default:
-		return nil, ""
+		return nil, fmt.Errorf("不支持的消息元素类型: %T", element)
 	}
 
-	return dtoRichMediaMessage, hash
+	return dtoRichMediaMessage, nil
 }
