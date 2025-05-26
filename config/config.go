@@ -56,9 +56,9 @@ type QQWebHook struct {
 
 // FileServer 本地文件服务器配置
 type FileServer struct {
-	UseLocalFileServer bool   `yaml:"use_local_file_server"` // 是否使用本地文件服务器
-	URL                string `yaml:"url"`                   // 本地文件服务器地址
-	Port               uint16 `yaml:"port"`                  // 本地文件服务器端口
+	Enable      bool   `yaml:"enable"`       // 是否启用对外本地文件服务器
+	ExternalURL string `yaml:"external_url"` // 本地文件服务器公网地址 {{ .Host }}:{{ .Port }}
+	TTL         uint32 `yaml:"ttl"`          // 文件存储时间，单位秒
 }
 
 // Database 数据库配置
@@ -302,7 +302,7 @@ func IsFileServerEnabled() bool {
 		log.Warn("配置未加载，无法判断是否启用本地文件服务器。")
 		return false
 	}
-	return instance.FileServer.UseLocalFileServer
+	return instance.FileServer.Enable
 }
 
 // GetFileServerURL 获取本地文件服务器地址
@@ -314,5 +314,5 @@ func GetFileServerURL() string {
 		log.Warn("配置未加载，无法获取本地文件服务器地址。")
 		return ""
 	}
-	return instance.FileServer.URL
+	return instance.FileServer.ExternalURL
 }

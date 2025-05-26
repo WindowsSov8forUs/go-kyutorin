@@ -60,11 +60,11 @@ account: # QQ 机器人配置
 
 # 本地文件服务器配置
 # 请确保配置正确，否则无法正常启动
-# use_local_file_server 默认设置为 false ，如果需要使用本地文件服务器，请将其设置为 true
+# enable 默认设置为 false ，如果需要使用本地文件服务器，请将其设置为 true
 file_server:
-  use_local_file_server: false # 是否使用本地文件服务器
-  url: "" # 填入公网 IP 或域名
-  port: 8080 # 填入端口号
+  enable: false # 是否使用本地文件服务器
+  external_url: "" # 本地文件服务器公网地址 {{ .Host }}:{{ .Port }}
+  ttl: 86400 # 文件存储时间，单位秒
 
 # 数据库配置
 # 关联到部分单聊/群聊 API 的使用以及程序的空间占用
