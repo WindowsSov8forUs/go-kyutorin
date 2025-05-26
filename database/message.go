@@ -11,7 +11,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-const messageDBPath string = "data/cache/message"
+const messageDBPath string = "data/db/messages"
 
 // QueryDirection 查询方向
 type QueryDirection string
@@ -108,7 +108,7 @@ func GetMessageList(channelId, channelType, next string, direction QueryDirectio
 
 	// 初始化迭代器位置
 	if next != "" {
-		nextKey := []byte(fmt.Sprintf("%s:%s:%s", channelType, channelId, next))
+		nextKey := fmt.Appendf(nil, "%s:%s:%s", channelType, channelId, next)
 		iter.Seek(nextKey)
 	} else {
 		iter.Last()
