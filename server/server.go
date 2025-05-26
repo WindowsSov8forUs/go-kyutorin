@@ -121,7 +121,10 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 
 	metaGroup := engine.Group(fmt.Sprintf("%s/v1/meta", server.conf.Satori.Path))
 	// 元信息接口处理函数
-	metaGroup.Use(httpapi.HeadersValidateMiddleware())
+	metaGroup.Use(
+		httpapi.HeadersValidateMiddleware(),
+		httpapi.AuthenticateMiddleware("meta"),
+	)
 	metaGroup.POST("/*method", func(c *gin.Context) {
 		method := c.Param("method")
 		if method == "/" {
@@ -137,6 +140,25 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 		)
 		c.Set("method", method)
 		httpapi.MetaMiddleware()(c)
+	})
+
+	proxyGroup := engine.Group(fmt.Sprintf("%s/v1/proxy/", server.conf.Satori.Path))
+	proxyGroup.Use(
+		httpapi.HeadersValidateMiddleware(),
+		httpapi.AuthenticateMiddleware("proxy"),
+		httpapi.ProxyValidateMiddleware(),
+	)
+	proxyGroup.GET(":url", func(c *gin.Context) {
+		url := c.Param("url")
+		// 将请求输出
+		log.Tracef(
+			"收到请求: %s /proxy/%s ，请求头：%v ，请求体：%v",
+			c.Request.Method,
+			url,
+			c.Request.Header,
+			c.Request.Body,
+		)
+		httpapi.ProxyMiddleware()(c)
 	})
 
 	return engine

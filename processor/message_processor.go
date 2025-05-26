@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
 	"github.com/WindowsSov8forUs/go-kyutorin/log"
 	"github.com/WindowsSov8forUs/go-kyutorin/pkg/image"
 	"github.com/WindowsSov8forUs/go-kyutorin/pkg/mp4"
@@ -19,69 +19,30 @@ import (
 	"github.com/tencent-connect/botgo/dto"
 )
 
-// GetSrcKey 获取 src 的 key
-func GetSrcKey(src, messageType string) string {
-	// 分析 src 获取 hash
-	// 检查是否是 URL
-	u, err := url.Parse(src)
-	if err == nil && u.Scheme != "" && u.Host != "" {
-		// url 并不支持缓存
-		return ""
-	}
-
-	// 检查是否是 data/mime 字符串
-	re := regexp.MustCompile(`data:(.*);base64,(.*)`)
-	matches := re.FindStringSubmatch(src)
-	if len(matches) == 3 {
-		// 解析 data/mime 字符串
-		mimeType := matches[1]
-		base64Data := matches[2]
-
-		// 解析 mime 类型
-		mimeParts := strings.Split(mimeType, "/")
-		if len(mimeParts) != 2 {
-			log.Errorf("错误的 mime 类型: %s", mimeType)
-			return ""
-		}
-
-		// 解析 base64 编码
-		var data []byte
-		data, err = base64.StdEncoding.DecodeString(base64Data)
-		if err != nil {
-			log.Errorf("解析 base64 编码失败: %s", err.Error())
-			return ""
-		}
-
-		// 获取 hash 值
-		hash := fileserver.GetHash(data)
-		return messageType + ":" + hash
-	}
-
-	// 检查是否是本地文件
-	if _, err := os.Stat(src); err == nil {
-		// 读取文件数据
-		data, err := os.ReadFile(src)
-		if err != nil {
-			return ""
-		}
-
-		// 获取 hash 值
-		hash := fileserver.GetHash(data)
-		return messageType + ":" + hash
-	}
-
-	return ""
+type fileSrc struct {
+	MimeType string
+	Data     []byte
 }
 
-// SaveSrcToURL 将文件资源字符串保存并返回一个 URL
-func SaveSrcToURL(src string) (string, string) {
-	// 检查是否是 URL
-	u, err := url.Parse(src)
-	if err == nil && u.Scheme != "" && u.Host != "" {
-		return src, ""
+// GetReader 获取文件资源的读取器
+func (src *fileSrc) GetReader() (io.Reader, error) {
+	if src == nil || src.Data == nil {
+		return nil, fmt.Errorf("无效的文件资源")
 	}
 
-	// 检查是否是 data/mime 字符串
+	// 返回一个 bytes.Reader
+	return bytes.NewReader(src.Data), nil
+}
+
+// ParseSrc 解析 src 字符串
+func ParseSrc(src string) (string, *fileSrc, error) {
+	// 检查是否为 URL ，是则直接返回
+	u, err := url.Parse(src)
+	if err == nil && u.Scheme != "" && u.Host != "" {
+		return src, nil, nil
+	}
+
+	// 检查是否为 data/mime 字符串
 	re := regexp.MustCompile(`data:(.*);base64,(.*)`)
 	matches := re.FindStringSubmatch(src)
 	if len(matches) == 3 {
@@ -93,118 +54,105 @@ func SaveSrcToURL(src string) (string, string) {
 		mimeParts := strings.Split(mimeType, "/")
 		if len(mimeParts) != 2 {
 			log.Errorf("错误的 mime 类型: %s", mimeType)
-			return "", ""
-		}
-		fileType := mimeParts[0]
-
-		// 判断是否为音频文件
-		var isAudio bool
-		if fileType == "audio" {
-			isAudio = true
-		}
-
-		// 判断是否为视频文件
-		var isVideo bool
-		if fileType == "video" {
-			isVideo = true
-		}
-
-		// 判断是否为图像文件
-		var isImage bool
-		if fileType == "image" {
-			isImage = true
+			return "", nil, fmt.Errorf("错误的 mime 类型: %s", mimeType)
 		}
 
 		// 解析 base64 编码
-		var data []byte
-		data, err = base64.StdEncoding.DecodeString(base64Data)
+		data, err := base64.StdEncoding.DecodeString(base64Data)
 		if err != nil {
 			log.Errorf("解析 base64 编码失败: %s", err.Error())
-			return "", ""
-		}
-		if isAudio {
-			// 判断并转码
-			data, err = convertAudioToSilk(data)
-			if err != nil {
-				log.Errorf("转码音频文件失败: %s", err.Error())
-				return "", ""
-			}
-		} else if isVideo {
-			// 判断并转码
-			data, err = convertVideoToMP4(data)
-			if err != nil {
-				log.Errorf("转码视频文件失败: %s", err.Error())
-				return "", ""
-			}
-		} else if isImage {
-			// 判断并转码
-			data, err = convertImage(data)
-			if err != nil {
-				log.Errorf("转码图像文件失败: %s", err.Error())
-				return "", ""
-			}
-		}
-		if err != nil {
-			return "", ""
+			return "", nil, fmt.Errorf("解析 base64 编码失败: %w", err)
 		}
 
-		// 保存文件
-		u := fileserver.SaveFile(data)
-
-		// 返回 URL
-		return u, fileserver.GetHash(data)
+		return "", &fileSrc{MimeType: mimeType, Data: data}, nil
 	}
 
 	// 检查是否是本地文件
 	re = regexp.MustCompile(`file:///(.*)`)
 	matches = re.FindStringSubmatch(src)
-	path, err := url.PathUnescape(matches[1])
-	if err == nil {
+	if len(matches) == 2 {
+		path, err := url.PathUnescape(matches[1])
+		if err != nil {
+			log.Errorf("解析文件路径失败: %s", err.Error())
+			return "", nil, fmt.Errorf("解析文件路径失败: %w", err)
+		}
+
 		if _, err := os.Stat(path); err == nil {
 			// 读取文件数据
 			data, err := os.ReadFile(path)
 			if err != nil {
-				log.Errorf("failed to read file: %s", err.Error())
-				return "", ""
+				log.Errorf("读取文件失败: %s", err.Error())
+				return "", nil, fmt.Errorf("读取文件失败: %w", err)
 			}
-
-			// 判断是否为音频文件
-			fileType := http.DetectContentType(data)
-			if strings.HasPrefix(fileType, "audio/") {
-				// 判断并转码
-				data, err = convertAudioToSilk(data)
-				if err != nil {
-					log.Errorf("转码音频文件失败: %s", err.Error())
-					return "", ""
-				}
-			} else if strings.HasPrefix(fileType, "video/") {
-				// 判断并转码
-				data, err = convertVideoToMP4(data)
-				if err != nil {
-					log.Errorf("转码视频文件失败: %s", err.Error())
-					return "", ""
-				}
-			} else if strings.HasPrefix(fileType, "image/") {
-				// 判断并转码
-				data, err = convertImage(data)
-				if err != nil {
-					log.Errorf("转码图像文件失败: %s", err.Error())
-					return "", ""
-				}
-			} else {
-				return "", ""
-			}
-
-			// 保存文件
-			u := fileserver.SaveFile(data)
-
-			// 返回 URL
-			return u, fileserver.GetHash(data)
+			return "", &fileSrc{MimeType: http.DetectContentType(data), Data: data}, nil
 		}
 	}
 
-	log.Errorf("无法解析的资源字符串: %s", src)
-	return "", ""
+	return "", nil, fmt.Errorf("无法解析的资源字符串: %s", src)
+}
+
+// ParseSrcToString 解析 src 字符串，返回 src 标识用字符串
+func ParseSrcToString(src string) (string, error) {
+	url, fileSrc, err := ParseSrc(src)
+	if err != nil {
+		return "", err
+	}
+
+	if url != "" {
+		// 如果是 URL，直接返回
+		return url, nil
+	}
+
+	if fileSrc != nil {
+		return base64.StdEncoding.EncodeToString(fileSrc.Data), nil
+	}
+
+	return "", fmt.Errorf("无法解析的资源字符串: %s", src)
+}
+
+// ParseSrcToAvailavle 解析 src 字符串，返回可用的 URL 或 base64 字符串
+func ParseSrcToAvailavle(src string) (string, string, error) {
+	url, fileSrc, err := ParseSrc(src)
+	if err != nil {
+		return "", "", err
+	}
+
+	if url != "" {
+		// 如果是 URL，直接返回
+		return url, "", nil
+	}
+
+	if fileSrc != nil {
+		// 如果是 base64 字符串，返回没有 base64 头的 base64 编码字符串
+		// 对于图片、音频与视频，需要转码为可接受的格式
+		data, err := convertToAvailableFormat(fileSrc)
+		if err != nil {
+			log.Errorf("转换文件格式失败: %s", err.Error())
+			return "", "", fmt.Errorf("转换文件格式失败: %w", err)
+		}
+		base64Data := base64.StdEncoding.EncodeToString(data)
+		return "", base64Data, nil
+	}
+
+	return "", "", fmt.Errorf("无法解析的资源字符串: %s", src)
+}
+
+// convertToAvailableFormat 将文件资源转换为可用格式
+func convertToAvailableFormat(src *fileSrc) ([]byte, error) {
+	if src == nil || src.Data == nil {
+		return nil, fmt.Errorf("无效的文件资源")
+	}
+
+	// 判断并转码
+	if strings.HasPrefix(src.MimeType, "audio/") {
+		return convertAudioToSilk(src.Data)
+	} else if strings.HasPrefix(src.MimeType, "video/") {
+		return convertVideoToMP4(src.Data)
+	} else if strings.HasPrefix(src.MimeType, "image/") {
+		return convertImage(src.Data)
+	}
+
+	return src.Data, nil
 }
 
 // convertAudioToSilk 将音频文件转换为 silk 格式

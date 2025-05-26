@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/WindowsSov8forUs/go-kyutorin/config"
+	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
 	"github.com/WindowsSov8forUs/go-kyutorin/processor"
 	"github.com/WindowsSov8forUs/go-kyutorin/version"
 	"github.com/gin-gonic/gin"
@@ -332,6 +334,50 @@ func BotValidateMiddleware() gin.HandlerFunc {
 	}
 }
 
+// ProxyValidateMiddleware 代理路由验证中间件
+func ProxyValidateMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		urlParam := c.Param("url")
+
+		// 验证内部链接
+		if strings.HasPrefix(urlParam, "internal:") {
+			// 解析内部链接格式
+			if platform, userId, _, ok := fileserver.ParseInternalURL(urlParam); ok {
+				bot := processor.GetBot(platform)
+				if bot == nil {
+					c.String(http.StatusNotFound, `user.id "%s" at platform "%s" is not exist`, userId, platform)
+					c.Abort()
+					return
+				} else if bot.Id != userId {
+					c.String(http.StatusNotFound, `user.id "%s" at platform "%s" is not exist`, userId, platform)
+					c.Abort()
+					return
+				}
+			} else {
+				c.String(http.StatusBadRequest, "invalid internal url")
+				c.Abort()
+				return
+			}
+		} else {
+			// 验证是否为合法的 URL
+			if _, err := url.ParseRequestURI(urlParam); err != nil {
+				c.String(http.StatusBadRequest, "invalid url")
+				c.Abort()
+				return
+			}
+
+			// 验证是否符合 proxy_urls 中列出的前缀之一
+			if !couldBeProxied(urlParam) {
+				c.String(http.StatusForbidden, "forbidden")
+				c.Abort()
+				return
+			}
+		}
+
+		c.Next()
+	}
+}
+
 // ResourceMiddleware 资源中间件
 func ResourceMiddleware(api, apiV2 openapi.OpenAPI) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -377,7 +423,7 @@ func resourceAPIHandler(c *gin.Context, api, apiV2 openapi.OpenAPI) {
 	}
 }
 
-// AdminMiddleware 管理接口中间件
+// MetaMiddleware 元信息接口中间件
 func MetaMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// 在内部进行判断处理
@@ -415,6 +461,34 @@ func metaAPIHandler(c *gin.Context) {
 	} else {
 		// 返回结果
 		c.JSON(http.StatusOK, response)
+	}
+}
+
+// ProxyMiddleware 代理路由中间件
+func ProxyMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 在内部进行判断处理
+		proxyHandler(c)
+	}
+}
+
+// proxyHandler 处理代理路由
+func proxyHandler(c *gin.Context) {
+	// 提取路径中参数
+	urlParam := c.Param("url")
+
+	// 解析内部链接
+	if _, _, path, ok := fileserver.ParseInternalURL(urlParam); ok {
+		if file, err := fileserver.GetFromPath(path); err == nil {
+			// 设置响应头
+			c.Header("Content-Type", file.ContentType)
+			c.Header("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", file.Name))
+			c.Header("Content-Length", fmt.Sprintf("%d", file.Size))
+			c.Header("Last-Modified", file.LastModified.Format(time.RFC1123))
+			// 返回文件内容
+			c.DataFromReader(http.StatusOK, file.Size, file.ContentType, file.Reader, nil)
+			return
+		}
 	}
 }
 
