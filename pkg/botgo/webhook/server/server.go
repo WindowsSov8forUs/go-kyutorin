@@ -53,7 +53,6 @@ type WebhookHandler interface {
 
 func (s *Server) New(config dto.Config) webhook.WebHook {
 	engine := gin.New()
-	gin.SetMode(gin.DebugMode)
 	engine.Use(gin.Recovery())
 
 	return &Server{
