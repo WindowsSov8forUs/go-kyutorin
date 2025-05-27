@@ -193,7 +193,7 @@ func NewServer(api, apiV2 openapi.OpenAPI, conf *config.Config) (*Server, error)
 }
 
 func (server *Server) Run() error {
-	log.Infof("Satori 服务器已启动，地址: %s", server.httpServer.Addr())
+	log.Infof("Satori 服务器已启动，监听地址: %s", server.httpServer.Addr())
 	err := server.httpServer.Run()
 	if err != nil && err != http.ErrServerClosed {
 		return err
