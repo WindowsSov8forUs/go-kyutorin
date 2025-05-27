@@ -230,7 +230,7 @@ func SaveFile(file io.Reader, platform, userId, name, fileType string) (*FileMet
 
 // SaveFileInfo 保存文件信息
 func SaveFileInfo(targetId, src, fileInfo string, ttl uint64) (*FileInfo, error) {
-	if instance == nil || !instance.Enable {
+	if instance == nil {
 		return nil, fmt.Errorf("文件服务器未启用！")
 	}
 
@@ -284,7 +284,7 @@ func GetFile(ident string) (*FileMetadata, error) {
 
 // GetFileInfo 获取文件信息
 func GetFileInfo(ident string) (*FileInfo, error) {
-	if instance == nil || !instance.Enable {
+	if instance == nil {
 		return nil, fmt.Errorf("文件服务器未启用！")
 	}
 
@@ -315,7 +315,7 @@ func DeleteFile(ident string) error {
 
 // DeleteFileInfo 删除文件信息
 func DeleteFileInfo(ident string) error {
-	if instance == nil || !instance.Enable {
+	if instance == nil {
 		return nil
 	}
 

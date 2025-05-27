@@ -65,18 +65,7 @@ func main() {
 	}
 
 	// 开启本地文件服务器
-	var hasFileServer bool
-	if conf.FileServer.Enable {
-		if conf.FileServer.ExternalURL != "" {
-			hasFileServer = true
-			fileserver.StartFileServer(conf)
-		} else {
-			log.Warn("文件服务器 URL 未指定，将不会启动文件服务器")
-		}
-	}
-	if !hasFileServer {
-		log.Warn("文件服务器未启动，将无法使用本地文件或 base64 编码发送文件")
-	}
+	fileserver.StartFileServer(conf)
 
 	// 启动消息数据库
 	if conf.Database.MessageDatabase.Enable {
