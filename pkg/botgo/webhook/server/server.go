@@ -85,13 +85,20 @@ type messageChan chan *dto.Payload
 func (s *Server) Listen() error {
 	// 注册 webhook 路由
 	webhookGroup := s.engine.Group(s.config.Path)
-	webhookGroup.Use(s.signatureValidateMiddleware())
-	webhookGroup.POST("", s.webhookHandler())
+
+	// 只对 POST 请求应用签名验证中间件
+	webhookGroup.POST("", s.signatureValidateMiddleware(), s.webhookHandler())
 	go s.listenMessageAndHandle()
 
+	// GET 请求不使用验证中间件
+	webhookGroup.GET("", func(c *gin.Context) {
+		// 健康检查路由
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
 	// 启动 HTTP 服务器
-	log.Warnf("由于 Go 已不再支持 SSLv3 证书文件，请务必通过其他方式进行反代，否则无法配置给 QQ 开放平台。")
-	log.Infof("启动 HTTP 服务器，地址: %s:%d", s.config.Host, s.config.Port)
+	log.Warnf("由于 GoLang 已不再支持 SSLv3 证书文件，请务必通过其他方式进行反代，否则无法配置给 QQ 开放平台。")
+	log.Infof("启动 WebHook 服务器，监听地址: %s:%d", s.config.Host, s.config.Port)
 	return s.server.ListenAndServe()
 }
 
@@ -186,6 +193,7 @@ func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read body"})
 			return
 		}
+
 		// 重新设置请求体，以便后续处理
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(httpBody))
 		// 按照timestamp+Body顺序组成签名体
