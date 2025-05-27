@@ -34,28 +34,10 @@ func main() {
 
 	fmt.Printf("Go-Kyutorin %s\n", version.Version)
 
-	// 检查 config.yml 是否存在
-	if _, err := os.Stat("config.yml"); os.IsNotExist(err) {
-		var err error
-		configData := config.ConfigTemplate
-
-		// 写入 config.yml
-		err = os.WriteFile("config.yml", []byte(configData), 0644)
-		if err != nil {
-			log.Fatalf("写入配置文件时出错: %v", err)
-			return
-		}
-
-		fmt.Println("已生成默认配置文件 config.yml，请修改后重启程序")
-		fmt.Println("按下任意键继续...")
-		fmt.Scanln()
-		os.Exit(0)
-	}
-
 	// 加载配置
 	conf, err := config.LoadConfig("config.yml")
 	if err != nil {
-		fmt.Printf("加载配置文件时出错: %v", err)
+		log.Fatalf("加载配置文件时出错: %v", err)
 		os.Exit(0)
 		return
 	}
@@ -65,7 +47,7 @@ func main() {
 
 	// 设置 gin 运行模式
 	if conf.DebugMode {
-		fmt.Println("正在 Debug 模式下运行服务器！")
+		log.Warn("正在 Debug 模式下运行服务器！")
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
@@ -77,7 +59,7 @@ func main() {
 
 	// 如果配置并未设置
 	if conf.Account.Token == "" {
-		fmt.Println("检测到未完成机器人配置，请修改配置文件后重启程序")
+		log.Fatal("检测到未完成机器人配置，请修改配置文件后重启程序")
 		os.Exit(0)
 		return
 	}
@@ -97,7 +79,7 @@ func main() {
 	}
 
 	// 启动消息数据库
-	if conf.Database.MessageDatabase.InUse {
+	if conf.Database.MessageDatabase.Enable {
 		log.Info("正在启动消息数据库...")
 		err := database.StartMessageDB(conf.Database.MessageDatabase.Limit)
 		if err != nil {

@@ -71,16 +71,12 @@ file_server:
 # 请确保你是否需要使用数据库，若不需要请设置关闭
 database:
 
-  # 是否使用文件数据库
-  # 如果不使用文件数据库，将无法使用缓存发送文件
-  file_database: true
-
   # 消息数据库配置
   message_database:
 
     # 是否启用消息数据库
     # 如果不启用消息数据库，将无法通过消息 ID 获取单聊/群聊消息
-    in_use: true
+    enable: true
     limit: 20 # 消息获取数量限制，决定每次使用 API 可以获取多少消息，设置为 0 则无上限
 
 satori: # Satori 配置

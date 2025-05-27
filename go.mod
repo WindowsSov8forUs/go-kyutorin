@@ -12,8 +12,11 @@ require (
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hoshinonyaruko/gensokyo v0.0.0-20250422135138-3723b1ce79b4 // indirect
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	golang.org/x/image v0.16.0 // indirect
+	golang.org/x/term v0.20.0 // indirect
 )
 
 require (
@@ -39,6 +42,7 @@ require (
 )
 
 require (
+	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/bytedance/sonic v1.11.7 // indirect
 	github.com/disintegration/imaging v1.6.2
 	github.com/fatih/color v1.17.0
