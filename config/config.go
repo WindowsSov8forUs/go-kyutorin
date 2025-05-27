@@ -560,20 +560,22 @@ func LoadConfig(path string) (*Config, error) {
 		// 写入 config.yml
 		err = os.WriteFile("config.yml", []byte(configData), 0644)
 		if err != nil {
-			log.Fatalf("写入配置文件时出错: %v", err)
+			return nil, fmt.Errorf("写入配置文件时出错: %v", err)
 		}
 	} else {
-
 		// 确保配置完整性
 		if err := ensureConfigComplete(path); err != nil {
 			return nil, err
 		}
 
+		// 读取配置文件
 		configData, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
 
+		// 初始化配置结构体
+		config = &Config{}
 		if err = yaml.Unmarshal(configData, config); err != nil {
 			return nil, err
 		}
