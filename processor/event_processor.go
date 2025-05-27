@@ -285,11 +285,7 @@ func (p *Processor) getHandlersByName(intentName string) ([]interface{}, bool) {
 			DirectMessageDeleteEventHandler(p),
 		}
 		return handlers, true
-	case "OPEN_FORUMS_EVENT": // 公域论坛事件
-		return nil, true
-	case "AUDIO_OR_LIVE_CHANNEL_MEMBER": // 音频或直播频道成员事件
-		return nil, true
-	case "USER_MESSAGES": // 单聊/群聊消息事件
+	case "GROUP_AND_C2C_EVENT": // 单聊/群聊消息事件
 		handlers := []interface{}{
 			GroupATMessageEventHandler(p),
 			GroupAddRobotEventHandler(p),
@@ -321,7 +317,6 @@ func (p *Processor) getHandlersByName(intentName string) ([]interface{}, bool) {
 		}
 		return handlers, true
 	default:
-		log.Warnf("未知的 Intents : %s\n", intentName)
 		return nil, false
 	}
 }
