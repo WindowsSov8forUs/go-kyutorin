@@ -158,12 +158,16 @@ func RegisterHandlers(handlers ...interface{}) dto.Intent {
 			i = i | dto.EventToIntent(dto.EventInteractionCreate)
 		case GroupAddRobotEventHandler:
 			DefaultHandlers.GroupAddbot = handle
+			i = i | dto.EventToIntent(dto.EventGroupAddRobot)
 		case GroupDelRobotEventHandler:
 			DefaultHandlers.GroupDelbot = handle
+			i = i | dto.EventToIntent(dto.EventGroupDelRobot)
 		case GroupMsgRejectHandler:
 			DefaultHandlers.GroupMsgReject = handle
+			i = i | dto.EventToIntent(dto.EventGroupMsgReject)
 		case GroupMsgReceiveHandler:
 			DefaultHandlers.GroupMsgReceive = handle
+			i = i | dto.EventToIntent(dto.EventGroupMsgReceive)
 		default:
 		}
 	}
