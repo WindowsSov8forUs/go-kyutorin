@@ -89,11 +89,6 @@ func (s *Server) Listen() error {
 	webhookGroup.POST("", s.webhookHandler())
 	go s.listenMessageAndHandle()
 
-	// 一个 get 方法以验证服务器是否运行
-	webhookGroup.GET("/check", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-
 	// 启动 HTTP 服务器
 	log.Warnf("由于 Go 已不再支持 SSLv3 证书文件，请务必通过其他方式进行反代，否则无法配置给 QQ 开放平台。")
 	log.Infof("启动 HTTP 服务器，地址: %s:%d", s.config.Host, s.config.Port)
