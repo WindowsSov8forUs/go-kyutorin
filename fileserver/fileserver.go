@@ -68,20 +68,29 @@ func StartFileServer(conf *config.Config) {
 	}
 
 	// 启动文件元数据数据库
-	db, err := StartMetaDB()
+	metaDB, err := StartMetaDB()
 	if err != nil {
 		log.Errorf("启动文件数据库失败: %s", err)
 		instance = nil
 		return
 	}
 
+	// 启动文件信息数据库
+	fileInfoDB, err := StartFileInfoDB()
+	if err != nil {
+		log.Errorf("启动文件信息数据库失败: %s", err)
+		instance = nil
+		return
+	}
+
 	instance = &FileServer{
-		version: fmt.Sprintf("v%d", conf.Satori.Version),
-		path:    conf.Satori.Path,
-		URL:     publicURL,
-		TTL:     time.Duration(conf.FileServer.TTL) * time.Second,
-		Enable:  conf.FileServer.Enable,
-		MetaDB:  db,
+		version:    fmt.Sprintf("v%d", conf.Satori.Version),
+		path:       conf.Satori.Path,
+		URL:        publicURL,
+		TTL:        time.Duration(conf.FileServer.TTL) * time.Second,
+		Enable:     conf.FileServer.Enable,
+		MetaDB:     metaDB,
+		FileInfoDB: fileInfoDB,
 	}
 
 	// 清理过期文件
