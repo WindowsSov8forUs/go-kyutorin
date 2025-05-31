@@ -22,7 +22,6 @@ var (
 // Config 配置
 type Config struct {
 	LogLevel   log.LogLevel `yaml:"log_level"`   // 日志等级
-	DebugMode  bool         `yaml:"debug_mode"`  // 调试模式
 	Account    Account      `yaml:"account"`     // QQ 机器人账号配置
 	FileServer FileServer   `yaml:"file_server"` // 本地文件服务器配置
 	Database   Database     `yaml:"database"`    // 数据库配置
@@ -128,7 +127,6 @@ func DumpConfig(conf *Config) string {
 	return fmt.Sprintf(
 		ConfigTemplate,
 		conf.LogLevel,
-		conf.DebugMode,
 		conf.Account.BotID,
 		conf.Account.AppID,
 		conf.Account.Token,
@@ -809,7 +807,6 @@ func mergeConfigStructs(template, original *Config) *Config {
 	if original.LogLevel != 0 {
 		result.LogLevel = original.LogLevel
 	}
-	result.DebugMode = original.DebugMode // bool 类型直接覆盖
 
 	// 合并 Account 配置
 	if original.Account.BotID != 0 {

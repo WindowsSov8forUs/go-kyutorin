@@ -24,6 +24,9 @@ func main() {
 	// 定义 faststart 命令行标志，默认为 false
 	fastStart := flag.Bool("faststart", false, "是否快速启动")
 
+	// 定义 debug 命令行标志，默认为 false
+	debug := flag.Bool("debug", false, "是否启用调试模式")
+
 	// 解析命令行参数到定义的标志
 	flag.Parse()
 
@@ -46,7 +49,7 @@ func main() {
 	log.SetLogLevel(conf.LogLevel)
 
 	// 设置 gin 运行模式
-	if conf.DebugMode {
+	if *debug {
 		log.Warn("正在 Debug 模式下运行服务器！")
 		gin.SetMode(gin.DebugMode)
 	} else {
