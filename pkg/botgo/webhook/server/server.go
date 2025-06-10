@@ -96,8 +96,8 @@ func (s *Server) Listen() error {
 	})
 
 	// 启动 HTTP 服务器
-	log.Warnf("由于 GoLang 已不再支持 SSLv3 证书文件，请务必通过其他方式进行反代，否则无法配置给 QQ 开放平台。")
-	log.Infof("启动 WebHook 服务器，监听地址: %s:%d", s.config.Host, s.config.Port)
+	log.Warnf("[wh] 由于 GoLang 已不再支持 SSLv3 证书文件，请务必通过其他方式进行反代，否则无法配置给 QQ 开放平台。")
+	log.Debugf("[wh] 启动 WebHook 服务器，监听地址: %s:%d", s.config.Host, s.config.Port)
 	return s.server.ListenAndServe()
 }
 
@@ -114,7 +114,7 @@ func (s *Server) webhookHandler() gin.HandlerFunc {
 		// 读取请求体
 		body, err := io.ReadAll(c.Request.Body)
 		if err != nil {
-			log.Errorf("读取请求体失败: %v", err)
+			log.Errorf("[wh] 读取请求体失败: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot read request body"})
 			return
 		}
@@ -122,7 +122,7 @@ func (s *Server) webhookHandler() gin.HandlerFunc {
 		// 预处理请求
 		payload, err := s.parseMessageToPayload(body)
 		if err != nil {
-			log.Errorf("解析请求体失败: %v", err)
+			log.Errorf("[wh] 解析请求体失败: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload data"})
 			return
 		}
@@ -131,7 +131,7 @@ func (s *Server) webhookHandler() gin.HandlerFunc {
 			// 处理验证请求
 			rspBytes, err := s.handleValidation(c, payload)
 			if err != nil {
-				log.Errorf("处理验证请求失败: %v", err)
+				log.Errorf("[wh] 处理验证请求失败: %v", err)
 				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid validation request"})
 				return
 			}
@@ -156,7 +156,7 @@ func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 		rand := strings.NewReader(seed[:ed25519.SeedSize])
 		publicKey, _, err := ed25519.GenerateKey(rand)
 		if err != nil {
-			log.Errorf("%s ed25519 generate key failed:", s.config, err)
+			log.Errorf("[wh] %s ed25519 generate key failed: %v", s.config, err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate key"})
 			return
 		}
@@ -169,12 +169,12 @@ func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 		}
 		sig, err := hex.DecodeString(signature)
 		if err != nil {
-			log.Errorf("%s hex decode signature failed:", s.config, err)
+			log.Errorf("[wh] %s hex decode signature failed: %v", s.config, err)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
 			return
 		}
 		if len(sig) != ed25519.SignatureSize || sig[63]&224 != 0 {
-			log.Errorf("%s signature length is not valid:", s.config, err)
+			log.Errorf("[wh] %s signature length is not valid: %v", s.config, err)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
 			return
 		}
@@ -182,13 +182,13 @@ func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 		// 取HTTP header中 X-Signature-Timestamp 并校验
 		timestamp := c.GetHeader("X-Signature-Timestamp")
 		if timestamp == "" {
-			log.Errorf("%s X-Signature-Timestamp is empty:", s.config)
+			log.Errorf("[wh] %s X-Signature-Timestamp is empty:", s.config)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "lack of timestamp"})
 			return
 		}
 		httpBody, err := io.ReadAll(c.Request.Body)
 		if err != nil {
-			log.Errorf("%s read http body failed:", s.config, err)
+			log.Errorf("[wh] %s read http body failed: %v", s.config, err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read body"})
 			return
 		}
@@ -203,7 +203,7 @@ func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 		if ed25519.Verify(publicKey, msg.Bytes(), sig) {
 			c.Next()
 		} else {
-			log.Errorf("%s ed25519 verify failed:", s.config)
+			log.Errorf("[wh] %s ed25519 verify failed:", s.config)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
 			return
 		}
@@ -213,13 +213,13 @@ func (s *Server) signatureValidateMiddleware() gin.HandlerFunc {
 func (s *Server) parseMessageToPayload(message []byte) (*dto.Payload, error) {
 	payload := &dto.Payload{}
 	if err := json.Unmarshal(message, payload); err != nil {
-		log.Errorf("%s json failed, %v", s.config, err)
+		log.Errorf("[wh] %s json failed, %v", s.config, err)
 		return nil, err
 	}
 	atomic.StoreInt64(&global_s, payload.S)
 
 	payload.RawMessage = message
-	log.Infof("%s receive %s message, %s", s.config, dto.OPMeans(payload.OPCode), string(message))
+	log.Debugf("[wh] %s receive %s message, %s", s.config, dto.OPMeans(payload.OPCode), string(message))
 	return payload, nil
 }
 
@@ -230,7 +230,7 @@ func (s *Server) readMessageToQueue(payload *dto.Payload) {
 	// 检查是否已存在相同的 Data
 	if existingPayload, ok := getDataFromSyncMap(dataHash); ok {
 		// 如果已存在相同的 Data，则丢弃当前消息
-		log.Infof("%s discard duplicate message with DataHash: %v", s.config, existingPayload)
+		log.Debugf("[wh] %s discard duplicate message with DataHash: %v", s.config, existingPayload)
 		return
 	}
 
@@ -274,39 +274,39 @@ func (s *Server) listenMessageAndHandle() {
 	defer func() {
 		// panic，一般是由于业务自己实现的 handle 不完善导致
 		if err := recover(); err != nil {
-			log.Errorf("%s listen message and handle panic: %v", s.config, err)
+			log.Errorf("[wh] %s listen message and handle panic: %v", s.config, err)
 		}
 	}()
 	for payload := range s.messageQueue {
 		go event.ParseAndHandle(payload)
 	}
-	log.Infof("%s message queue is closed", s.config)
+	log.Debugf("[wh] %s message queue is closed", s.config)
 }
 
 func (s *Server) handleValidation(c *gin.Context, payload *dto.Payload) ([]byte, error) {
 	appid := c.GetHeader("X-Bot-Appid")
 	appidInt, err := strconv.Atoi(appid)
 	if err != nil || uint64(appidInt) != s.appId {
-		log.Errorf("%s callback address verify appid not match, %s", s.config, appid)
+		log.Errorf("[wh] %s callback address verify appid not match, %s", s.config, appid)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "appid不匹配"})
 		return nil, fmt.Errorf("appid不匹配")
 	}
 
 	userAgent := c.GetHeader("User-Agent")
 	if userAgent != "QQBot-Callback" {
-		log.Errorf("%s callback address verify userAgent not match, %s", s.config, userAgent)
+		log.Errorf("[wh] %s callback address verify userAgent not match, %s", s.config, userAgent)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "userAgent不匹配"})
 		return nil, fmt.Errorf("userAgent不匹配")
 	}
 
 	validationPayload := &dto.WHValidationRequest{}
 	if err := event.ParseData(payload.RawMessage, validationPayload); err != nil {
-		log.Errorf("%s callback address verify data parse failed, %v, message %v", s.config, err, payload.RawMessage)
+		log.Errorf("[wh] %s callback address verify data parse failed, %v, message %v", s.config, err, payload.RawMessage)
 		return nil, fmt.Errorf("data parse failed")
 	}
 	signature, err := s.calculateSignature(validationPayload)
 	if err != nil {
-		log.Errorf("%s calculateSignature failed, %v", s.config, err)
+		log.Errorf("[wh] %s calculateSignature failed, %v", s.config, err)
 		return nil, fmt.Errorf("calculateSignature failed")
 	}
 	rspBytes, err := json.Marshal(
@@ -316,7 +316,7 @@ func (s *Server) handleValidation(c *gin.Context, payload *dto.Payload) ([]byte,
 		},
 	)
 	if err != nil {
-		log.Errorf("handle validation failed:", err)
+		log.Errorf("[wh] %s handle validation failed: %v", s.config, err)
 		return nil, fmt.Errorf("handle validation failed")
 	}
 	return rspBytes, nil
@@ -333,7 +333,7 @@ func (s *Server) calculateSignature(payload *dto.WHValidationRequest) (string, e
 	// GenerateKey 方法会返回公钥、私钥，这里只需要私钥进行签名生成不需要返回公钥
 	_, privateKey, err := ed25519.GenerateKey(reader)
 	if err != nil {
-		log.Errorf("ed25519 generate key failed:", err)
+		log.Errorf("[wh] ed25519 generate key failed: %v", err)
 		return "", err
 	}
 	var msg bytes.Buffer

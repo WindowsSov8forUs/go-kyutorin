@@ -9,7 +9,7 @@ func Debug(v ...interface{}) {
 	DefaultLogger.Debug(v...)
 }
 
-// Info log.Info
+// Info log.Debug
 func Info(v ...interface{}) {
 	DefaultLogger.Info(v...)
 }
@@ -29,7 +29,7 @@ func Debugf(format string, v ...interface{}) {
 	DefaultLogger.Debugf(format, v...)
 }
 
-// Infof log.Infof
+// Infof log.Debugf
 func Infof(format string, v ...interface{}) {
 	DefaultLogger.Infof(format, v...)
 }

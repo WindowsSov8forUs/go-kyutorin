@@ -18,5 +18,5 @@ func TestSimulateSearch(t *testing.T) {
 		// 这里用于模拟，默认的 testcase 肯定是失败的，所以这里不断言
 		log.Error(err)
 	}
-	log.Info(got)
+	log.Debug(got)
 }

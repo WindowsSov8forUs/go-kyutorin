@@ -100,7 +100,7 @@ func (o *openAPIv2) setupClient() {
 		// 设置请求之后的钩子，打印日志，判断状态码
 		OnAfterResponse(
 			func(client *resty.Client, resp *resty.Response) error {
-				log.Infof("%v", respInfo(resp))
+				log.Debugf("%v", respInfo(resp))
 				// 执行请求后过滤器
 				if err := openapi.DoRespFilterChains(resp.Request.RawRequest, resp.RawResponse); err != nil {
 					return err

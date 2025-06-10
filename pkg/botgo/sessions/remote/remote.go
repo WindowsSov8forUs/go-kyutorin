@@ -59,7 +59,7 @@ func (r *RedisManager) Start(apInfo *dto.WebsocketAP, token *token.Token, intent
 		return err
 	}
 	startInterval := manager.CalcInterval(apInfo.SessionStartLimit.MaxConcurrency)
-	log.Infof("[ws/session/redis] will start %d sessions and per session start interval is %s",
+	log.Debugf("[ws/session/redis] will start %d sessions and per session start interval is %s",
 		apInfo.Shards, startInterval)
 
 	// session 生产队列
@@ -70,7 +70,7 @@ func (r *RedisManager) Start(apInfo *dto.WebsocketAP, token *token.Token, intent
 	// ctx := context.Background()
 	// distributeLock := lock.New(r.clusterKey, uuid.New().String(), r.client)
 	// if err := distributeLock.Lock(ctx, distributeLockExpireTime); err == nil {
-	// 	log.Infof("[ws/session/redis] got distribute lock! i will do distributeSession, key: %s", r.clusterKey)
+	// 	log.Debugf("[ws/session/redis] got distribute lock! i will do distributeSession, key: %s", r.clusterKey)
 	// 	// 抢到锁的进行初次分发
 	// 	if err = r.distributeSession(apInfo, token, intents); err != nil {
 	// 		log.Errorf("[ws/session/redis] distribute sessions failed: %v", err)

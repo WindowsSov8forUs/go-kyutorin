@@ -54,10 +54,10 @@ func (l *Lock) StartRenew(ctx context.Context, expire time.Duration) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Infof("[lock] context done, stop renew, %+v", l)
+			log.Debugf("[lock] context done, stop renew, %+v", l)
 			return
 		case <-l.stopRenewChan:
-			log.Infof("[lock] renew stop, %+v", l)
+			log.Debugf("[lock] renew stop, %+v", l)
 			return
 		case <-l.renewTicker.C:
 			if err := l.Renew(ctx, expire); err != nil {

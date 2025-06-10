@@ -31,7 +31,7 @@ func (l *ChanManager) Start(apInfo *dto.WebsocketAP, token *token.Token, intents
 		return err
 	}
 	startInterval := manager.CalcInterval(apInfo.SessionStartLimit.MaxConcurrency)
-	log.Infof("[ws/session/local] will start %d sessions and per session start interval is %s",
+	log.Debugf("[ws/session/local] will start %d sessions and per session start interval is %s",
 		apInfo.Shards, startInterval)
 
 	// 按照shards数量初始化，用于启动连接的管理
@@ -66,7 +66,7 @@ func (l *ChanManager) StartSingle(apInfo *dto.WebsocketAPSingle, token *token.To
 		return err
 	}
 	startInterval := manager.CalcInterval(apInfo.SessionStartLimit.MaxConcurrency)
-	log.Infof("[ws/session/local] will start %d sessions and per session start interval is %s",
+	log.Debugf("[ws/session/local] will start %d sessions and per session start interval is %s",
 		apInfo.ShardCount, startInterval)
 
 	// 只启动一个分片

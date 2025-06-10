@@ -154,11 +154,11 @@ type queryTokenRsp struct {
 // 		return AccessTokenInfo{}, err
 // 	}
 // 	payload := bytes.NewReader(data)
-// 	log.Infof("reqdata:%v", string(data))
+// 	log.Debugf("reqdata:%v", string(data))
 // 	client := &http.Client{
 // 		Timeout: 10 * time.Second,
 // 	}
-// 	log.Infof("tokenURL:%v", tokenURL)
+// 	log.Debugf("tokenURL:%v", tokenURL)
 // 	req, err := http.NewRequest(method, tokenURL, payload)
 // 	if err != nil {
 // 		log.Errorf("NewRequest err:%v", err)
@@ -177,7 +177,7 @@ type queryTokenRsp struct {
 // 		log.Errorf("ReadAll do err:%v", err)
 // 		return AccessTokenInfo{}, err
 // 	}
-// 	log.Infof("accesstoken:%v", string(body))
+// 	log.Debugf("accesstoken:%v", string(body))
 // 	queryRsp := queryTokenRsp{}
 // 	if err = json.Unmarshal(body, &queryRsp); err != nil {
 // 		log.Errorf("Unmarshal err:%v", err)

@@ -80,7 +80,7 @@ func (c *Client) Connect() error {
 		log.Errorf("%s, connect err: %v", c.session, err)
 		return err
 	}
-	log.Infof("%s, url %s, connected", c.session, c.session.URL)
+	log.Debugf("%s, url %s, connected", c.session, c.session.URL)
 
 	return nil
 }
@@ -104,7 +104,7 @@ func (c *Client) Listening() error {
 	for {
 		select {
 		case <-resumeSignal: // 使用信号量控制连接立即重连
-			log.Infof("%s, received resumeSignal signal", c.session)
+			log.Debugf("%s, received resumeSignal signal", c.session)
 			return errs.ErrNeedReConnect
 		case err := <-c.closeChan:
 			// 关闭连接的错误码 https://bot.q.qq.com/wiki/develop/api/gateway/error/error.html
@@ -218,7 +218,7 @@ func (c *Client) Session() *dto.Session {
 // 		atomic.StoreInt64(&global_s, payload.S)
 
 // 		payload.RawMessage = message
-// 		log.Infof("%s receive %s message, %s", c.session, dto.OPMeans(payload.OPCode), string(message))
+// 		log.Debugf("%s receive %s message, %s", c.session, dto.OPMeans(payload.OPCode), string(message))
 // 		// 处理内置的一些事件，如果处理成功，则这个事件不再投递给业务
 // 		if c.isHandleBuildIn(payload) {
 // 			continue
@@ -326,7 +326,7 @@ func (c *Client) listenMessageAndHandle() {
 		// 	log.Errorf("%s parseAndHandle failed, %v", c.session, err)
 		// }
 	}
-	log.Infof("%s message queue is closed", c.session)
+	log.Debugf("%s message queue is closed", c.session)
 }
 
 func (c *Client) saveSeq(seq uint32) {
