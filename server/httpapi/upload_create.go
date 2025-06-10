@@ -1,8 +1,8 @@
 package httpapi
 
 import (
-	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
-	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/glyccat/fileserver"
+	"github.com/WindowsSov8forUs/glyccat/log"
 	"github.com/gin-gonic/gin"
 	"github.com/tencent-connect/botgo/openapi"
 )

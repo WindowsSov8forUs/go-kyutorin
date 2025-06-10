@@ -29,7 +29,7 @@ func RunningByDoubleClick() bool {
 // NoMoreDoubleClick 提示不要双击运行，并生成启动脚本
 func NoMoreDoubleClick() error {
 	toHighDPI()
-	r := boxW(getConsoleWindows(), "请勿通过双击直接运行本程序, 这将导致一些非预料的后果.\n请在shell中运行 go-kyutorin \n点击确认将释出安全启动脚本，点击取消则关闭程序", "警告", 0x00000030|0x00000001)
+	r := boxW(getConsoleWindows(), "请勿通过双击直接运行本程序, 这将导致一些非预料的后果.\n请在shell中运行 GlycCat \n点击确认将释出安全启动脚本，点击取消则关闭程序", "警告", 0x00000030|0x00000001)
 	if r == 2 {
 		return nil
 	}
@@ -45,7 +45,7 @@ func NoMoreDoubleClick() error {
 
 	ex, _ := os.Executable()
 	exPath := filepath.Base(ex)
-	_, err = f.WriteString("%Created by go-kyutorin. DO NOT EDIT ME!%\nstart cmd /K \"" + exPath + "\"")
+	_, err = f.WriteString("%Created by GlycCat. DO NOT EDIT ME!%\nstart cmd /K \"" + exPath + "\"")
 	if err != nil {
 		return err
 	}

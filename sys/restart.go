@@ -9,7 +9,7 @@ import (
 
 	"github.com/mattn/go-isatty"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/glyccat/log"
 )
 
 // RestartApplication 重启应用

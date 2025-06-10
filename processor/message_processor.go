@@ -11,10 +11,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/log"
-	"github.com/WindowsSov8forUs/go-kyutorin/pkg/image"
-	"github.com/WindowsSov8forUs/go-kyutorin/pkg/mp4"
-	"github.com/WindowsSov8forUs/go-kyutorin/pkg/silk"
+	"github.com/WindowsSov8forUs/glyccat/log"
+	"github.com/WindowsSov8forUs/glyccat/pkg/image"
+	"github.com/WindowsSov8forUs/glyccat/pkg/mp4"
+	"github.com/WindowsSov8forUs/glyccat/pkg/silk"
 	satoriMessage "github.com/satori-protocol-go/satori-model-go/pkg/message"
 	"github.com/tencent-connect/botgo/dto"
 )

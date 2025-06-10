@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/config"
-	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
-	"github.com/WindowsSov8forUs/go-kyutorin/processor"
-	"github.com/WindowsSov8forUs/go-kyutorin/version"
+	"github.com/WindowsSov8forUs/glyccat/config"
+	"github.com/WindowsSov8forUs/glyccat/fileserver"
+	"github.com/WindowsSov8forUs/glyccat/processor"
+	"github.com/WindowsSov8forUs/glyccat/version"
 	"github.com/gin-gonic/gin"
 	"github.com/satori-protocol-go/satori-model-go/pkg/user"
 	"github.com/tencent-connect/botgo/openapi"
@@ -248,7 +248,7 @@ func HeadersSetMiddleware(satoriVersion string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		c.Header("Date", time.Now().Format(time.RFC1123))
-		c.Header("Server", fmt.Sprintf("Go-Kyutorin/%s", version.Version))
+		c.Header("Server", fmt.Sprintf("GlycCat/%s", version.Version))
 		c.Header("X-Satori-Protocol", satoriVersion)
 		c.Next()
 	}

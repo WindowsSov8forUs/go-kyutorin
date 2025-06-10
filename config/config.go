@@ -10,7 +10,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"gopkg.in/yaml.v3"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/glyccat/log"
 )
 
 var (

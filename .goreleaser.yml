@@ -29,7 +29,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w -X github.com/WindowsSov8forUs/go-kyutorin/version.Version={{ .Version }}
+      - -s -w -X github.com/WindowsSov8forUs/glyccat/version.Version={{ .Version }}
     ignore:
       - goos: darwin
         goarch: arm
@@ -51,7 +51,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w -X github.com/WindowsSov8forUs/go-kyutorin/version.Version={{ .Version }}
+      - -s -w -X github.com/WindowsSov8forUs/glyccat/version.Version={{ .Version }}
 
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/operation"
+	"github.com/WindowsSov8forUs/glyccat/operation"
 	"github.com/tencent-connect/botgo/dto"
 )
 

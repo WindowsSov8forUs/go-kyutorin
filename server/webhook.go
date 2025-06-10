@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/operation"
+	"github.com/WindowsSov8forUs/glyccat/operation"
 )
 
 var ErrBadRequest = errors.New("bad request")

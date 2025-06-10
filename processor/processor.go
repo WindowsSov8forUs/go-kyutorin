@@ -12,9 +12,9 @@ import (
 	"github.com/tencent-connect/botgo/openapi"
 	"github.com/tencent-connect/botgo/token"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/config"
-	"github.com/WindowsSov8forUs/go-kyutorin/log"
-	"github.com/WindowsSov8forUs/go-kyutorin/operation"
+	"github.com/WindowsSov8forUs/glyccat/config"
+	"github.com/WindowsSov8forUs/glyccat/log"
+	"github.com/WindowsSov8forUs/glyccat/operation"
 )
 
 type EventIDTable struct {

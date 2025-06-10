@@ -3,7 +3,7 @@ package httpapi
 import (
 	"strings"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/processor"
+	"github.com/WindowsSov8forUs/glyccat/processor"
 )
 
 // couldBeProxied 是否可代理

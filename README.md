@@ -1,6 +1,6 @@
 <div align="center">
 
-# go-kyutorin
+# GlycCat
 
 _✨ 基于 [Satori](https://satori.js.org/zh-CN/) 协议的 QQ 官方机器人 API GoLang 实现 ✨_
 

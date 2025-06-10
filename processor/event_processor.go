@@ -3,8 +3,8 @@ package processor
 import (
 	"time"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/log"
-	"github.com/WindowsSov8forUs/go-kyutorin/operation"
+	"github.com/WindowsSov8forUs/glyccat/log"
+	"github.com/WindowsSov8forUs/glyccat/operation"
 	"github.com/satori-protocol-go/satori-model-go/pkg/login"
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/event"

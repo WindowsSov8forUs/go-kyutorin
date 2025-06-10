@@ -10,7 +10,7 @@ import (
 	"github.com/tencent-connect/botgo/dto"
 	"github.com/tencent-connect/botgo/openapi"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/processor"
+	"github.com/WindowsSov8forUs/glyccat/processor"
 )
 
 func init() {

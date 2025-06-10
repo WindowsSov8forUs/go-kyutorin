@@ -1,4 +1,4 @@
-module github.com/WindowsSov8forUs/go-kyutorin
+module github.com/WindowsSov8forUs/glyccat
 
 go 1.21.5
 

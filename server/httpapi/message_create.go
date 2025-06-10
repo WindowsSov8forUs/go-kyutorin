@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/fileserver"
-	"github.com/WindowsSov8forUs/go-kyutorin/log"
-	"github.com/WindowsSov8forUs/go-kyutorin/processor"
+	"github.com/WindowsSov8forUs/glyccat/fileserver"
+	"github.com/WindowsSov8forUs/glyccat/log"
+	"github.com/WindowsSov8forUs/glyccat/processor"
 	"github.com/gin-gonic/gin"
 
 	"github.com/satori-protocol-go/satori-model-go/pkg/channel"

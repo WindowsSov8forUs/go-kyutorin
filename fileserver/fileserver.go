@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WindowsSov8forUs/go-kyutorin/config"
-	"github.com/WindowsSov8forUs/go-kyutorin/log"
+	"github.com/WindowsSov8forUs/glyccat/config"
+	"github.com/WindowsSov8forUs/glyccat/log"
 )
 
 const (
