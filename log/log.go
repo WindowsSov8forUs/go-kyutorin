@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -271,4 +272,17 @@ func Tracef(format string, v ...interface{}) {
 func (l *Logger) Sync() error {
 	// Logrus 会自动同步，但为了兼容性保留此方法
 	return nil
+}
+
+// 字符串居中函数
+func StringCenter(text string, width int) string {
+	textLen := len(text)
+	if textLen >= width {
+		return text
+	}
+
+	leftPad := (width - textLen) / 2
+	rightPad := width - textLen - leftPad
+
+	return strings.Repeat(" ", leftPad) + text + strings.Repeat(" ", rightPad)
 }

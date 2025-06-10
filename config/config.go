@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"gopkg.in/yaml.v3"
@@ -545,11 +544,9 @@ func LoadConfig(path string) (*Config, error) {
 	if _, err := os.Stat("config.yml"); os.IsNotExist(err) {
 		config = DefaultConfig()
 
-		fmt.Println("! 未检测到配置文件，即将进入首次配置流程")
-		fmt.Println("! 请按照提示输入配置，按下 Ctrl+C 退出程序")
-		fmt.Println("! 如果需要使用默认配置，请直接按回车键")
+		fmt.Printf("%s 未检测到配置文件，即将进入首次配置流程\n", log.InfoMark)
 		if err := SetConfigByInput(config); err != nil {
-			fmt.Printf("! 获取用户配置项时出错: %v\n", err)
+			fmt.Printf("%s 获取用户配置项时出错: %v\n", log.FailMark, err)
 			return nil, err
 		}
 
@@ -558,7 +555,7 @@ func LoadConfig(path string) (*Config, error) {
 		// 写入 config.yml
 		err = os.WriteFile("config.yml", []byte(configData), 0644)
 		if err != nil {
-			return nil, fmt.Errorf("写入配置文件时出错: %v", err)
+			return nil, fmt.Errorf("%s 写入配置文件时出错: %v", log.FailMark, err)
 		}
 	} else {
 		// 确保配置完整性
@@ -697,23 +694,21 @@ func findInvalidKeysRecursive(prefix string, current, template map[string]interf
 
 // displayConfigIssues 显示配置问题
 func displayConfigIssues(missingKeys, invalidKeys []string) {
-	fmt.Println("\n<=== ! 配置文件检查结果 ! ===>")
+	fmt.Printf("%s 配置文件检查结果:\n", log.InfoMark)
 
 	if len(missingKeys) > 0 {
-		fmt.Printf("\n! 缺失的配置项 (%d个):\n", len(missingKeys))
+		fmt.Printf("  %s 缺失的配置项 (%d个):\n", log.WarningMark, len(missingKeys))
 		for _, key := range missingKeys {
-			fmt.Printf("  - %s\n", key)
+			fmt.Printf("    - %s\n", key)
 		}
 	}
 
 	if len(invalidKeys) > 0 {
-		fmt.Printf("\n! 无效的配置项 (%d个):\n", len(invalidKeys))
+		fmt.Printf("  %s 无效的配置项 (%d个):\n", log.WarningMark, len(invalidKeys))
 		for _, key := range invalidKeys {
-			fmt.Printf("  - %s\n", key)
+			fmt.Printf("    - %s\n", key)
 		}
 	}
-
-	fmt.Println()
 }
 
 // promptUserForConfigFix 询问用户是否要修复配置文件
@@ -731,21 +726,20 @@ func promptUserForConfigFix() (bool, error) {
 // fixConfigFile 修复配置文件
 func fixConfigFile(configPath string, originalData []byte) error {
 	// 创建备份文件名（带时间戳）
-	backupPath := fmt.Sprintf("config_backup_%d.yml",
-		func() int64 { return time.Now().Unix() }())
+	backupPath := "config.yml.backup"
 
 	// 备份原配置文件
 	if err := os.WriteFile(backupPath, originalData, 0644); err != nil {
 		return fmt.Errorf("备份配置文件失败: %w", err)
 	}
 
-	fmt.Printf("! 原配置文件已备份为: %s\n", backupPath)
+	fmt.Printf("%s 原配置文件已备份为: %s\n", log.SuccessMark, backupPath)
 
 	// 尝试合并配置
 	mergedConfig, err := mergeConfigWithTemplate(originalData)
 	if err != nil {
 		// 如果合并失败，使用模板重新生成
-		fmt.Print("! 配置合并失败，将使用模板重新生成配置文件\n")
+		fmt.Printf("%s 配置合并失败，将使用模板重新生成配置文件\n", log.WarningMark)
 		return regenerateConfigFromTemplate(configPath)
 	}
 
@@ -753,12 +747,12 @@ func fixConfigFile(configPath string, originalData []byte) error {
 	// 解析合并后的配置以进行交互式配置
 	var config Config
 	if err := yaml.Unmarshal(mergedConfig, &config); err != nil {
-		fmt.Print("! 解析合并配置失败，将使用默认配置\n")
+		fmt.Printf("%s 解析合并配置失败，将使用默认配置\n", log.WarningMark)
 		finalConfig = DefaultConfig()
 	} else {
 		// 进行交互式配置
 		if err := interactiveConfigUpdate(&config); err != nil {
-			fmt.Printf("! 配置更新流程失败: %v，将使用合并后的配置\n", err)
+			fmt.Printf("%s 配置更新流程失败: %v，将使用合并后的配置\n", log.WarningMark, err)
 			finalConfig = &config
 		} else {
 			finalConfig = &config
@@ -774,7 +768,9 @@ func fixConfigFile(configPath string, originalData []byte) error {
 		return fmt.Errorf("写入配置文件失败: %w", err)
 	}
 
-	fmt.Printf("配置文件已更新，原配置已备份为: %s\n", backupPath)
+	fmt.Printf("%s 配置文件已更新，原配置已备份为: %s\n", log.SuccessMark, backupPath)
+
+	fmt.Print("\n==========================================================\n\n")
 
 	return nil
 }
@@ -889,13 +885,13 @@ func regenerateConfigFromTemplate(configPath string) error {
 		return fmt.Errorf("重新生成配置文件失败: %w", err)
 	}
 
-	fmt.Print("! 配置文件已从模板重新生成。")
+	fmt.Printf("%s 配置文件已从模板重新生成。\n", log.SuccessMark)
 	return nil
 }
 
 // interactiveConfigUpdate 交互式更新配置
 func interactiveConfigUpdate(conf *Config) error {
-	fmt.Println("\n<=== ? 配置更新 ? ===>")
+	fmt.Printf("%s 配置更新选项:\n", log.InfoMark)
 
 	// 检查并配置连接方式
 	if needsConnectionConfig(conf) {

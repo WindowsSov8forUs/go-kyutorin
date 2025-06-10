@@ -44,9 +44,9 @@ var (
 	FatalColor ColorFunc = color.New(color.FgHiRed, color.Bold).Sprintf // 深红色加粗
 	PanicColor ColorFunc = color.New(color.FgHiRed, color.Bold).Sprintf // 深红色加粗
 	ErrorColor ColorFunc = color.New(color.FgRed).Sprintf               // 红色
-	WarnColor  ColorFunc = color.New(color.FgHiYellow).Sprintf          // 橙色（高亮黄色）
+	WarnColor  ColorFunc = color.New(color.FgYellow).Sprintf            // 橙色（黄色）
 	InfoColor  ColorFunc = color.New(color.FgBlue).Sprintf              // 蓝色
-	DebugColor ColorFunc = color.New(color.FgYellow).Sprintf            // 黄色
+	DebugColor ColorFunc = color.New(color.FgHiYellow).Sprintf          // 高亮黄色
 	TraceColor ColorFunc = color.New(color.FgGreen).Sprintf             // 绿色
 	TimeColor  ColorFunc = color.New(color.FgHiCyan).Sprintf            // 时间戳颜色（浅蓝色）
 )
@@ -140,3 +140,11 @@ func GetLevelColorFunc(level string) ColorFunc {
 func NewColorFunc(attrs ...color.Attribute) ColorFunc {
 	return color.New(attrs...).Sprintf
 }
+
+// 输出符号
+var (
+	SuccessMark = Green("✓")  // 成功
+	FailMark    = Red("✗")    // 失败
+	WarningMark = Yellow("⚠") // 警告
+	InfoMark    = Cyan("ℹ")   // 信息
+)

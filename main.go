@@ -35,12 +35,15 @@ func main() {
 		sys.InitBase()
 	}
 
-	fmt.Printf("Go-Kyutorin %s\n", version.Version)
+	fmt.Println(version.Logo())
+	versionString := log.StringCenter(fmt.Sprintf("GlycCat %s", version.Version), 58)
+	log.PrintlnCyan(versionString)
+	fmt.Print("\n==========================================================\n\n")
 
 	// 加载配置
 	conf, err := config.LoadConfig("config.yml")
 	if err != nil {
-		log.Fatalf("加载配置文件时出错: %v", err)
+		fmt.Printf("%s 加载配置文件时出错: %v\n", log.FailMark, log.Red(fmt.Sprint(err)))
 		os.Exit(0)
 		return
 	}
