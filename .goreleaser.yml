@@ -1,4 +1,6 @@
 # .goreleaser.yml
+version: 2
+
 before:
   hooks:
     - mkdir -p internal
@@ -9,45 +11,32 @@ before:
     - rm -rf ./dist
 
 release:
-  prerelease: '{{ .Env.IS_PRERELEASE }}'
+  prerelease: auto
 
 builds:
   - id: nowin
     env:
       - CGO_ENABLED=0
-      - GO111MOULE=on
+      - GO111MODULE=on
     goos:
       - linux
       - darwin
     goarch:
-      - '386'
       - amd64
-      - arm
       - arm64
-    goarm:
-      - '7'
     flags:
       - -trimpath
     ldflags:
       - -s -w -X github.com/WindowsSov8forUs/glyccat/version.Version={{ .Version }}
-    ignore:
-      - goos: darwin
-        goarch: arm
-      - goos: darwin
-        goarch: '386'
   - id: win
     env:
       - CGO_ENABLED=0
-      - GO111MOULE=on
+      - GO111MODULE=on
     goos:
       - windows
     goarch:
-      - '386'
       - amd64
-      - arm
       - arm64
-    goarm:
-      - '7'
     flags:
       - -trimpath
     ldflags:
@@ -55,15 +44,12 @@ builds:
 
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-    format_overrides:
-      - goos: windows
-        format: binary
+    builds:
+      - nowin
+      - win
 
 # checksum:
 #   name_template: 'checksums.txt'
-
-snapshot:
-  name_template: "{{ .Tag }}-{{ .Commit }}"
 
 changelog:
   sort: asc

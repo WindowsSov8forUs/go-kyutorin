@@ -11,12 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.21.5
+          go-version: '1.21'
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整的 git 历史，解决浅克隆问题
 
       - name: Set up environment
         run: |
@@ -24,51 +26,10 @@ jobs:
           echo $PATH
           echo $(go env GOPATH)
       
-      - name: Check if release exists
-        id: check_release
-        run: |
-          TAG_NAME=${{ github.ref }} # refs/tags/v0.1.0
-          TAG_NAME=${TAG_NAME#refs/tags/} # v0.1.0
-          RELEASE_ID=$(curl --silent --show-error --header "Authorization: token ${{ secrets.PAT }}" "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" | jq '.id')
-          IS_PRERELEASE=$(curl --silent --show-error --header "Authorization: token ${{ secrets.PAT }}" "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" | jq '.prerelease')
-          echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
-          echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_ENV
-
       - name: Build binaries
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
-          args: release
+          args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
-          IS_PRERELEASE: ${{ env.IS_PRERELEASE }}
-      
-      # - name: Create Release
-      #   id: create_release
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.PAT }}
-      #   with:
-      #     tag_name: ${{ github.ref }}
-      #     release_name: Release ${{ github.ref }}
-      #     draft: false
-      #     prerelease: false
-      #   if: env.RELEASE_ID == 'null'
-
-      - name: Upload Release Assets
-        run: |
-          UPLOAD_URL=$(if [ "${{ env.RELEASE_ID }}" == "null" ]; then echo "${{ steps.create_release.outputs.upload_url }}"; else echo "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ env.RELEASE_ID }}/assets"; fi)
-          for file in dist/*; do
-            if [[ -f "$file" ]]; then
-              filename=$(basename -- "$file")
-              extension="${filename##*.}"
-              if [[ "$extension" == "exe" || "$extension" == "tar.gz" ]]; then
-                echo "Uploading $file"
-                curl \
-                  --header "Authorization: token ${{ secrets.PAT }}" \
-                  --header "Content-Type: $(file -b --mime-type $file)" \
-                  --data-binary @"$file" \
-                  "$UPLOAD_URL?name=$(basename $file)"
-              fi
-            fi
-          done
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
