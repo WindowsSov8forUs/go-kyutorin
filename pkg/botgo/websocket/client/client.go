@@ -144,7 +144,7 @@ func (c *Client) Listening() error {
 // Write 往 ws 写入数据
 func (c *Client) Write(message *dto.Payload) error {
 	m, _ := json.Marshal(message)
-	log.Infof("%s write %s message, %v", c.session, dto.OPMeans(message.OPCode), string(m))
+	log.Debugf("%s write %s message, %v", c.session, dto.OPMeans(message.OPCode), string(m))
 
 	if err := c.conn.WriteMessage(wss.TextMessage, m); err != nil {
 		log.Errorf("%s WriteMessage failed, %v", c.session, err)
@@ -244,7 +244,7 @@ func (c *Client) readMessageToQueue() {
 		atomic.StoreInt64(&global_s, payload.S)
 
 		payload.RawMessage = message
-		log.Infof("%s receive %s message, %s", c.session, dto.OPMeans(payload.OPCode), string(message))
+		log.Debugf("%s receive %s message, %s", c.session, dto.OPMeans(payload.OPCode), string(message))
 
 		// 不过滤心跳事件
 		if payload.OPCode != 11 {
@@ -254,7 +254,7 @@ func (c *Client) readMessageToQueue() {
 			// 检查是否已存在相同的 Data
 			if existingPayload, ok := getDataFromSyncMap(dataHash); ok {
 				// 如果已存在相同的 Data，则丢弃当前消息
-				log.Infof("%s discard duplicate message with DataHash: %v", c.session, existingPayload)
+				log.Debugf("%s discard duplicate message with DataHash: %v", c.session, existingPayload)
 				continue
 			}
 

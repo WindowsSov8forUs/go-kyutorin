@@ -3,10 +3,10 @@ package v1
 import (
 	"bytes"
 	"context"
-	"log"
 	"strconv"
 
 	"github.com/tencent-connect/botgo/dto"
+	"github.com/tencent-connect/botgo/log"
 	"github.com/tencent-connect/botgo/openapi"
 )
 
@@ -32,11 +32,11 @@ func (o *openAPI) PostDirectMessage(ctx context.Context,
 		Post(o.getURL(dmsURI))
 	if err != nil {
 		// 打印msg内容
-		log.Printf("Message being posted: %+v\n", *msg)
+		log.Debugf("Message being posted: %+v\n", *msg)
 		return nil, err
 	}
 	// 打印msg内容
-	log.Printf("Message being posted: %+v\n", *msg)
+	log.Debugf("Message being posted: %+v\n", *msg)
 	return resp.Result().(*dto.Message), nil
 }
 
@@ -86,12 +86,12 @@ func (o *openAPI) PostDirectMessageMultipart(ctx context.Context, dm *dto.Direct
 	resp, err := request.Post(o.getURL(dmsURI))
 	if err != nil {
 		// 打印msg内容
-		log.Printf("Message being posted: %+v\n", *msg)
+		log.Errorf("Message being posted: %+v\n", *msg)
 		return nil, err
 	}
 
 	// 打印msg内容
-	log.Printf("Message being posted: %+v\n", *msg)
+	log.Debugf("Message being posted: %+v\n", *msg)
 	return resp.Result().(*dto.Message), nil
 }
 
