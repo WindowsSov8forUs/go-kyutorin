@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +16,8 @@ import (
 	"github.com/WindowsSov8forUs/glyccat/operation"
 	"github.com/WindowsSov8forUs/glyccat/server/httpapi"
 )
+
+const satoriVersion = "1.2"
 
 // EventQueue 事件队列
 type EventQueue struct {
@@ -92,7 +95,6 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 	engine := gin.New()
 	engine.Use(
 		gin.Recovery(),
-		httpapi.HeadersSetMiddleware("1.2"),
 	)
 
 	webSocketGroup := engine.Group(fmt.Sprintf("%s/v1/events", server.conf.Satori.Path))
@@ -105,6 +107,7 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 		httpapi.HeadersValidateMiddleware(),
 		httpapi.AuthenticateMiddleware("http_api"),
 		httpapi.BotValidateMiddleware(),
+		httpapi.HeadersSetMiddleware(satoriVersion),
 	)
 	resourceGroup.POST(":method", func(c *gin.Context) {
 		method := c.Param("method")
@@ -124,6 +127,7 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 	metaGroup.Use(
 		httpapi.HeadersValidateMiddleware(),
 		httpapi.AuthenticateMiddleware("meta"),
+		httpapi.HeadersSetMiddleware(satoriVersion),
 	)
 	metaGroup.POST("/*method", func(c *gin.Context) {
 		method := c.Param("method")
@@ -142,14 +146,15 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 		httpapi.MetaMiddleware()(c)
 	})
 
-	proxyGroup := engine.Group(fmt.Sprintf("%s/v1/proxy/", server.conf.Satori.Path))
+	proxyGroup := engine.Group(fmt.Sprintf("%s/v1/proxy", server.conf.Satori.Path))
 	proxyGroup.Use(
-		httpapi.HeadersValidateMiddleware(),
-		httpapi.AuthenticateMiddleware("proxy"),
 		httpapi.ProxyValidateMiddleware(),
 	)
-	proxyGroup.GET(":url", func(c *gin.Context) {
+	proxyGroup.GET("/*url", func(c *gin.Context) {
 		url := c.Param("url")
+		// 去除开头斜线
+		url = strings.TrimPrefix(url, "/")
+
 		// 将请求输出
 		log.Tracef(
 			"收到请求: %s /proxy/%s ，请求头：%v ，请求体：%v",
@@ -158,7 +163,7 @@ func (server *Server) setupV1Engine(api, apiV2 openapi.OpenAPI) *gin.Engine {
 			c.Request.Header,
 			c.Request.Body,
 		)
-		httpapi.ProxyMiddleware()(c)
+		httpapi.ProxyMiddleware(satoriVersion)(c)
 	})
 
 	return engine
