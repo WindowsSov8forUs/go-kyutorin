@@ -48,7 +48,7 @@ func HandleLoginGet(api, apiv2 openapi.OpenAPI, message *ActionMessage) (any, AP
 	response.Platform = message.Platform
 	response.User = bot
 	response.Status = status
-	response.Adapter = "kyutorin"
+	response.Adapter = "GlycCat"
 	response.Features = processor.Features()
 
 	return response, nil

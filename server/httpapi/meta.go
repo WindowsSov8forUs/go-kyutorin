@@ -41,7 +41,7 @@ func HandlerMeta(message *MetaActionMessage) (any, APIError) {
 			Platform: platform,
 			User:     bot,
 			Status:   processor.GetStatus(platform),
-			Adapter:  "kyutorin",
+			Adapter:  "GlycCat",
 			Features: processor.Features(),
 		}
 		response.Logins = append(response.Logins, &login)

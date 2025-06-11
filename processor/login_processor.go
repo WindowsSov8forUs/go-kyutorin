@@ -32,7 +32,8 @@ func buildLoginEventLogin(platform string) *login.Login {
 		Platform: platform,
 		User:     bot,
 		Status:   GetStatus(platform),
-		Adapter:  "kyutorin",
+		Adapter:  "GlycCat",
+		Features: Features(),
 	}
 }
 
@@ -43,6 +44,9 @@ func buildNonLoginEventLogin(platform string) *login.Login {
 		Sn:       GenerateLoginSn(),
 		Platform: platform,
 		User:     bot,
+		Status:   login.StatusOnline,
+		Adapter:  "GlycCat",
+		Features: Features(),
 	}
 }
 

@@ -105,7 +105,7 @@ func GetReadyBody() *operation.ReadyBody {
 			Platform: platform,
 			User:     bot,
 			Status:   GetStatus(platform),
-			Adapter:  "kyutorin",
+			Adapter:  "GlycCat",
 			Features: Features(),
 		}
 		logins = append(logins, login)
