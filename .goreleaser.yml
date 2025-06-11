@@ -44,9 +44,6 @@ builds:
 
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-    builds:
-      - nowin
-      - win
 
 # checksum:
 #   name_template: 'checksums.txt'
