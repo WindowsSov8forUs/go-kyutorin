@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -42,15 +41,6 @@ type FileServer struct {
 }
 
 var instance *FileServer
-
-// fileData 获取到的文件
-type fileData struct {
-	Reader       io.Reader // 文件内容
-	Name         string    // 文件名
-	ContentType  string    // 文件内容类型
-	Size         int64     // 文件大小
-	LastModified time.Time // 最后修改时间
-}
 
 // StartFileServer 启动文件服务器
 func StartFileServer(conf *config.Config) {
@@ -424,10 +414,10 @@ func ParseInternalURL(url string) (string, string, string, bool) {
 	return matches[1], matches[2], matches[3], true
 }
 
-// GetFromPath 获取文件内容
-func GetFromPath(path string) (*fileData, error) {
+// GetPath 获取文件本地路径
+func GetPath(path string) (string, error) {
 	if instance == nil || !instance.Enable {
-		return nil, fmt.Errorf("文件服务器未启用！")
+		return "", fmt.Errorf("文件服务器未启用！")
 	}
 
 	// 对于 _tmp 文件路径
@@ -435,30 +425,11 @@ func GetFromPath(path string) (*fileData, error) {
 		// 提取文件 ident
 		ident := strings.TrimPrefix(path, "_tmp/")
 		if meta, err := GetFile(ident); err == nil {
-			// 打开文件
-			if file, err := os.Open(meta.Path); err == nil {
-				info, err := file.Stat()
-				if err == nil {
-					return &fileData{
-						Reader:       file,
-						Name:         info.Name(),
-						ContentType:  http.DetectContentType(make([]byte, 512)),
-						Size:         info.Size(),
-						LastModified: info.ModTime(),
-					}, nil
-				} else {
-					log.Errorf("获取文件数据失败: %s", err)
-					return nil, err
-				}
-			} else {
-				log.Errorf("打开文件失败: %s", err)
-				return nil, err
-			}
+			return meta.Path, nil
 		} else {
-			log.Errorf("获取文件元数据失败: %s", err)
-			return nil, err
+			return "", err
 		}
 	}
 
-	return nil, fmt.Errorf("无效的文件路径: %s", path)
+	return "", fmt.Errorf("无效的文件路径: %s", path)
 }

@@ -338,6 +338,8 @@ func BotValidateMiddleware() gin.HandlerFunc {
 func ProxyValidateMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		urlParam := c.Param("url")
+		// 去除开头斜线
+		urlParam = strings.TrimPrefix(urlParam, "/")
 
 		// 验证内部链接
 		if strings.HasPrefix(urlParam, "internal:") {
@@ -465,28 +467,32 @@ func metaAPIHandler(c *gin.Context) {
 }
 
 // ProxyMiddleware 代理路由中间件
-func ProxyMiddleware() gin.HandlerFunc {
+func ProxyMiddleware(satoriVersion string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 在内部进行判断处理
-		proxyHandler(c)
+		proxyHandler(c, satoriVersion)
 	}
 }
 
 // proxyHandler 处理代理路由
-func proxyHandler(c *gin.Context) {
+func proxyHandler(c *gin.Context, satoriVersion string) {
 	// 提取路径中参数
 	urlParam := c.Param("url")
+	// 去除开头斜线
+	urlParam = strings.TrimPrefix(urlParam, "/")
 
 	// 解析内部链接
 	if _, _, path, ok := fileserver.ParseInternalURL(urlParam); ok {
-		if file, err := fileserver.GetFromPath(path); err == nil {
+		if filePath, err := fileserver.GetPath(path); err == nil {
+
 			// 设置响应头
-			c.Header("Content-Type", file.ContentType)
-			c.Header("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", file.Name))
-			c.Header("Content-Length", fmt.Sprintf("%d", file.Size))
-			c.Header("Last-Modified", file.LastModified.Format(time.RFC1123))
-			// 返回文件内容
-			c.DataFromReader(http.StatusOK, file.Size, file.ContentType, file.Reader, nil)
+			c.Header("Date", time.Now().Format(time.RFC1123))
+			c.Header("Server", fmt.Sprintf("GlycCat/%s", version.Version))
+			c.Header("X-Satori-Protocol", satoriVersion)
+
+			// 设置文件路径
+			c.File(filePath)
+
 			return
 		}
 	}
