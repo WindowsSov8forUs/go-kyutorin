@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/WindowsSov8forUs/glyccat/log"
 	"github.com/WindowsSov8forUs/glyccat/pkg/image"
 	"github.com/WindowsSov8forUs/glyccat/pkg/mp4"
 	"github.com/WindowsSov8forUs/glyccat/pkg/silk"
@@ -53,14 +52,12 @@ func ParseSrc(src string) (string, *fileSrc, error) {
 		// 解析 mime 类型
 		mimeParts := strings.Split(mimeType, "/")
 		if len(mimeParts) != 2 {
-			log.Errorf("错误的 mime 类型: %s", mimeType)
 			return "", nil, fmt.Errorf("错误的 mime 类型: %s", mimeType)
 		}
 
 		// 解析 base64 编码
 		data, err := base64.StdEncoding.DecodeString(base64Data)
 		if err != nil {
-			log.Errorf("解析 base64 编码失败: %s", err.Error())
 			return "", nil, fmt.Errorf("解析 base64 编码失败: %w", err)
 		}
 
@@ -73,7 +70,6 @@ func ParseSrc(src string) (string, *fileSrc, error) {
 	if len(matches) == 2 {
 		path, err := url.PathUnescape(matches[1])
 		if err != nil {
-			log.Errorf("解析文件路径失败: %s", err.Error())
 			return "", nil, fmt.Errorf("解析文件路径失败: %w", err)
 		}
 
@@ -81,7 +77,6 @@ func ParseSrc(src string) (string, *fileSrc, error) {
 			// 读取文件数据
 			data, err := os.ReadFile(path)
 			if err != nil {
-				log.Errorf("读取文件失败: %s", err.Error())
 				return "", nil, fmt.Errorf("读取文件失败: %w", err)
 			}
 			return "", &fileSrc{MimeType: http.DetectContentType(data), Data: data}, nil
@@ -127,7 +122,6 @@ func ParseSrcToAvailavle(src string) (string, string, error) {
 		// 对于图片、音频与视频，需要转码为可接受的格式
 		data, err := convertToAvailableFormat(fileSrc)
 		if err != nil {
-			log.Errorf("转换文件格式失败: %s", err.Error())
 			return "", "", fmt.Errorf("转换文件格式失败: %w", err)
 		}
 		base64Data := base64.StdEncoding.EncodeToString(data)
