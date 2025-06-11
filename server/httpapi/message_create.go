@@ -238,6 +238,11 @@ func parseElementsInMessageToCreate(elements []satoriMessage.MessageElement, dto
 				}
 
 				// 保存至本地文件服务器
+				fileReader, err = file.GetReader()
+				if err != nil {
+					log.Warnf("获取文件读取器失败: %s", err)
+					continue
+				}
 				meta, err := fileserver.SaveFile(fileReader, "qqguild", userId, e.Title, file.MimeType)
 				if err != nil {
 					log.Warnf("保存图片文件失败: %s", err)
