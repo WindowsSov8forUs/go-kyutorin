@@ -248,6 +248,11 @@ func (p *Processor) Run(ctx context.Context, server Server) error {
 	p.Server = server
 
 	if p.conf.Account.WebHook.Enable {
+		// 将所有 Bot 状态置为 ONLINE
+		for platform, _ := range GetBots() {
+			SetStatus(platform, login.StatusOnline)
+		}
+
 		err := establishWebHook(p, p.conf)
 		if err != nil {
 			return err
