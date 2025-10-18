@@ -335,7 +335,7 @@ func getMessageLog(data interface{}) string {
 		bot := GetBot("qq") // 获取 qq 平台机器人实例
 		if bot != nil {
 			atString := "@" + bot.Name
-			messageStrings = append(messageStrings, atString)
+			messageStrings = append([]string{atString}, messageStrings...)
 		}
 	}
 
