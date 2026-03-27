@@ -10,8 +10,8 @@ _✨ 基于 [Satori](https://satori.js.org/zh-CN/) 协议的 QQ 官方机器人 
 
 本项目引用了这些项目，并进行了一些改动
 
-- [`tencent-connect/botgo`](https://github.com/tencent-connect/botgo)
-- [`satori-protocol-go/satori-model-go`](https://github.com/satori-protocol-go/satori-model-go)
+- [`WindowsSov8forUs/botgo-plus`](https://github.com/WindowsSov8forUs/botgo-plus)
+- [`satori-protocol-go/satori-go`](https://github.com/satori-protocol-go/satori-go)
 
 ## 说明
 

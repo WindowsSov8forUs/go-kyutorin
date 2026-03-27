@@ -1,15 +1,17 @@
 module github.com/WindowsSov8forUs/glyccat
 
-go 1.21.5
-
-require github.com/tencent-connect/botgo v0.2.1
+go 1.25.4
 
 require (
-	github.com/satori-protocol-go/satori-model-go v0.2.1
+	github.com/go-chi/chi/v5 v5.2.3
+	github.com/satori-protocol-go/satori-go v1.0.0
 	github.com/sirupsen/logrus v1.9.3
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
 require (
+	github.com/BurntSushi/toml v1.6.0 // indirect
+	github.com/WindowsSov8forUs/botgo-plus v1.0.0 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
@@ -18,8 +20,8 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	golang.org/x/image v0.16.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/term v0.20.0 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 )
 
 require (
@@ -51,8 +53,8 @@ require (
 	github.com/fatih/color v1.17.0
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.10.0
-	github.com/go-resty/resty/v2 v2.13.1
-	github.com/gorilla/websocket v1.5.1
+	github.com/go-resty/resty/v2 v2.13.1 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tidwall/gjson v1.17.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -60,5 +62,3 @@ require (
 	golang.org/x/net v0.25.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 )
-
-replace github.com/tencent-connect/botgo => ./pkg/botgo

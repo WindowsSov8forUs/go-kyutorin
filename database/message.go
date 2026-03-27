@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/WindowsSov8forUs/glyccat/log"
-	"github.com/satori-protocol-go/satori-model-go/pkg/message"
+	"github.com/satori-protocol-go/satori-go/pkg/satori/model/message"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )

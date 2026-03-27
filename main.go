@@ -1,36 +1,34 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/WindowsSov8forUs/glyccat/config"
 	"github.com/WindowsSov8forUs/glyccat/database"
 	"github.com/WindowsSov8forUs/glyccat/fileserver"
 	"github.com/WindowsSov8forUs/glyccat/log"
-	"github.com/WindowsSov8forUs/glyccat/processor"
-	"github.com/WindowsSov8forUs/glyccat/server"
 	"github.com/WindowsSov8forUs/glyccat/sys"
 	"github.com/WindowsSov8forUs/glyccat/version"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tencent-connect/botgo"
+	"github.com/go-chi/chi/v5"
+	"github.com/satori-protocol-go/satori-go/pkg/satori/adapter/qq"
+	"github.com/satori-protocol-go/satori-go/pkg/satori/server"
 )
 
 func main() {
-	// 定义 faststart 命令行标志，默认为 false
-	fastStart := flag.Bool("faststart", false, "是否快速启动")
-
-	// 定义 debug 命令行标志，默认为 false
-	debug := flag.Bool("debug", false, "是否启用调试模式")
-
-	// 解析命令行参数到定义的标志
+	fastStart := flag.Bool("faststart", false, "fast startup")
+	debug := flag.Bool("debug", false, "debug mode")
 	flag.Parse()
 
-	// 检查是否使用了 -faststart 参数
 	if !*fastStart {
 		sys.InitBase()
 	}
@@ -40,72 +38,196 @@ func main() {
 	log.PrintlnCyan(versionString)
 	fmt.Print("\n==========================================================\n\n")
 
-	// 加载配置
 	conf, err := config.LoadConfig("config.yml")
 	if err != nil {
-		fmt.Printf("%s 加载配置文件时出错: %v\n", log.FailMark, log.Red(fmt.Sprint(err)))
+		fmt.Printf("%s load config failed: %v\n", log.FailMark, log.Red(fmt.Sprint(err)))
 		os.Exit(0)
 		return
 	}
 
-	// 配置日志等级
 	log.SetLogLevel(conf.LogLevel)
 
-	// 设置 gin 运行模式
 	if *debug {
-		log.Warn("正在 Debug 模式下运行服务器！")
+		log.Warn("running in debug mode")
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// 设置 logger
-	logger := log.GetLogger()
-	botgo.SetLogger(logger)
+	log.GetLogger()
 
-	// 如果配置并未设置
 	if conf.Account.Token == "" {
-		log.Fatal("检测到未完成机器人配置，请修改配置文件后重启程序")
+		log.Fatal("bot token is empty, please configure account token")
 		os.Exit(0)
 		return
 	}
 
-	// 开启本地文件服务器
 	fileserver.StartFileServer(conf)
 
-	// 启动消息数据库
 	if conf.Database.MessageDatabase.Enable {
-		log.Info("正在启动消息数据库...")
+		log.Info("starting message database")
 		err := database.StartMessageDB(conf.Database.MessageDatabase.Limit)
 		if err != nil {
-			log.Errorf("启动消息数据库时出错，将无法使用消息缓存: %v", err)
+			log.Errorf("start message database failed: %v", err)
 		}
 	} else {
-		log.Warn("消息数据库未启动，将无法使用消息缓存。")
+		log.Warn("message database is disabled")
 	}
 
-	// 初始化消息处理器
-	p, ctx, err := processor.NewProcessor(conf)
+	runtime, err := newRuntime(conf)
 	if err != nil {
-		log.Fatalf("建立与 QQ 开放平台连接时出错: %v", err)
-	}
-	// 创建 Satori 服务端
-	server, err := server.NewServer(p.Api, p.ApiV2, conf)
-	if err != nil {
-		log.Fatalf("建立 Satori 服务端时出错: %v", err)
-	}
-	// 运行消息处理器
-	err = p.Run(ctx, server)
-	if err != nil {
-		log.Fatalf("应用启动时出错: %v", err)
+		log.Fatalf("initialize runtime failed: %v", err)
 	}
 
-	// 使用通道来等待信号
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	runErrCh := make(chan error, 2)
+	go func() {
+		runErrCh <- runtime.satoriServer.Run(ctx)
+	}()
+
+	if runtime.qqWebhookServer != nil {
+		go func() {
+			err := runtime.qqWebhookServer.ListenAndServe()
+			if err != nil && err != http.ErrServerClosed {
+				runErrCh <- err
+			}
+		}()
+	}
+
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	// 等待信号
-	<-sigCh
+	select {
+	case <-sigCh:
+		log.Info("received shutdown signal")
+	case runErr := <-runErrCh:
+		if runErr != nil {
+			log.Errorf("runtime failed: %v", runErr)
+		}
+	}
 
-	server.Close()
+	cancel()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	if runtime.qqWebhookServer != nil {
+		if err := runtime.qqWebhookServer.Shutdown(shutdownCtx); err != nil && err != http.ErrServerClosed {
+			log.Errorf("shutdown qq webhook server failed: %v", err)
+		}
+	}
+	if err := runtime.satoriServer.Shutdown(shutdownCtx); err != nil {
+		log.Errorf("shutdown satori server failed: %v", err)
+	}
+}
+
+type runtimeBundle struct {
+	satoriServer    *server.Server
+	qqWebhookServer *http.Server
+}
+
+func newRuntime(conf *config.Config) (*runtimeBundle, error) {
+	useWebSocket := conf.Account.WebSocket.Enable && !conf.Account.WebHook.Enable
+	if !useWebSocket && !conf.Account.WebHook.Enable {
+		return nil, fmt.Errorf("both webhook and websocket are disabled")
+	}
+
+	adapterCfg := qq.Config{
+		AppID:         conf.Account.AppID,
+		Secret:        conf.Account.AppSecret,
+		Token:         conf.Account.Token,
+		Sandbox:       conf.Account.Sandbox,
+		Path:          conf.Account.WebHook.Path,
+		Adapter:       "GlycCat",
+		UseWebSocket:  useWebSocket,
+		WSIntentNames: conf.Account.WebSocket.Intents,
+		WSShardCount:  conf.Account.WebSocket.Shards,
+	}
+
+	innerAdapter, err := qq.New(adapterCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	version := conf.Satori.Version
+	if version == 0 {
+		version = 1
+	}
+	srv, err := server.NewServer(server.Config{
+		Host:    conf.Satori.Server.Host,
+		Port:    int(conf.Satori.Server.Port),
+		Path:    conf.Satori.Path,
+		Version: fmt.Sprintf("v%d", version),
+		Token:   conf.Satori.Token,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if applyErr := srv.Apply(innerAdapter); applyErr != nil {
+		return nil, applyErr
+	}
+
+	webhookServer := buildQQWebhookServer(conf, innerAdapter)
+
+	return &runtimeBundle{
+		satoriServer:    srv,
+		qqWebhookServer: webhookServer,
+	}, nil
+}
+
+func buildQQWebhookServer(conf *config.Config, registrar server.RootRouteRegistrar) *http.Server {
+	if !conf.Account.WebHook.Enable {
+		return nil
+	}
+
+	webhookHost := strings.TrimSpace(conf.Account.WebHook.Host)
+	if webhookHost == "" {
+		webhookHost = strings.TrimSpace(conf.Satori.Server.Host)
+	}
+	webhookPort := conf.Account.WebHook.Port
+	if webhookPort == 0 {
+		webhookPort = conf.Satori.Server.Port
+	}
+
+	satoriHost := strings.TrimSpace(conf.Satori.Server.Host)
+	if satoriHost == "" {
+		satoriHost = "127.0.0.1"
+	}
+	satoriPort := conf.Satori.Server.Port
+	if satoriPort == 0 {
+		satoriPort = 5500
+	}
+
+	if isSameListenEndpoint(webhookHost, webhookPort, satoriHost, satoriPort) {
+		return nil
+	}
+
+	router := chi.NewRouter()
+	registrar.RegisterRootRoutes(router)
+
+	return &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", webhookHost, webhookPort),
+		Handler: router,
+	}
+}
+
+func isSameListenEndpoint(hostA string, portA uint16, hostB string, portB uint16) bool {
+	if portA != portB {
+		return false
+	}
+	normalize := func(host string) string {
+		host = strings.TrimSpace(host)
+		if host == "" || host == "::" {
+			return "0.0.0.0"
+		}
+		return host
+	}
+	a := normalize(hostA)
+	b := normalize(hostB)
+	if a == b {
+		return true
+	}
+	return a == "0.0.0.0" || b == "0.0.0.0"
 }
