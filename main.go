@@ -128,6 +128,8 @@ type runtimeBundle struct {
 	qqWebhookServer *http.Server
 }
 
+type logger struct{}
+
 func newRuntime(conf *config.Config) (*runtimeBundle, error) {
 	useWebSocket := conf.Account.WebSocket.Enable && !conf.Account.WebHook.Enable
 	if !useWebSocket && !conf.Account.WebHook.Enable {
@@ -151,25 +153,33 @@ func newRuntime(conf *config.Config) (*runtimeBundle, error) {
 		return nil, err
 	}
 
-	version := conf.Satori.Version
-	if version == 0 {
-		version = 1
+	protocolVersion := conf.Satori.Version
+	if protocolVersion == 0 {
+		protocolVersion = 1
 	}
+	satoriVersion := fmt.Sprintf("v%d", protocolVersion)
+	serverHeader := fmt.Sprintf("GlycCat/%s", version.Version)
+
+	apiRouter := chi.NewRouter()
+	apiRouter.Use(responseHeaderMiddleware(satoriVersion, serverHeader))
+
 	srv, err := server.NewServer(server.Config{
-		Host:    conf.Satori.Server.Host,
-		Port:    int(conf.Satori.Server.Port),
-		Path:    conf.Satori.Path,
-		Version: fmt.Sprintf("v%d", version),
-		Token:   conf.Satori.Token,
+		Host:          conf.Satori.Server.Host,
+		Port:          int(conf.Satori.Server.Port),
+		Path:          conf.Satori.Path,
+		Version:       satoriVersion,
+		Token:         conf.Satori.Token,
+		ReplaceRouter: apiRouter,
 	})
 	if err != nil {
 		return nil, err
 	}
+	srv.RegisterLogger(logger{})
 	if applyErr := srv.Apply(innerAdapter); applyErr != nil {
 		return nil, applyErr
 	}
 
-	webhookServer := buildQQWebhookServer(conf, innerAdapter)
+	webhookServer := buildQQWebhookServer(conf, innerAdapter, satoriVersion, serverHeader)
 
 	return &runtimeBundle{
 		satoriServer:    srv,
@@ -177,7 +187,12 @@ func newRuntime(conf *config.Config) (*runtimeBundle, error) {
 	}, nil
 }
 
-func buildQQWebhookServer(conf *config.Config, registrar server.RootRouteRegistrar) *http.Server {
+func buildQQWebhookServer(
+	conf *config.Config,
+	registrar server.RootRouteRegistrar,
+	satoriVersion string,
+	serverHeader string,
+) *http.Server {
 	if !conf.Account.WebHook.Enable {
 		return nil
 	}
@@ -205,6 +220,7 @@ func buildQQWebhookServer(conf *config.Config, registrar server.RootRouteRegistr
 	}
 
 	router := chi.NewRouter()
+	router.Use(responseHeaderMiddleware(satoriVersion, serverHeader))
 	registrar.RegisterRootRoutes(router)
 
 	return &http.Server{
@@ -230,4 +246,45 @@ func isSameListenEndpoint(hostA string, portA uint16, hostB string, portB uint16
 		return true
 	}
 	return a == "0.0.0.0" || b == "0.0.0.0"
+}
+
+func responseHeaderMiddleware(satoriVersion string, serverHeader string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+			w.Header().Set("Date", time.Now().Format(time.RFC1123))
+			if serverHeader != "" {
+				w.Header().Set("Server", serverHeader)
+			}
+			if satoriVersion != "" {
+				w.Header().Set("X-Satori-Protocol", satoriVersion)
+			}
+			next.ServeHTTP(w, request)
+		})
+	}
+}
+
+func (logger) Log(_ context.Context, level server.LogLevel, message string, fields ...server.Field) {
+	text := strings.TrimSpace(message)
+	if text == "" {
+		text = "satori server event"
+	}
+	args := make([]interface{}, 0, 1+len(fields))
+	args = append(args, text)
+	for _, field := range fields {
+		key := strings.TrimSpace(field.Key)
+		if key == "" {
+			continue
+		}
+		args = append(args, fmt.Sprintf("%s=%v", key, field.Value))
+	}
+	lvl := log.INFO
+	switch level {
+	case server.LogLevelDebug:
+		lvl = log.DEBUG
+	case server.LogLevelWarn:
+		lvl = log.WARN
+	case server.LogLevelError:
+		lvl = log.ERROR
+	}
+	log.GetLogger().Println(lvl, args...)
 }
